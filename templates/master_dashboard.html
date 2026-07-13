@@ -1,10 +1,26 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
-    <title>Pannello del Master</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Master Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <h1>Schermo del Master 👁️</h1>
-    <p>Da qui creerai pergamene e tomi antichi.</p>
+    <div class="wrap">
+        <h1>Master's Screen &#128065;</h1>
+        <p class="subtitle">Forge scrolls and ancient tomes from here.</p>
+
+        <div class="panel">
+            <h2>Upload a Handout</h2>
+            <!-- Wired to Flask in Phase 1 -->
+            <p class="subtitle">Upload form coming in Phase 1.</p>
+        </div>
+
+        <div class="panel">
+            <h2>Your Handouts</h2>
+            <div class="empty">No handouts uploaded yet.</div>
+        </div>
+    </div>
 </body>
 </html>

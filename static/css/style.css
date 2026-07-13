@@ -1,0 +1,249 @@
+/* =====================================================================
+   Local Handouts Manager - 8-bit / dark-fantasy stylesheet
+   Visual style inspired by 8bitcn/ui (https://8bitcn.com) - MIT.
+   Reimplemented here in plain CSS (no React/Tailwind dependency).
+
+   Approach: MOBILE-FIRST. Base rules target phones (the primary
+   device at the table). Tablet/desktop scale up via min-width.
+   ===================================================================== */
+
+/* Pixel display font for headings/UI, readable serif for long text */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IM+Fell+English:ital@0;1&display=swap');
+
+/* ---- Theme tokens (Dungeon Torch) ------------------------------- */
+:root {
+  --bg:        #1a1614;   /* anthracite / soot */
+  --bg-panel:  #2a2320;   /* slightly lifted panel */
+  --ink:       #f4e9d8;   /* parchment text */
+  --ink-dim:   #b9a78d;   /* muted text */
+  --accent:    #e8a83a;   /* torch gold */
+  --accent-2:  #c0532b;   /* ember red */
+  --border:    #0d0b0a;   /* hard black outline */
+  --shadow:    #000000;   /* drop-shadow color */
+  --good:      #6a9c4f;   /* "visible" green */
+
+  --px: 4px;              /* base pixel unit for shadows/borders */
+  --tap: 44px;            /* min touch target (Apple HIG) */
+}
+
+/* ---- Reset-ish -------------------------------------------------- */
+* { box-sizing: border-box; }
+
+html {
+  /* stop iOS Safari from auto-inflating text on orientation change */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg);
+  /* faint pixel-grid texture so flat areas aren't dead */
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 16px 16px;
+  color: var(--ink);
+  font-family: 'IM Fell English', Georgia, serif;
+  font-size: 16px;              /* phone baseline */
+  line-height: 1.6;
+  image-rendering: pixelated;
+  /* avoid horizontal scroll from stepped shadows on narrow screens */
+  overflow-x: hidden;
+}
+
+.wrap {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px 14px 56px;      /* tighter gutters on phones */
+}
+
+/* ---- Headings (pixel font) ------------------------------------- */
+h1, h2, h3, .pixel {
+  font-family: 'Press Start 2P', monospace;
+  color: var(--accent);
+  line-height: 1.4;
+  /* wrap long pixel-font words instead of overflowing on narrow screens */
+  overflow-wrap: anywhere;
+  text-shadow: var(--px) var(--px) 0 var(--border);
+}
+
+h1 { font-size: 1.15rem; margin: 0 0 8px; }
+h2 { font-size: 0.95rem; margin: 28px 0 12px; color: var(--ink); }
+h3 { font-size: 0.8rem; }
+
+.subtitle {
+  color: var(--ink-dim);
+  font-style: italic;
+  margin-top: 0;
+}
+
+/* ---- The 8-bit surface: card / panel --------------------------- */
+/* Hard black border + stepped shadow = the whole retro look.       */
+.panel {
+  background: var(--bg-panel);
+  border: var(--px) solid var(--border);
+  box-shadow: var(--px) var(--px) 0 0 var(--shadow);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+/* ---- Buttons --------------------------------------------------- */
+.btn {
+  display: inline-block;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.7rem;
+  text-decoration: none;
+  text-align: center;
+  color: var(--border);
+  background: var(--accent);
+  border: var(--px) solid var(--border);
+  box-shadow: var(--px) var(--px) 0 0 var(--shadow);
+  /* comfortable finger target */
+  min-height: var(--tap);
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: none;             /* retro = instant, no easing */
+  touch-action: manipulation;   /* kill the 300ms tap delay on mobile */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* hover effects only where a real pointer exists (not touch) */
+@media (hover: hover) {
+  .btn:hover { background: #f2bd5a; }
+  .btn--danger:hover { background: #d76a41; }
+}
+
+/* pressed-in effect: shove the button into its own shadow */
+.btn:active {
+  transform: translate(var(--px), var(--px));
+  box-shadow: 0 0 0 0 var(--shadow);
+}
+
+.btn--danger  { background: var(--accent-2); color: var(--ink); }
+.btn--ghost   { background: var(--bg-panel); color: var(--ink); }
+
+/* full-width buttons on phones are easier to tap; auto on larger screens */
+.btn--block { display: block; width: 100%; }
+
+/* ---- Form controls --------------------------------------------- */
+label {
+  display: block;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+  color: var(--ink-dim);
+  margin: 16px 0 6px;
+}
+
+input[type="text"],
+input[type="file"],
+select {
+  width: 100%;
+  font-family: 'IM Fell English', serif;
+  /* 16px min prevents iOS from zooming in when the field is focused */
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--bg);
+  border: var(--px) solid var(--border);
+  box-shadow: inset var(--px) var(--px) 0 0 rgba(0,0,0,0.4);
+  min-height: var(--tap);
+  padding: 10px;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ---- Handout grid (player hub) --------------------------------- */
+/* Phones: 2 columns so cards aren't tiny and the reveal reads at a glance */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.handout-card {
+  background: var(--bg-panel);
+  border: var(--px) solid var(--border);
+  box-shadow: var(--px) var(--px) 0 0 var(--shadow);
+  padding: 10px;
+  text-align: center;
+}
+
+.handout-card img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border: var(--px) solid var(--border);
+  image-rendering: pixelated;
+}
+
+.handout-card .title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+  color: var(--ink);
+  margin-top: 10px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* status pill for the master's list */
+.pill {
+  display: inline-block;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  padding: 4px 8px;
+  border: 2px solid var(--border);
+}
+.pill--on  { background: var(--good);    color: var(--border); }
+.pill--off { background: var(--ink-dim); color: var(--border); }
+
+/* ---- Empty state ----------------------------------------------- */
+.empty {
+  text-align: center;
+  color: var(--ink-dim);
+  font-style: italic;
+  padding: 40px 16px;
+}
+
+/* =====================================================================
+   TABLET  (iPad portrait and up)
+   ===================================================================== */
+@media (min-width: 768px) {
+  body { font-size: 18px; }
+  .wrap { padding: 24px 20px 64px; }
+
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.1rem; }
+  h3 { font-size: 0.9rem; }
+
+  .panel { padding: 20px; margin-bottom: 20px; }
+
+  /* buttons size to content again; no need for full-width on wider screens */
+  .btn--block { display: inline-block; width: auto; }
+
+  /* roomier cards: let them flow by min size */
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 18px;
+  }
+  .handout-card { padding: 12px; }
+  .handout-card img { height: 150px; }
+  .handout-card .title { font-size: 0.65rem; }
+}
+
+/* =====================================================================
+   DESKTOP / large iPad landscape
+   ===================================================================== */
+@media (min-width: 1024px) {
+  h1 { font-size: 1.7rem; }
+
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+  }
+  .handout-card img { height: 160px; }
+}
