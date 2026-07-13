@@ -13,14 +13,130 @@
 
         <div class="panel">
             <h2>Upload a Handout</h2>
-            <!-- Wired to Flask in Phase 1 -->
-            <p class="subtitle">Upload form coming in Phase 1.</p>
+            <form action="{{ url_for('upload_handout') }}" method="post" enctype="multipart/form-data">
+                <label for="title">Title</label>
+                <input type="text" id="title" name="title" placeholder="Old Kingdom Map" required>
+
+                <label for="description">Description (optional)</label>
+                <input type="text" id="description" name="description" placeholder="A weathered map of the fallen kingdom.">
+
+                <label for="alt_text">Fallback Text (optional)</label>
+                <input type="text" id="alt_text" name="alt_text" placeholder="Shown if the handout fails to load.">
+
+                <label for="category">Category (optional)</label>
+                <input type="text" id="category" name="category" list="category-list" placeholder="Map, NPC, Letter…">
+                <datalist id="category-list">
+                    {% for c in categories %}<option value="{{ c }}">{% endfor %}
+                </datalist>
+
+                <label for="session_number">Session Number (optional)</label>
+                <input type="number" id="session_number" name="session_number" min="1" step="1" placeholder="1">
+
+                <label for="session_title">Session Title (optional)</label>
+                <input type="text" id="session_title" name="session_title" placeholder="The Sunless Citadel">
+
+                <label for="file">Files (images or PDF)</label>
+                <input type="file" id="file" name="files" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf" multiple required>
+                <p class="subtitle">Select several images to build a carousel.</p>
+
+                <label>&nbsp;</label>
+                <button type="submit" class="btn btn--block">Forge Handout</button>
+            </form>
         </div>
 
         <div class="panel">
-            <h2>Your Handouts</h2>
+            <div class="panel-head">
+                <h2>Your Handouts</h2>
+                {% if handouts %}
+                <div class="view-switch" role="group" aria-label="View mode">
+                    <button type="button" class="btn btn--ghost view-btn" data-view="rows">Rows</button>
+                    <button type="button" class="btn btn--ghost view-btn" data-view="cards">Cards</button>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if not handouts %}
             <div class="empty">No handouts uploaded yet.</div>
+            {% else %}
+            <div id="handout-list" class="view--rows">
+                {% for h in handouts %}
+                <div class="h-item {% if h.visible %}h-item--public{% endif %}">
+                    <div class="h-thumb">
+                        {% set cover = h.files[0] %}
+                        {% if cover.reader == 'image' %}
+                        <img src="{{ url_for('static', filename='uploads/' ~ cover.filename) }}"
+                             alt="{{ h.alt_text or h.title }}">
+                        {% else %}
+                        <div class="h-thumb--pdf">PDF</div>
+                        {% endif %}
+                        {% if h.files|length > 1 %}<span class="count-badge">{{ h.files|length }}</span>{% endif %}
+                    </div>
+
+                    <div class="h-body">
+                        <div class="h-title">{{ h.title }}</div>
+                        {% if h.description %}<div class="h-desc">{{ h.description }}</div>{% endif %}
+                        <div class="h-meta">
+                            <span class="pill {% if h.visible %}pill--on{% else %}pill--off{% endif %}">
+                                {% if h.visible %}PUBLIC{% else %}HIDDEN{% endif %}
+                            </span>
+                            {% if h.category %}<span class="tag">{{ h.category }}</span>{% endif %}
+                            {% if h.session_number %}<span class="tag tag--session">Session {{ h.session_number }}</span>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="h-actions">
+                        <form method="post" action="{{ url_for('toggle_visibility', handout_id=h.id) }}"
+                              {% if not h.visible %}data-confirm="Are you sure you want to publish &quot;{{ h.title }}&quot; to the players?"{% endif %}>
+                            {% if h.visible %}
+                            <button type="submit" class="btn btn--ghost btn--block">Unpublish</button>
+                            {% else %}
+                            <button type="submit" class="btn btn--block">Publish</button>
+                            {% endif %}
+                        </form>
+                        <form method="post" action="{{ url_for('delete_handout', handout_id=h.id) }}"
+                              data-confirm="Delete &quot;{{ h.title }}&quot; permanently? This removes the file too.">
+                            <button type="submit" class="btn btn--danger btn--block">Delete</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
         </div>
     </div>
+
+    <script>
+        (function () {
+            // ---- View switch (rows / cards), remembered on this laptop ----
+            var list = document.getElementById('handout-list');
+            if (list) {
+                var saved = localStorage.getItem('handout-view') || 'rows';
+                setView(saved);
+                document.querySelectorAll('.view-btn').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        setView(btn.dataset.view);
+                    });
+                });
+            }
+            function setView(view) {
+                if (!list) return;
+                list.classList.remove('view--rows', 'view--cards');
+                list.classList.add('view--' + view);
+                localStorage.setItem('handout-view', view);
+                document.querySelectorAll('.view-btn').forEach(function (b) {
+                    b.classList.toggle('view-btn--active', b.dataset.view === view);
+                });
+            }
+
+            // ---- Confirm before publishing ----
+            document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+                form.addEventListener('submit', function (e) {
+                    if (!window.confirm(form.dataset.confirm)) {
+                        e.preventDefault();
+                    }
+                });
+            });
+        })();
+    </script>
 </body>
 </html>

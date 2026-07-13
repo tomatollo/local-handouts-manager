@@ -247,3 +247,338 @@ input:focus, select:focus {
   }
   .handout-card img { height: 160px; }
 }
+
+/* =====================================================================
+   MASTER: "Your Handouts" list  (rows / cards dual view)
+   Added for Phase 2. Mobile-first; the Master is usually on a laptop.
+   ===================================================================== */
+
+/* panel header: title on the left, view switch on the right */
+.panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.panel-head h2 { margin: 0; }
+
+.view-switch { display: flex; gap: 6px; }
+.view-btn {
+  font-size: 0.55rem;
+  min-height: auto;
+  padding: 8px 10px;
+}
+/* the active view button is lit like torch gold */
+.view-btn--active {
+  background: var(--accent);
+  color: var(--border);
+}
+
+/* ---- Shared item chrome (both views) --------------------------- */
+.h-item {
+  background: var(--bg-panel);
+  border: var(--px) solid var(--border);
+  box-shadow: var(--px) var(--px) 0 0 var(--shadow);
+}
+/* PUBLIC handouts are unmistakable: green torch edge + tint */
+.h-item--public {
+  border-color: var(--good);
+  box-shadow: var(--px) var(--px) 0 0 var(--good);
+}
+
+.h-thumb img,
+.h-thumb--pdf {
+  width: 100%;
+  object-fit: cover;
+  border: var(--px) solid var(--border);
+  image-rendering: pixelated;
+}
+.h-thumb--pdf {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--accent);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.7rem;
+}
+
+.h-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+  color: var(--ink);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.h-desc {
+  color: var(--ink-dim);
+  font-style: italic;
+  font-size: 0.9rem;
+  margin: 4px 0 8px;
+}
+.h-body .pill { margin-top: 4px; }
+
+/* ---- ROWS view (Windows-explorer-like list) -------------------- */
+.view--rows { display: flex; flex-direction: column; gap: 10px; }
+.view--rows .h-item {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+}
+.view--rows .h-thumb img,
+.view--rows .h-thumb--pdf { height: 56px; }
+.view--rows .h-actions { grid-column: 1 / -1; }
+
+/* ---- CARDS view ------------------------------------------------ */
+.view--cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.view--cards .h-item {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  text-align: center;
+}
+.view--cards .h-thumb img,
+.view--cards .h-thumb--pdf { height: 120px; }
+.view--cards .h-body { margin: 8px 0; }
+.view--cards .h-actions { margin-top: auto; }
+
+/* On a laptop the Master has room: roomier rows, more card columns */
+@media (min-width: 768px) {
+  .view--rows .h-item {
+    grid-template-columns: 64px 1fr auto;
+  }
+  .view--rows .h-thumb img,
+  .view--rows .h-thumb--pdf { height: 64px; }
+  /* actions move back inline on the right instead of wrapping full-width */
+  .view--rows .h-actions { grid-column: auto; }
+  .view--rows .h-actions .btn--block { display: inline-block; width: auto; }
+
+  .view--cards {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 18px;
+  }
+  .view--cards .h-thumb img,
+  .view--cards .h-thumb--pdf { height: 150px; }
+}
+
+/* =====================================================================
+   TAGS, SESSION GROUPS & SHARED BITS  (Phase 3: categories + sessions)
+   ===================================================================== */
+
+/* small category / session chip */
+.tag {
+  display: inline-block;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  padding: 4px 8px;
+  background: var(--bg);
+  color: var(--accent);
+  border: 2px solid var(--border);
+}
+.tag--session { color: var(--ink-dim); }
+
+/* master list: meta row wraps pill + tags together */
+.h-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+/* master list: stack the two action forms with a small gap */
+.h-actions { display: flex; flex-direction: column; gap: 6px; }
+@media (min-width: 768px) {
+  .view--rows .h-actions { flex-direction: row; }
+}
+
+/* ---- Player hub: session grouping ------------------------------ */
+.session-block { margin-bottom: 28px; }
+.session-head {
+  border-bottom: var(--px) solid var(--border);
+  padding-bottom: 8px;
+}
+.session-title {
+  color: var(--ink-dim);
+  font-size: 0.7rem;
+  overflow-wrap: anywhere;
+}
+
+/* player card extras: description + PDF placeholder */
+.card-desc {
+  color: var(--ink-dim);
+  font-style: italic;
+  font-size: 0.85rem;
+  margin: 6px 0;
+}
+.handout-card__pdf {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  background: var(--bg);
+  color: var(--accent);
+  border: var(--px) solid var(--border);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.9rem;
+}
+.handout-card .tag { margin-top: 8px; }
+
+@media (min-width: 768px) {
+  .handout-card__pdf { height: 150px; }
+}
+@media (min-width: 1024px) {
+  .handout-card__pdf { height: 160px; }
+}
+
+/* =====================================================================
+   CLICKABLE CARDS, COUNT BADGE & LIGHTBOX  (Phase 3: open handouts)
+   ===================================================================== */
+
+.handout-card { cursor: pointer; position: relative; }
+@media (hover: hover) {
+  .handout-card:hover { border-color: var(--accent); }
+}
+.handout-card:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* "N images" badge on multi-file covers (master thumb + player card) */
+.count-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  color: var(--border);
+  background: var(--accent);
+  border: 2px solid var(--border);
+  padding: 3px 6px;
+}
+.h-thumb { position: relative; }
+
+/* ---- Lightbox -------------------------------------------------- */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+.lightbox[hidden] { display: none; }
+
+.lightbox__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+}
+
+.lightbox__dialog {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 900px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border: var(--px) solid var(--border);
+  box-shadow: var(--px) var(--px) 0 0 var(--shadow);
+  padding: 12px;
+}
+
+.lightbox__close {
+  align-self: flex-end;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.9rem;
+  line-height: 1;
+  color: var(--ink);
+  background: var(--accent-2);
+  border: var(--px) solid var(--border);
+  min-width: var(--tap);
+  min-height: var(--tap);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.lightbox__stage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 0;
+  flex: 1;
+}
+.lightbox__media {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox__media img {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border: var(--px) solid var(--border);
+  image-rendering: auto;   /* real photos: don't pixelate the full view */
+}
+.lightbox__pdf {
+  width: 100%;
+  height: 70vh;
+  border: var(--px) solid var(--border);
+  background: #fff;
+}
+
+.lightbox__nav {
+  flex: 0 0 auto;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1rem;
+  color: var(--border);
+  background: var(--accent);
+  border: var(--px) solid var(--border);
+  min-width: var(--tap);
+  min-height: var(--tap);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+@media (hover: hover) {
+  .lightbox__nav:hover { background: #f2bd5a; }
+}
+
+.lightbox__dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 0 4px;
+}
+.lightbox__dots .dot {
+  width: 10px;
+  height: 10px;
+  background: var(--ink-dim);
+  border: 2px solid var(--border);
+  cursor: pointer;
+}
+.lightbox__dots .dot--active { background: var(--accent); }
+
+.lightbox__caption { text-align: center; padding-top: 6px; }
+.lightbox__title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.7rem;
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+.lightbox__desc {
+  color: var(--ink-dim);
+  font-style: italic;
+  margin-top: 6px;
+}
