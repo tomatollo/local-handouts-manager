@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Edit Handout</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="wrap">
+        <h1>Edit Handout &#9998;</h1>
+        <p class="subtitle"><a href="{{ url_for('master.dm_panel') }}">&lsaquo; Back to Master's Screen</a></p>
+
+        <div class="panel">
+            <h2>{{ handout.title }}</h2>
+            <form action="{{ url_for('master.edit_handout', handout_id=handout.id) }}" method="post" enctype="multipart/form-data">
+                <label for="title">Title</label>
+                <input type="text" id="title" name="title" value="{{ handout.title }}" required>
+
+                <label for="description">Description (optional)</label>
+                <input type="text" id="description" name="description" value="{{ handout.description }}">
+
+                <label for="category">Category (optional)</label>
+                <input type="text" id="category" name="category" list="category-list" value="{{ handout.category }}">
+                <datalist id="category-list">
+                    {% for c in categories %}<option value="{{ c }}">{% endfor %}
+                </datalist>
+
+                <label for="tags">Tags (optional, comma-separated)</label>
+                <input type="text" id="tags" name="tags" list="tag-list"
+                       value="{{ handout.tags | join(', ') }}" placeholder="map, kingdom, cursed">
+                <datalist id="tag-list">
+                    {% for t in tags %}<option value="{{ t }}">{% endfor %}
+                </datalist>
+
+                <label for="view_type">Viewer</label>
+                <select id="view_type" name="view_type">
+                    {% for vt in view_types %}
+                    <option value="{{ vt }}" {% if handout.view_type == vt %}selected{% endif %}>{{ vt|capitalize }}</option>
+                    {% endfor %}
+                </select>
+
+                <label>Folders (optional)</label>
+                {% if folders %}
+                <p class="subtitle">A handout can live in several folders.</p>
+                <div class="folder-picker">
+                    {% for fo in folders %}
+                    <label class="folder-choice">
+                        <input type="checkbox" name="folders" value="{{ fo.id }}"
+                               {% if fo.id in handout.folders %}checked{% endif %}>
+                        {{ fo.name }}
+                    </label>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="subtitle">No folders yet &mdash; create some on the Master's Screen.</p>
+                {% endif %}
+
+                <label for="session_number">Session Number (optional)</label>
+                <input type="number" id="session_number" name="session_number" min="1" step="1"
+                       value="{{ handout.session_number if handout.session_number is not none else '' }}">
+
+                <label for="session_title">Session Title (optional)</label>
+                <input type="text" id="session_title" name="session_title" value="{{ handout.session_title }}">
+
+                <label for="found_location">Place of Discovery (optional)</label>
+                <input type="text" id="found_location" name="found_location" value="{{ handout.found_location }}">
+
+                <label for="found_date">Date of Discovery (optional)</label>
+                <input type="text" id="found_date" name="found_date" value="{{ handout.found_date }}">
+
+                <label>Current Files</label>
+                <p class="subtitle">Drag by the handle to reorder. The first file is the cover. Tick to remove on save.</p>
+                <div class="edit-grid" id="file-reorder">
+                    {% for f in handout.files %}
+                    <div class="edit-file" draggable="true" data-filename="{{ f.filename }}">
+                        <span class="edit-file__handle" aria-hidden="true">&#8942;&#8942;</span>
+                        {% if f.reader == 'image' %}
+                        <img src="{{ url_for('static', filename='uploads/' ~ f.filename) }}" alt="">
+                        {% else %}
+                        <div class="edit-file__pdf">PDF</div>
+                        {% endif %}
+                        <label class="edit-file__desc">
+                            <span>Description</span>
+                            <input type="text" name="desc_{{ f.filename }}" value="{{ f.description }}"
+                                   placeholder="What players see for this file">
+                        </label>
+                        <label class="edit-file__remove">
+                            <input type="checkbox" name="remove" value="{{ f.filename }}"> Remove
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+                <!-- Reflects the current drag order; rebuilt by JS on every drop. -->
+                <div id="order-inputs">
+                    {% for f in handout.files %}
+                    <input type="hidden" name="order" value="{{ f.filename }}">
+                    {% endfor %}
+                </div>
+
+                <label for="file">Add More Files (optional)</label>
+                <input type="file" id="file" name="files" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf" multiple>
+                <!-- One description input per newly-picked file, filled in by JS. -->
+                <div id="new-desc" class="new-desc"></div>
+
+                <label>Back Cover (Book viewer, optional)</label>
+                {% if handout.back_cover %}
+                <div class="back-cover-current">
+                    {% if handout.back_cover.reader == 'image' %}
+                    <img src="{{ url_for('static', filename='uploads/' ~ handout.back_cover.filename) }}" alt="Back cover">
+                    {% else %}
+                    <div class="edit-file__pdf">PDF</div>
+                    {% endif %}
+                    <label class="edit-file__remove">
+                        <input type="checkbox" name="remove_back_cover" value="1"> Remove back cover
+                    </label>
+                </div>
+                <p class="subtitle">Upload a new file to replace it:</p>
+                {% endif %}
+                <input type="file" id="back_cover" name="back_cover" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf">
+                <p class="subtitle">Shown as the last page in the Book viewer.</p>
+
+                <label>&nbsp;</label>
+                <button type="submit" class="btn btn--block">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            // ---- Drag-and-drop reordering of current files ----------------
+            var grid = document.getElementById('file-reorder');
+            var orderBox = document.getElementById('order-inputs');
+            if (grid && orderBox) {
+                var dragged = null;
+
+                grid.addEventListener('dragstart', function (e) {
+                    var tile = e.target.closest('.edit-file');
+                    if (!tile) return;
+                    dragged = tile;
+                    tile.classList.add('edit-file--dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                grid.addEventListener('dragend', function () {
+                    if (dragged) dragged.classList.remove('edit-file--dragging');
+                    dragged = null;
+                    syncOrder();
+                });
+                grid.addEventListener('dragover', function (e) {
+                    e.preventDefault();
+                    if (!dragged) return;
+                    var after = elementAfter(grid, e.clientY, e.clientX);
+                    if (after == null) grid.appendChild(dragged);
+                    else grid.insertBefore(dragged, after);
+                });
+
+                // Find the tile that should come *after* the cursor, so we know
+                // where to drop. Works across the wrapped 2D grid.
+                function elementAfter(container, y, x) {
+                    var tiles = [].slice.call(
+                        container.querySelectorAll('.edit-file:not(.edit-file--dragging)'));
+                    var closest = null, closestDist = Infinity;
+                    tiles.forEach(function (t) {
+                        var box = t.getBoundingClientRect();
+                        var cy = box.top + box.height / 2;
+                        var cx = box.left + box.width / 2;
+                        // prefer tiles below/right of the cursor
+                        if (y < cy || (Math.abs(y - cy) < box.height / 2 && x < cx)) {
+                            var d = Math.hypot(x - cx, y - cy);
+                            if (d < closestDist) { closestDist = d; closest = t; }
+                        }
+                    });
+                    return closest;
+                }
+
+                function syncOrder() {
+                    orderBox.innerHTML = '';
+                    grid.querySelectorAll('.edit-file').forEach(function (t) {
+                        var inp = document.createElement('input');
+                        inp.type = 'hidden';
+                        inp.name = 'order';
+                        inp.value = t.getAttribute('data-filename');
+                        orderBox.appendChild(inp);
+                    });
+                }
+            }
+
+            // ---- Description inputs for newly-added files -----------------
+            var picker = document.getElementById('file');
+            var newDesc = document.getElementById('new-desc');
+            if (picker && newDesc) {
+                picker.addEventListener('change', function () {
+                    newDesc.innerHTML = '';
+                    [].forEach.call(picker.files, function (file) {
+                        var wrap = document.createElement('label');
+                        wrap.className = 'new-desc__row';
+                        var name = document.createElement('span');
+                        name.textContent = file.name;
+                        var inp = document.createElement('input');
+                        inp.type = 'text';
+                        inp.name = 'new_desc';
+                        inp.placeholder = 'Description (optional)';
+                        wrap.appendChild(name);
+                        wrap.appendChild(inp);
+                        newDesc.appendChild(wrap);
+                    });
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

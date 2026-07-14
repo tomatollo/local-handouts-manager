@@ -1,0 +1,294 @@
+{# Shared player lightbox: opened by any .handout-card. The card carries
+   data-view (carousel|book|gallery) which selects the viewer. Included by
+   hub.html and folder.html so the logic lives in one place. #}
+<div id="lightbox" class="lightbox" hidden aria-hidden="true">
+    <div class="lightbox__backdrop" data-close></div>
+    <div class="lightbox__dialog" role="dialog" aria-modal="true">
+        <button class="lightbox__close" type="button" data-close aria-label="Close">&times;</button>
+        <div class="lightbox__stage">
+            <button class="lightbox__nav lightbox__nav--prev" type="button" aria-label="Previous">&lsaquo;</button>
+            <div class="lightbox__media"><!-- filled by JS --></div>
+            <button class="lightbox__nav lightbox__nav--next" type="button" aria-label="Next">&rsaquo;</button>
+        </div>
+        <div class="lightbox__dots"><!-- filled by JS --></div>
+        <div class="lightbox__caption">
+            <div class="lightbox__title"></div>
+            <div class="lightbox__desc"></div>
+            <div class="lightbox__found"></div>
+            <!-- Per-file description, shown only when the player asks for it. -->
+            <button class="btn btn--ghost lightbox__descbtn" type="button" hidden>Show description</button>
+            <div class="lightbox__filedesc" hidden></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var box = document.getElementById('lightbox');
+        if (!box) return;
+        var media = box.querySelector('.lightbox__media');
+        var dots = box.querySelector('.lightbox__dots');
+        var titleEl = box.querySelector('.lightbox__title');
+        var descEl = box.querySelector('.lightbox__desc');
+        var foundEl = box.querySelector('.lightbox__found');
+        var descBtn = box.querySelector('.lightbox__descbtn');
+        var fileDescEl = box.querySelector('.lightbox__filedesc');
+        var prevBtn = box.querySelector('.lightbox__nav--prev');
+        var nextBtn = box.querySelector('.lightbox__nav--next');
+        var stage = box.querySelector('.lightbox__stage');
+        var dialog = box.querySelector('.lightbox__dialog');
+
+        var UPLOADS = "{{ url_for('static', filename='uploads/') }}";
+        function uploadUrl(name) { return UPLOADS + name; }
+
+        var files = [];       // [{filename, reader, description}]
+        var view = 'carousel';
+        var index = 0;        // carousel: file index; book: spread index
+
+        // ---- helpers to build media nodes ----
+        function makeImage(f) {
+            var img = document.createElement('img');
+            img.src = uploadUrl(f.filename);
+            img.alt = f.description || '';
+            return img;
+        }
+        function makePdf(f) {
+            var frame = document.createElement('iframe');
+            frame.src = uploadUrl(f.filename);
+            frame.className = 'lightbox__pdf';
+            return frame;
+        }
+        function makeNode(f) {
+            return f.reader === 'image' ? makeImage(f) : makePdf(f);
+        }
+
+        // ---- per-file description control (carousel/book use current file) ----
+        function setFileDesc(desc) {
+            fileDescEl.hidden = true;
+            fileDescEl.textContent = desc || '';
+            if (desc) {
+                descBtn.hidden = false;
+                descBtn.textContent = 'Show description';
+            } else {
+                descBtn.hidden = true;
+            }
+        }
+
+        // =====================================================================
+        // CAROUSEL: one file at a time, arrows + dots + swipe (the default).
+        // =====================================================================
+        function renderCarousel() {
+            media.innerHTML = '';
+            media.className = 'lightbox__media';
+            media.appendChild(makeNode(files[index]));
+
+            dots.innerHTML = '';
+            var multi = files.length > 1;
+            prevBtn.style.display = multi ? '' : 'none';
+            nextBtn.style.display = multi ? '' : 'none';
+            if (multi) {
+                files.forEach(function (_, i) {
+                    var d = document.createElement('span');
+                    d.className = 'dot' + (i === index ? ' dot--active' : '');
+                    d.addEventListener('click', function () { index = i; renderCarousel(); });
+                    dots.appendChild(d);
+                });
+            }
+            setFileDesc(files[index].description);
+        }
+
+        // =====================================================================
+        // GALLERY: every page shown at once in a grid; click a page to blow it
+        // up full-screen, click again (or Esc handling below) to return.
+        // =====================================================================
+        var galleryZoom = null;   // index currently zoomed, or null
+        function renderGallery() {
+            prevBtn.style.display = 'none';
+            nextBtn.style.display = 'none';
+            dots.innerHTML = '';
+            setFileDesc('');       // no single "current" file in grid mode
+            descBtn.hidden = true;
+
+            media.innerHTML = '';
+            if (galleryZoom === null) {
+                media.className = 'lightbox__media lightbox__media--gallery';
+                var grid = document.createElement('div');
+                grid.className = 'gallery-grid';
+                files.forEach(function (f, i) {
+                    var cell = document.createElement('button');
+                    cell.type = 'button';
+                    cell.className = 'gallery-cell';
+                    cell.appendChild(makeNode(f));
+                    cell.addEventListener('click', function () {
+                        galleryZoom = i; renderGallery();
+                    });
+                    grid.appendChild(cell);
+                });
+                media.appendChild(grid);
+            } else {
+                // zoomed single page; clicking it returns to the grid
+                media.className = 'lightbox__media';
+                var wrap = document.createElement('div');
+                wrap.className = 'gallery-zoom';
+                wrap.appendChild(makeNode(files[galleryZoom]));
+                wrap.addEventListener('click', function () {
+                    galleryZoom = null; renderGallery();
+                });
+                media.appendChild(wrap);
+                setFileDesc(files[galleryZoom].description);
+            }
+        }
+
+        // =====================================================================
+        // BOOK: cover alone, then two-page spreads (2-3, 4-5, ...). On narrow
+        // screens CSS collapses the spread to a single page. Page-turn anim.
+        // =====================================================================
+        // Spread model: spread 0 = [cover]; spread k>=1 = [2k-1, 2k].
+        function spreadCount() {
+            if (files.length <= 1) return 1;
+            return 1 + Math.ceil((files.length - 1) / 2);
+        }
+        function pagesForSpread(s) {
+            if (s === 0) return [0];
+            var left = 2 * s - 1, right = 2 * s;
+            var out = [left];
+            if (right < files.length) out.push(right);
+            return out;
+        }
+        function renderBook(turnDir) {
+            media.innerHTML = '';
+            media.className = 'lightbox__media lightbox__media--book';
+            var pages = pagesForSpread(index);
+
+            var spread = document.createElement('div');
+            spread.className = 'book-spread';
+            if (pages.length === 1) spread.classList.add('book-spread--single');
+
+            pages.forEach(function (pi) {
+                var page = document.createElement('div');
+                page.className = 'book-page';
+                page.appendChild(makeNode(files[pi]));
+                spread.appendChild(page);
+            });
+            if (turnDir) {
+                spread.classList.add(turnDir === 'next' ? 'book-turn-next' : 'book-turn-prev');
+            }
+            media.appendChild(spread);
+
+            var multi = spreadCount() > 1;
+            prevBtn.style.display = multi ? '' : 'none';
+            nextBtn.style.display = multi ? '' : 'none';
+
+            // dots per spread
+            dots.innerHTML = '';
+            if (multi) {
+                for (var s = 0; s < spreadCount(); s++) {
+                    (function (s) {
+                        var d = document.createElement('span');
+                        d.className = 'dot' + (s === index ? ' dot--active' : '');
+                        d.addEventListener('click', function () { index = s; renderBook(); });
+                        dots.appendChild(d);
+                    })(s);
+                }
+            }
+            // description: first page of the spread
+            setFileDesc(files[pages[0]].description);
+        }
+
+        // ---- unified render + navigation ----
+        function render(turnDir) {
+            if (view === 'gallery') return renderGallery();
+            if (view === 'book') return renderBook(turnDir);
+            return renderCarousel();
+        }
+
+        function count() {
+            if (view === 'book') return spreadCount();
+            return files.length;
+        }
+
+        function step(delta) {
+            if (view === 'gallery') {
+                // in zoomed state, arrows move between pages; in grid, ignore
+                if (galleryZoom !== null) {
+                    galleryZoom = (galleryZoom + delta + files.length) % files.length;
+                    renderGallery();
+                }
+                return;
+            }
+            var n = count();
+            if (n < 2) return;
+            var dir = delta > 0 ? 'next' : 'prev';
+            index = (index + delta + n) % n;
+            render(dir);
+        }
+
+        // ---- open / close ----
+        function open(card) {
+            try { files = JSON.parse(card.getAttribute('data-files')); }
+            catch (e) { files = []; }
+            if (!files.length) return;
+            view = card.getAttribute('data-view') || 'carousel';
+            index = 0;
+            galleryZoom = null;
+            dialog.setAttribute('data-view', view);
+
+            titleEl.textContent = card.getAttribute('data-title') || '';
+            descEl.textContent = card.getAttribute('data-desc') || '';
+            var loc = card.getAttribute('data-location') || '';
+            var date = card.getAttribute('data-date') || '';
+            var parts = [];
+            if (loc) parts.push('Found at ' + loc);
+            if (date) parts.push(date);
+            foundEl.textContent = parts.join(' \u2022 ');
+
+            render();
+            box.hidden = false;
+            box.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+        function close() {
+            box.hidden = true;
+            box.setAttribute('aria-hidden', 'true');
+            media.innerHTML = '';
+            document.body.style.overflow = '';
+        }
+
+        descBtn.addEventListener('click', function () {
+            fileDescEl.hidden = !fileDescEl.hidden;
+            descBtn.textContent = fileDescEl.hidden ? 'Show description' : 'Hide description';
+        });
+
+        document.querySelectorAll('.handout-card').forEach(function (card) {
+            card.addEventListener('click', function () { open(card); });
+            card.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(card); }
+            });
+        });
+
+        prevBtn.addEventListener('click', function () { step(-1); });
+        nextBtn.addEventListener('click', function () { step(1); });
+        box.querySelectorAll('[data-close]').forEach(function (el) {
+            el.addEventListener('click', close);
+        });
+        document.addEventListener('keydown', function (e) {
+            if (box.hidden) return;
+            if (e.key === 'Escape') {
+                // In zoomed gallery, Esc returns to grid first.
+                if (view === 'gallery' && galleryZoom !== null) { galleryZoom = null; renderGallery(); }
+                else close();
+            } else if (e.key === 'ArrowLeft') { step(-1); }
+            else if (e.key === 'ArrowRight') { step(1); }
+        });
+
+        // swipe (carousel + book + zoomed gallery)
+        var startX = null;
+        stage.addEventListener('touchstart', function (e) { startX = e.touches[0].clientX; }, {passive: true});
+        stage.addEventListener('touchend', function (e) {
+            if (startX === null) { return; }
+            var dx = e.changedTouches[0].clientX - startX;
+            if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1);
+            startX = null;
+        });
+    })();
+</script>

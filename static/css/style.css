@@ -157,6 +157,23 @@ input:focus, select:focus {
   border-color: var(--accent);
 }
 
+/* Themed dropdown: kill the native chrome and draw our own pixel arrow so the
+   <select> matches the dark inputs across browsers. */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 28px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ink-dim) 50%),
+    linear-gradient(135deg, var(--ink-dim) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) calc(50% - 2px),
+    calc(100% - 9px) calc(50% - 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
 /* ---- Handout grid (player hub) --------------------------------- */
 /* Phones: 2 columns so cards aren't tiny and the reveal reads at a glance */
 .grid {
@@ -582,3 +599,527 @@ input:focus, select:focus {
   font-style: italic;
   margin-top: 6px;
 }
+
+/* =====================================================================
+   EDIT PAGE: current-files grid with remove checkboxes
+   ===================================================================== */
+.edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+@media (min-width: 768px) {
+  .edit-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+}
+.edit-file {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg-panel);
+  border: var(--px) solid var(--border);
+  padding: 6px;
+  cursor: pointer;
+}
+.edit-file img,
+.edit-file__pdf {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border: 2px solid var(--border);
+}
+.edit-file__pdf {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--accent);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.7rem;
+}
+.edit-file__remove {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-dim);
+  font-size: 0.85rem;
+}
+/* a file marked for removal dims + reddens so it's obvious before saving */
+.edit-file:has(input:checked) {
+  border-color: var(--danger, #b23b3b);
+  opacity: 0.55;
+}
+
+/* lightbox discovery line (place / date of discovery) */
+.lightbox__found {
+  color: var(--accent);
+  font-size: 0.85rem;
+  margin-top: 6px;
+}
+.lightbox__found:empty { display: none; }
+
+/* =====================================================================
+   PHASE B: per-file descriptions, file reordering, folders, tags,
+   player browse drawer + organization modes.
+   Mobile-first; reuses existing tokens and the .h-item / .view--*
+   machinery from the master list.
+   ===================================================================== */
+
+/* ---- Lightbox: on-demand per-file description ------------------- */
+.lightbox__descbtn {
+  margin-top: 8px;
+  font-size: 0.55rem;
+  min-height: auto;
+  padding: 8px 10px;
+}
+.lightbox__filedesc {
+  margin-top: 8px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 2px solid var(--border);
+  padding: 8px 10px;
+  text-align: left;
+}
+.lightbox__filedesc[hidden] { display: none; }
+
+/* ---- Tag chip variant (distinct from category) ----------------- */
+/* Tags read as links in the drawer, so kill the underline there. */
+.tag--tag { color: var(--ink); }
+a.tag { text-decoration: none; }
+
+/* ---- Edit page: reorderable file tiles ------------------------- */
+.edit-file { position: relative; }
+.edit-file__handle {
+  align-self: flex-start;
+  cursor: grab;
+  color: var(--ink-dim);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+  letter-spacing: -2px;
+  padding: 2px 4px;
+  user-select: none;
+}
+.edit-file[draggable="true"] { cursor: grab; }
+.edit-file--dragging {
+  opacity: 0.5;
+  border-color: var(--accent);
+}
+/* per-file description field inside each tile */
+.edit-file__desc {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+.edit-file__desc > span {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  color: var(--ink-dim);
+}
+.edit-file__desc input { margin: 0; }
+.edit-file__remove { cursor: pointer; }
+
+/* description inputs for newly added files */
+.new-desc { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 4px; }
+.new-desc__row { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+.new-desc__row > span {
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+  overflow-wrap: anywhere;
+}
+
+/* ---- Folders: pickers (upload/edit) + management list (dashboard) */
+.folder-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.folder-choice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: var(--px) solid var(--border);
+  color: var(--ink);
+  font-family: 'IM Fell English', serif;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.folder-choice input { width: auto; min-height: auto; }
+
+/* create form + rows in the dashboard Folders panel */
+.folder-new {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  margin-bottom: 12px;
+}
+.folder-new input { margin: 0; }
+.folder-new .btn { flex: 0 0 auto; }
+
+.folder-list { display: flex; flex-direction: column; gap: 8px; }
+.folder-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: stretch;
+}
+.folder-rename {
+  display: flex;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.folder-rename input { margin: 0; flex: 1 1 auto; min-width: 0; }
+.folder-row .btn { flex: 0 0 auto; }
+
+/* ---- Player hub: top bar + toolbar ----------------------------- */
+.hub-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.hub-top .btn { flex: 0 0 auto; }
+
+.hub-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0 4px;
+}
+.hub-mode { display: flex; flex-wrap: wrap; gap: 6px; }
+.hub-mode__btn {
+  font-size: 0.55rem;
+  min-height: auto;
+  padding: 8px 10px;
+}
+.hub-mode__btn--active {
+  background: var(--accent);
+  color: var(--border);
+}
+.hub-search-note {
+  color: var(--ink-dim);
+  font-style: italic;
+  margin: 4px 0 8px;
+}
+.hub-search-note a { color: var(--accent); }
+
+/* ---- Player hub: browse drawer (slides in from the right) ------- */
+.drawer { position: fixed; inset: 0; z-index: 900; }
+.drawer[hidden] { display: none; }
+.drawer__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+}
+.drawer__panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: min(320px, 88vw);
+  overflow-y: auto;
+  background: var(--bg-panel);
+  border-left: var(--px) solid var(--border);
+  box-shadow: calc(-1 * var(--px)) 0 0 0 var(--shadow);
+  padding: 14px;
+}
+.drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.drawer__head h2 { margin: 0; }
+.drawer__search { margin: 12px 0 8px; }
+.drawer__section { margin-top: 18px; }
+.drawer__section h3 {
+  color: var(--ink-dim);
+  margin: 0 0 8px;
+}
+.drawer__link {
+  display: block;
+  padding: 10px;
+  margin-bottom: 6px;
+  color: var(--ink);
+  text-decoration: none;
+  background: var(--bg);
+  border: var(--px) solid var(--border);
+  overflow-wrap: anywhere;
+}
+@media (hover: hover) {
+  .drawer__link:hover { border-color: var(--accent); }
+}
+.drawer__link--active {
+  background: var(--accent);
+  color: var(--border);
+}
+.drawer__tags { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* On wider screens the folder create/rename rows can sit inline neatly. */
+@media (min-width: 768px) {
+  .folder-row { flex-wrap: nowrap; }
+}
+
+/* ---- Player: collection cards (folders as objects, 2x2 cover mosaic) ---- */
+.folder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+.folder-card {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--bg-panel);
+  border: var(--px) solid var(--border);
+  box-shadow: var(--px) var(--px) 0 0 var(--shadow);
+  /* A slight double-border lip so it reads as a folder/box, not a flat card. */
+  outline: var(--px) solid var(--border);
+  outline-offset: 3px;
+  transition: transform 0.06s steps(2);
+}
+@media (hover: hover) {
+  .folder-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+}
+.folder-card--orphans { opacity: 0.92; }
+.folder-card--orphans .folder-card__name { font-style: italic; color: var(--ink-dim); }
+
+.folder-card__mosaic {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2px;
+  aspect-ratio: 1 / 1;
+  background: var(--border);
+  border-bottom: var(--px) solid var(--border);
+}
+.folder-card__cell {
+  background: var(--bg);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.folder-card__cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  display: block;
+}
+.folder-card__pdf {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  color: var(--ink-dim);
+}
+.folder-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+}
+.folder-card__name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.folder-card__count { flex: 0 0 auto; }
+
+/* =====================================================================
+   MASTER DASHBOARD: two-column layout, grid form, search + grouping.
+   ===================================================================== */
+
+/* Single column on phones; splits into lists + aside from tablet up. */
+.master-layout { display: block; }
+@media (min-width: 768px) {
+  .master-layout {
+    display: grid;
+    grid-template-columns: 1fr minmax(320px, 420px);
+    gap: 18px;
+    align-items: start;
+  }
+  /* The create form is used often, so keep it in view while scrolling lists. */
+  .master-aside { position: sticky; top: 12px; }
+}
+
+/* ---- Search + grouping toolbar above the lists ---- */
+.list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.list-search {
+  flex: 1 1 200px;
+  margin: 0;
+}
+.group-switch { display: flex; flex-wrap: wrap; gap: 6px; }
+.group-btn {
+  font-size: 0.55rem;
+  min-height: auto;
+  padding: 8px 10px;
+}
+.group-btn--active {
+  background: var(--accent);
+  color: var(--border);
+}
+.no-results { color: var(--danger, #b23b3b); font-style: italic; }
+
+/* ---- The two list sections (Hidden over Public) ---- */
+.list-section { margin-top: 14px; }
+.list-section:first-of-type { margin-top: 0; }
+.list-section .panel-head { margin-bottom: 8px; }
+.list-section .panel-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---- Grouping sub-headings within a list ---- */
+.h-group { margin-bottom: 10px; }
+.h-group__head {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+  color: var(--accent);
+  margin: 10px 0 6px;
+  padding-bottom: 4px;
+  border-bottom: var(--px) dashed var(--border);
+}
+
+/* ---- Viewer-type chip on each item ---- */
+.tag--viewer {
+  background: transparent;
+  border-style: dashed;
+  color: var(--ink-dim);
+}
+
+/* ---- The create form as a compact 2-column grid ---- */
+/* Label sits beside its input on wide fields; the grid gives the two-column
+   feel without cramming narrow inputs. */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+}
+.form-grid .field { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+.form-grid .field--wide { grid-column: 1 / -1; }
+.form-grid .field label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  color: var(--ink-dim);
+  margin: 0;
+}
+.form-grid .field .hint {
+  font-family: 'IM Fell English', serif;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--ink-dim);
+  text-transform: none;
+}
+.form-grid .field input,
+.form-grid .field select { margin: 0; }
+.form-grid .field .subtitle { margin: 2px 0 0; }
+.form-grid .folder-picker { margin-top: 2px; }
+
+/* On very narrow phones, collapse the form to a single column. */
+@media (max-width: 380px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .form-grid .field { grid-column: 1 / -1; }
+}
+
+/* =====================================================================
+   PLAYER VIEWERS: book (StPageFlip page-curl). Carousel uses base styles.
+   ===================================================================== */
+
+/* The book fills the stage; StPageFlip draws its own canvas + shadows. */
+.lightbox__media--book {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+.book-host {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Each page: fill its slot with the image, on a parchment-ish backing. */
+.book-page {
+  background: var(--bg);
+  overflow: hidden;
+}
+.book-page__inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.book-page__inner img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  display: block;
+}
+.book-page[data-density="hard"] { background: var(--bg-panel); }
+
+/* ---- One "Show info" panel for description + discovery ---- */
+.lightbox__infobtn {
+  margin-top: 8px;
+  font-size: 0.55rem;
+  min-height: auto;
+  padding: 8px 10px;
+}
+.lightbox__info { margin-top: 8px; }
+.lightbox__info[hidden] { display: none; }
+
+/* ---- DM dashboard: compact lists inside the narrower left column ---- */
+.toolbar-right { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* Rows: keep each handout to a single tight line with inline actions. */
+.dm-list.view--rows .h-item { padding: 8px; }
+.dm-list.view--rows .h-desc { display: none; }        /* keep rows one-liners */
+.dm-list.view--rows .h-actions .btn { padding: 8px 10px; min-height: auto; font-size: 0.5rem; }
+
+/* Cards: 3-4 across on a laptop; compact action buttons side by side. */
+@media (min-width: 768px) {
+  .dm-list.view--cards {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+  .dm-list.view--cards .h-thumb img,
+  .dm-list.view--cards .h-thumb--pdf { height: 110px; }
+}
+.dm-list.view--cards .h-actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+.dm-list.view--cards .h-actions .btn,
+.dm-list.view--cards .h-actions form {
+  flex: 1 1 auto;
+}
+.dm-list.view--cards .h-actions .btn {
+  padding: 8px 6px;
+  min-height: auto;
+  font-size: 0.5rem;
+  width: 100%;
+}
+.dm-list.view--cards .h-desc { display: none; }       /* keep cards tidy */

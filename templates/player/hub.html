@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Player Hub</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/page-flip.css') }}">
+</head>
+<body>
+    <div class="wrap">
+        <div class="hub-top">
+            <div>
+                <h1>Welcome, Adventurers!</h1>
+                <p class="subtitle">Handouts revealed by your Game Master appear below.</p>
+            </div>
+            <button type="button" class="btn" id="browse-btn" aria-controls="drawer" aria-expanded="false">&#9776; Browse</button>
+        </div>
+
+        {# Toolbar: how the current view is organized + the rows/cards switch. #}
+        <div class="hub-toolbar">
+            <div class="hub-mode">
+                {% set modes = [('folder','Folders'), ('session','Sessions'), ('tag','Tags'), ('recent','Recent')] %}
+                {% for key, label in modes %}
+                <a class="btn btn--ghost hub-mode__btn {% if mode == key %}hub-mode__btn--active{% endif %}"
+                   href="{{ url_for('player.home', by=key, q=query or None) }}">{{ label }}</a>
+                {% endfor %}
+            </div>
+            {# Rows/cards only make sense for handout lists, not the collection cards. #}
+            {% if folder_cards is none %}
+            <div class="view-switch" role="group" aria-label="View mode">
+                <button type="button" class="btn btn--ghost view-btn" data-view="rows">Rows</button>
+                <button type="button" class="btn btn--ghost view-btn" data-view="cards">Cards</button>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if query %}
+        <p class="hub-search-note">
+            Showing {{ shown }} of {{ total }} for &ldquo;{{ query }}&rdquo;.
+            <a href="{{ url_for('player.home', by=mode) }}">Clear</a>
+        </p>
+        {% endif %}
+
+        {% if folder_cards is not none %}
+        {# ---- Collections view: one card per folder, 2x2 cover mosaic ---- #}
+        {% if not folder_cards %}
+        <div class="empty">No folders yet. Your Master hasn't grouped anything into collections.</div>
+        {% else %}
+        <div class="folder-grid">
+            {% for fc in folder_cards %}
+            <a class="folder-card {% if fc.is_orphans %}folder-card--orphans{% endif %}"
+               href="{{ url_for('player.folder', folder_id=fc.id) }}">
+                <div class="folder-card__mosaic">
+                    {# Always render 4 cells; fill with covers, leave the rest empty. #}
+                    {% for i in range(4) %}
+                    {% set cov = fc.covers[i] if i < fc.covers|length else none %}
+                    <div class="folder-card__cell">
+                        {% if cov and cov.reader == 'image' %}
+                        <img src="{{ url_for('static', filename='uploads/' ~ cov.filename) }}" alt="">
+                        {% elif cov %}
+                        <div class="folder-card__pdf">PDF</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="folder-card__foot">
+                    <span class="folder-card__name">{{ fc.name }}</span>
+                    <span class="count-badge folder-card__count">{{ fc.count }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% elif not groups or shown == 0 %}
+        <div class="empty">
+            {% if query %}Nothing matches your search.{% else %}Nothing revealed yet. Await your Master's word...{% endif %}
+        </div>
+        {% else %}
+        {% for group in groups %}
+        {% if group.handouts %}
+        <div class="session-block">
+            {% if group.label %}
+            <h2 class="session-head">
+                {{ group.label }}
+                {% if group.title %}<span class="session-title">&mdash; {{ group.title }}</span>{% endif %}
+            </h2>
+            {% endif %}
+            <div class="view--cards hub-list">
+                {% for h in group.handouts %}
+                {% set cover = h.files[0] %}
+                <div class="h-item handout-card" role="button" tabindex="0"
+                     data-title="{{ h.title }}"
+                     data-desc="{{ h.description }}"
+                     data-location="{{ h.found_location }}"
+                     data-date="{{ h.found_date }}"
+                     data-view="{{ h.view_type }}"
+                     {% if h.back_cover %}data-back='{{ h.back_cover | tojson }}'{% endif %}
+                     data-files='{{ h.files | tojson }}'>
+                    <div class="h-thumb">
+                        {% if cover.reader == 'image' %}
+                        <img src="{{ url_for('static', filename='uploads/' ~ cover.filename) }}"
+                             alt="{{ cover.description or h.title }}">
+                        {% else %}
+                        <div class="h-thumb--pdf">PDF</div>
+                        {% endif %}
+                        {% if h.files|length > 1 %}<span class="count-badge">{{ h.files|length }}</span>{% endif %}
+                    </div>
+                    <div class="h-body">
+                        <div class="h-title">{{ h.title }}</div>
+                        {% if h.description %}<div class="h-desc">{{ h.description }}</div>{% endif %}
+                        <div class="h-meta">
+                            {% if h.category %}<span class="tag">{{ h.category }}</span>{% endif %}
+                            {% if h.session_number %}<span class="tag tag--session">Session {{ h.session_number }}</span>{% endif %}
+                            {% for t in h.tags %}<span class="tag tag--tag">{{ t }}</span>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+    </div>
+
+    {# ---- Browse drawer: search box + shortcuts (folders / sessions / tags) ---- #}
+    <div id="drawer" class="drawer" hidden aria-hidden="true">
+        <div class="drawer__backdrop" data-drawer-close></div>
+        <div class="drawer__panel" role="dialog" aria-modal="true" aria-label="Browse handouts">
+            <div class="drawer__head">
+                <h2>Browse</h2>
+                <button type="button" class="lightbox__close" data-drawer-close aria-label="Close">&times;</button>
+            </div>
+
+            <form action="{{ url_for('player.home') }}" method="get" class="drawer__search">
+                <input type="hidden" name="by" value="{{ mode }}">
+                <label for="q">Search</label>
+                <input type="text" id="q" name="q" value="{{ query }}" placeholder="Title, tag, session...">
+                <button type="submit" class="btn btn--block">Search</button>
+            </form>
+
+            <div class="drawer__section">
+                <h3>Organize by</h3>
+                {% for key, label in modes %}
+                <a class="drawer__link {% if mode == key %}drawer__link--active{% endif %}"
+                   href="{{ url_for('player.home', by=key, q=query or None) }}">{{ label }}</a>
+                {% endfor %}
+            </div>
+
+            {% if folders %}
+            <div class="drawer__section">
+                <h3>Folders</h3>
+                {% for fo in folders %}
+                <a class="drawer__link" href="{{ url_for('player.home', by='folder', q=fo.name) }}">{{ fo.name }}</a>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if tags %}
+            <div class="drawer__section">
+                <h3>Tags</h3>
+                <div class="drawer__tags">
+                    {% for t in tags %}
+                    <a class="tag tag--tag" href="{{ url_for('player.home', by='tag', q=t) }}">{{ t }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='vendor/page-flip.browser.js') }}"></script>
+    {% include 'player/_lightbox.html' %}
+
+    <script>
+        (function () {
+            // ---- Rows / cards view switch (remembered on this device) ----
+            var lists = document.querySelectorAll('.hub-list');
+            function setView(view) {
+                lists.forEach(function (l) {
+                    l.classList.remove('view--rows', 'view--cards');
+                    l.classList.add('view--' + view);
+                });
+                localStorage.setItem('player-view', view);
+                document.querySelectorAll('.view-btn').forEach(function (b) {
+                    b.classList.toggle('view-btn--active', b.dataset.view === view);
+                });
+            }
+            if (lists.length) {
+                setView(localStorage.getItem('player-view') || 'cards');
+                document.querySelectorAll('.view-btn').forEach(function (btn) {
+                    btn.addEventListener('click', function () { setView(btn.dataset.view); });
+                });
+            }
+
+            // ---- Browse drawer open/close ----
+            var drawer = document.getElementById('drawer');
+            var browseBtn = document.getElementById('browse-btn');
+            function openDrawer() {
+                drawer.hidden = false;
+                drawer.setAttribute('aria-hidden', 'false');
+                browseBtn.setAttribute('aria-expanded', 'true');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeDrawer() {
+                drawer.hidden = true;
+                drawer.setAttribute('aria-hidden', 'true');
+                browseBtn.setAttribute('aria-expanded', 'false');
+                document.body.style.overflow = '';
+            }
+            if (browseBtn && drawer) {
+                browseBtn.addEventListener('click', openDrawer);
+                drawer.querySelectorAll('[data-drawer-close]').forEach(function (el) {
+                    el.addEventListener('click', closeDrawer);
+                });
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape' && !drawer.hidden) closeDrawer();
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

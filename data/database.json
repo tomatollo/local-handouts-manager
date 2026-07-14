@@ -1,3 +1,227 @@
 {
-  "handouts": []
+  "handouts": [
+    {
+      "id": "67643cb50409404ea100fb03812254f3",
+      "title": "Amuleto di Selune",
+      "description": "Un Amuleto d'argento circolare raccolto da Ulafiel nell'Underdark Chultiano liberando il Tempio del Grande Fungo. Era sporco e danneggiato, è stato sistemato, ha lacrimato durante la Luna Rossa. Sul retro riporta la scritta: \"Con amore, da Ravaquirelle.\"",
+      "files": [
+        {
+          "filename": "67643cb50409404ea100fb03812254f3_3.png",
+          "reader": "image",
+          "description": "Aggiustato e pulito."
+        },
+        {
+          "filename": "67643cb50409404ea100fb03812254f3_1.png",
+          "reader": "image",
+          "description": "Retro con dedica: \"Con amore, da Ravaquirelle.\""
+        },
+        {
+          "filename": "67643cb50409404ea100fb03812254f3_2.png",
+          "reader": "image",
+          "description": "Pendente con 3 lacrime di sangue."
+        },
+        {
+          "filename": "67643cb50409404ea100fb03812254f3_0.png",
+          "reader": "image",
+          "description": "Pendente sporco e danneggiato."
+        }
+      ],
+      "visible": true,
+      "category": "Item",
+      "session_number": 6,
+      "session_title": "",
+      "created_at": "2026-07-13T21:53:37.954628+00:00",
+      "tags": [],
+      "folders": [],
+      "found_location": "",
+      "found_date": "Un amuleto d'argento circolare con il simbolo di Selune su un lato, e la scritta \"Con amore, da Ravaquirelle.\" sull'altro lato",
+      "view_type": "carousel",
+      "back_cover": null
+    },
+    {
+      "id": "994356c3ea0c41a680fab643305567bc",
+      "title": "Tarocco della Morte",
+      "description": "Un Tarocco Magico, comparso nelle Ceneri di Ylwar al momento della sua disintegrazione.",
+      "files": [
+        {
+          "filename": "994356c3ea0c41a680fab643305567bc_0.png",
+          "reader": "image",
+          "description": "Tarocco della Morte."
+        }
+      ],
+      "visible": true,
+      "category": "Item",
+      "session_number": 16,
+      "session_title": "",
+      "created_at": "2026-07-13T21:58:03.937688+00:00",
+      "tags": [
+        "tarocchi"
+      ],
+      "folders": [
+        "fb0f11ed86534aca9e85ddd229d197e5"
+      ],
+      "found_location": "1 km da Campo Vendetta",
+      "found_date": "30esimo giorno di Solealto 1493 DR",
+      "view_type": "carousel",
+      "back_cover": null
+    },
+    {
+      "id": "0705a0a322194e84bb77225e75e32783",
+      "title": "Ricetta della Crostata Halfling Mele & More di Curedirosa",
+      "description": "Una ricetta particolare ritrovata nella tenda del Comandante del Guanto d'Arme Nill SpaccaOssa.",
+      "files": [
+        {
+          "filename": "0705a0a322194e84bb77225e75e32783_0.pdf",
+          "reader": "pdf",
+          "description": ""
+        }
+      ],
+      "visible": true,
+      "category": "Documento",
+      "session_number": 9,
+      "session_title": "",
+      "created_at": "2026-07-13T22:01:52.501993+00:00",
+      "tags": [],
+      "folders": [],
+      "view_type": "carousel",
+      "back_cover": null
+    },
+    {
+      "id": "011fc723cda04053a1792bd74c6baa52",
+      "title": "Cubo di Pietra di Origine Sconosciuta",
+      "description": "Ritrovato a Nephropia, è desiderato dagli Yuan-ti per chissà quale ragione. Se illuminato da una fonte di luce magica però, rivela un bassorilievo di un Almiraji.",
+      "files": [
+        {
+          "filename": "011fc723cda04053a1792bd74c6baa52_0.png",
+          "reader": "image",
+          "description": "Cubo di Pietra"
+        },
+        {
+          "filename": "011fc723cda04053a1792bd74c6baa52_1.png",
+          "reader": "image",
+          "description": ""
+        }
+      ],
+      "visible": true,
+      "category": "Item",
+      "session_number": 22,
+      "session_title": "",
+      "created_at": "2026-07-13T22:08:02.401122+00:00",
+      "tags": [],
+      "folders": [],
+      "view_type": "carousel",
+      "back_cover": null
+    },
+    {
+      "id": "3e79d44c62e849e89c3dd4e2f6f1f3fd",
+      "title": "Tarocco della Luna",
+      "description": "Un Tarocco Magico, comparso nella Notte di Luna Rossa.",
+      "files": [
+        {
+          "filename": "3e79d44c62e849e89c3dd4e2f6f1f3fd_0.png",
+          "reader": "image",
+          "description": "Tarocco della Luna, la luna è sporca di sangue."
+        }
+      ],
+      "visible": true,
+      "category": "Item",
+      "tags": [
+        "tarocchi"
+      ],
+      "folders": [
+        "fb0f11ed86534aca9e85ddd229d197e5"
+      ],
+      "session_number": 16,
+      "session_title": "",
+      "found_location": "1 km da Campo Vendetta",
+      "found_date": "1o giorno della Dissolvenza 1493 DR",
+      "created_at": "2026-07-14T06:54:29.543712+00:00",
+      "view_type": "carousel",
+      "back_cover": null
+    },
+    {
+      "id": "5e9dd1fdeae3442e81f183ea9483984d",
+      "title": "Profezia di Finian StoneFoot",
+      "description": "Il testo della Profezia Chultiana tradotta da Finian StoneFoot.",
+      "files": [
+        {
+          "filename": "5e9dd1fdeae3442e81f183ea9483984d_0.png",
+          "reader": "image",
+          "description": "\"Traduzione di Finian Stonefoot\" - \"Scuola di Waterdeep\" -  \"Sotto il sole che sbiadisce, dorme la città d’oro,  Nascosta alla vista finché il cielo non sanguinerà.  Nove vegliano il cammino, ma la loro voce è spezzata, Solo chi ne porta il tocco potrà varcare la soglia.  Quando l’occhio del destino si rifletterà nelle acque nere, La porta si spalancherà e il mondo tremerà.\""
+        }
+      ],
+      "visible": false,
+      "category": "Documento",
+      "tags": [
+        "fininan"
+      ],
+      "folders": [],
+      "session_number": 1,
+      "session_title": "",
+      "found_location": "Baia di Chult",
+      "found_date": "7 Solealto 1493 DR",
+      "created_at": "2026-07-14T06:58:31.957009+00:00",
+      "view_type": "carousel",
+      "back_cover": null
+    },
+    {
+      "id": "09b8b4d03c0049a4819ba91cab345380",
+      "title": "Libro1",
+      "description": "",
+      "files": [
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_0.png",
+          "reader": "image",
+          "description": ""
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_2.png",
+          "reader": "image",
+          "description": ""
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1.png",
+          "reader": "image",
+          "description": ""
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784028451_1.png",
+          "reader": "image",
+          "description": ""
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784028451_0.png",
+          "reader": "image",
+          "description": ""
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784028451_2.png",
+          "reader": "image",
+          "description": ""
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784028488_0.png",
+          "reader": "image",
+          "description": ""
+        }
+      ],
+      "visible": true,
+      "category": "Libro",
+      "tags": [],
+      "folders": [],
+      "view_type": "book",
+      "session_number": null,
+      "session_title": "",
+      "found_location": "",
+      "found_date": "",
+      "created_at": "2026-07-14T11:26:36.491689+00:00",
+      "back_cover": null
+    }
+  ],
+  "folders": [
+    {
+      "id": "fb0f11ed86534aca9e85ddd229d197e5",
+      "name": "Tarocchi"
+    }
+  ]
 }

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Master Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {# ---- Reusable handout row/card. Carries data-search for live filtering. ---- #}
+    {% macro handout_item(h) %}
+    {% set cover = h.files[0] %}
+    <div class="h-item {% if h.visible %}h-item--public{% endif %}"
+         data-search="{{ (h.title ~ ' ' ~ h.description ~ ' ' ~ h.category ~ ' ' ~ (h.tags | join(' ')) ~ ' ' ~ (h.session_title or '') ~ ' Session ' ~ (h.session_number or '')) | lower }}">
+        <div class="h-thumb">
+            {% if cover.reader == 'image' %}
+            <img src="{{ url_for('static', filename='uploads/' ~ cover.filename) }}"
+                 alt="{{ cover.description or h.title }}">
+            {% else %}
+            <div class="h-thumb--pdf">PDF</div>
+            {% endif %}
+            {% if h.files|length > 1 %}<span class="count-badge">{{ h.files|length }}</span>{% endif %}
+        </div>
+
+        <div class="h-body">
+            <div class="h-title">{{ h.title }}</div>
+            {% if h.description %}<div class="h-desc">{{ h.description }}</div>{% endif %}
+            <div class="h-meta">
+                <span class="pill {% if h.visible %}pill--on{% else %}pill--off{% endif %}">
+                    {% if h.visible %}PUBLIC{% else %}HIDDEN{% endif %}
+                </span>
+                {% if h.category %}<span class="tag">{{ h.category }}</span>{% endif %}
+                {% if h.session_number %}<span class="tag tag--session">Session {{ h.session_number }}</span>{% endif %}
+                {% for t in h.tags %}<span class="tag tag--tag">{{ t }}</span>{% endfor %}
+                <span class="tag tag--viewer">{{ h.view_type | capitalize }}</span>
+            </div>
+        </div>
+
+        <div class="h-actions">
+            <a href="{{ url_for('master.edit_handout', handout_id=h.id) }}" class="btn btn--ghost btn--block">Edit</a>
+            <form method="post" action="{{ url_for('master.toggle_visibility', handout_id=h.id) }}"
+                  {% if not h.visible %}data-confirm="Are you sure you want to publish &quot;{{ h.title }}&quot; to the players?"{% endif %}>
+                {% if h.visible %}
+                <button type="submit" class="btn btn--ghost btn--block">Unpublish</button>
+                {% else %}
+                <button type="submit" class="btn btn--block">Publish</button>
+                {% endif %}
+            </form>
+            <form method="post" action="{{ url_for('master.delete_handout', handout_id=h.id) }}"
+                  data-confirm="Delete &quot;{{ h.title }}&quot; permanently? This removes the file too.">
+                <button type="submit" class="btn btn--danger btn--block">Delete</button>
+            </form>
+        </div>
+    </div>
+    {% endmacro %}
+
+    {# ---- Render one collection of groups (a list) with headings ---- #}
+    {% macro group_list(groups, empty_msg) %}
+    {% set ns = namespace(total=0) %}
+    {% for g in groups %}{% set ns.total = ns.total + g.handouts|length %}{% endfor %}
+    {% if ns.total == 0 %}
+    <div class="empty">{{ empty_msg }}</div>
+    {% else %}
+    {% for g in groups %}
+    {% if g.handouts %}
+    <div class="h-group">
+        {% if g.label %}<h4 class="h-group__head">{{ g.label }}</h4>{% endif %}
+        {% for h in g.handouts %}{{ handout_item(h) }}{% endfor %}
+    </div>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+    {% endmacro %}
+
+    <div class="wrap">
+        <h1>Master's Screen &#128065;</h1>
+        <p class="subtitle">Forge scrolls and ancient tomes from here.</p>
+
+        <div class="master-layout">
+            {# ============ LEFT: the two lists (hidden over public) ============ #}
+            <div class="master-lists">
+                <div class="panel">
+                    <div class="list-toolbar">
+                        <input type="search" id="handout-search" class="list-search"
+                               placeholder="Search handouts..." aria-label="Search handouts">
+                        <div class="toolbar-right">
+                            <div class="group-switch">
+                                {% set gmodes = [('recent','Recent'), ('folder','Folders'), ('tag','Tags'), ('session','Sessions')] %}
+                                {% for key, label in gmodes %}
+                                <a class="btn btn--ghost group-btn {% if mode == key %}group-btn--active{% endif %}"
+                                   href="{{ url_for('master.dm_panel', by=key) }}">{{ label }}</a>
+                                {% endfor %}
+                            </div>
+                            <div class="view-switch" role="group" aria-label="View mode">
+                                <button type="button" class="btn btn--ghost view-btn" data-view="rows">Rows</button>
+                                <button type="button" class="btn btn--ghost view-btn" data-view="cards">Cards</button>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="subtitle no-results" id="no-results" hidden>No handouts match your search.</p>
+
+                    <section class="list-section">
+                        <div class="panel-head">
+                            <h2>Hidden <span class="count-badge">{{ hidden_count }}</span></h2>
+                        </div>
+                        <div class="list-scope dm-list" data-scope="hidden">
+                            {{ group_list(hidden_groups, "Nothing hidden. Everything is public.") }}
+                        </div>
+                    </section>
+
+                    <section class="list-section">
+                        <div class="panel-head">
+                            <h2>Public <span class="count-badge">{{ public_count }}</span></h2>
+                        </div>
+                        <div class="list-scope dm-list" data-scope="public">
+                            {{ group_list(public_groups, "Nothing published yet.") }}
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            {# ============ RIGHT: create form + folder management ============ #}
+            <div class="master-aside">
+                <div class="panel">
+                    <h2>Upload a Handout</h2>
+                    <form action="{{ url_for('master.upload_handout') }}" method="post"
+                          enctype="multipart/form-data" class="form-grid">
+                        <div class="field field--wide">
+                            <label for="title">Title</label>
+                            <input type="text" id="title" name="title" placeholder="Old Kingdom Map" required>
+                        </div>
+
+                        <div class="field field--wide">
+                            <label for="description">Description</label>
+                            <input type="text" id="description" name="description"
+                                   placeholder="A weathered map of the fallen kingdom.">
+                        </div>
+
+                        <div class="field">
+                            <label for="category">Category</label>
+                            <input type="text" id="category" name="category" list="category-list"
+                                   placeholder="Map, NPC...">
+                            <datalist id="category-list">
+                                {% for c in categories %}<option value="{{ c }}">{% endfor %}
+                            </datalist>
+                        </div>
+
+                        <div class="field">
+                            <label for="view_type">Viewer</label>
+                            <select id="view_type" name="view_type">
+                                {% for vt in view_types %}
+                                <option value="{{ vt }}" {% if vt == default_view_type %}selected{% endif %}>{{ vt|capitalize }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="field field--wide">
+                            <label for="tags">Tags <span class="hint">comma-separated</span></label>
+                            <input type="text" id="tags" name="tags" list="tag-list"
+                                   placeholder="map, kingdom, cursed">
+                            <datalist id="tag-list">
+                                {% for t in tags %}<option value="{{ t }}">{% endfor %}
+                            </datalist>
+                        </div>
+
+                        <div class="field field--wide">
+                            <label>Folders</label>
+                            {% if folders %}
+                            <div class="folder-picker">
+                                {% for fo in folders %}
+                                <label class="folder-choice">
+                                    <input type="checkbox" name="folders" value="{{ fo.id }}"> {{ fo.name }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="subtitle">No folders yet &mdash; create one below.</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="field">
+                            <label for="session_number">Session #</label>
+                            <input type="number" id="session_number" name="session_number" min="1" step="1" placeholder="1">
+                        </div>
+
+                        <div class="field">
+                            <label for="session_title">Session Title</label>
+                            <input type="text" id="session_title" name="session_title" placeholder="The Sunless Citadel">
+                        </div>
+
+                        <div class="field">
+                            <label for="found_location">Place of Discovery</label>
+                            <input type="text" id="found_location" name="found_location" placeholder="Port Nyanzaru">
+                        </div>
+
+                        <div class="field">
+                            <label for="found_date">Date of Discovery</label>
+                            <input type="text" id="found_date" name="found_date" placeholder="15 Kythorn, 1492 DR">
+                        </div>
+
+                        <div class="field field--wide">
+                            <label for="file">Files <span class="hint">images or PDF</span></label>
+                            <input type="file" id="file" name="files"
+                                   accept=".png,.jpg,.jpeg,.gif,.webp,.pdf" multiple required>
+                            <p class="subtitle">Select several images to build a carousel or book.</p>
+                        </div>
+
+                        <div class="field field--wide">
+                            <label for="back_cover">Back Cover <span class="hint">Book viewer, optional</span></label>
+                            <input type="file" id="back_cover" name="back_cover"
+                                   accept=".png,.jpg,.jpeg,.gif,.webp,.pdf">
+                            <p class="subtitle">Shown as the last page in the Book viewer.</p>
+                        </div>
+
+                        <div class="field field--wide">
+                            <button type="submit" class="btn btn--block">Forge Handout</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="panel">
+                    <h2>Folders</h2>
+                    <p class="subtitle">Group handouts any way you like. A handout can sit in several folders.</p>
+
+                    <form action="{{ url_for('master.create_folder') }}" method="post" class="folder-new">
+                        <input type="text" name="name" placeholder="New folder name" required aria-label="New folder name">
+                        <button type="submit" class="btn">Add</button>
+                    </form>
+
+                    {% if folders %}
+                    <div class="folder-list">
+                        {% for fo in folders %}
+                        <div class="folder-row">
+                            <form action="{{ url_for('master.rename_folder', folder_id=fo.id) }}" method="post" class="folder-rename">
+                                <input type="text" name="name" value="{{ fo.name }}" aria-label="Folder name">
+                                <button type="submit" class="btn btn--ghost">Rename</button>
+                            </form>
+                            <form action="{{ url_for('master.delete_folder', folder_id=fo.id) }}" method="post"
+                                  data-confirm="Delete the folder &quot;{{ fo.name }}&quot;? Handouts stay, they're just unfiled from it.">
+                                <button type="submit" class="btn btn--danger">Delete</button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            // ---- Live search across BOTH lists (client-side) ----
+            var search = document.getElementById('handout-search');
+            var noResults = document.getElementById('no-results');
+            var items = [].slice.call(document.querySelectorAll('.h-item'));
+            var groups = [].slice.call(document.querySelectorAll('.h-group'));
+
+            function applySearch() {
+                var q = (search.value || '').trim().toLowerCase();
+                var anyVisible = false;
+                items.forEach(function (it) {
+                    var hit = !q || (it.getAttribute('data-search') || '').indexOf(q) !== -1;
+                    it.style.display = hit ? '' : 'none';
+                    if (hit) anyVisible = true;
+                });
+                // Hide a group heading if all its items are filtered out.
+                groups.forEach(function (g) {
+                    var visible = g.querySelectorAll('.h-item:not([style*="none"])').length;
+                    g.style.display = visible ? '' : 'none';
+                });
+                if (noResults) noResults.hidden = anyVisible;
+            }
+            if (search) search.addEventListener('input', applySearch);
+
+            // ---- Rows / cards view switch (remembered on this laptop) ----
+            var scopes = [].slice.call(document.querySelectorAll('.dm-list'));
+            function setView(view) {
+                scopes.forEach(function (s) {
+                    s.classList.remove('view--rows', 'view--cards');
+                    s.classList.add('view--' + view);
+                });
+                localStorage.setItem('dm-view', view);
+                document.querySelectorAll('.view-btn').forEach(function (b) {
+                    b.classList.toggle('view-btn--active', b.dataset.view === view);
+                });
+            }
+            if (scopes.length) {
+                setView(localStorage.getItem('dm-view') || 'rows');
+                document.querySelectorAll('.view-btn').forEach(function (btn) {
+                    btn.addEventListener('click', function () { setView(btn.dataset.view); });
+                });
+            }
+
+            // ---- Confirm before publishing / destructive actions ----
+            document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+                form.addEventListener('submit', function (e) {
+                    if (!window.confirm(form.dataset.confirm)) e.preventDefault();
+                });
+            });
+        })();
+    </script>
+</body>
+</html>
