@@ -4,6 +4,7 @@ from flask import Blueprint, render_template, request, redirect, url_for
 
 from . import storage
 from . import organize
+from . import pdfs
 
 bp = Blueprint('player', __name__)
 
@@ -14,6 +15,12 @@ MODES = ('folder', 'session', 'tag', 'recent')
 @bp.route('/')
 def home():
     db = storage.load_db()
+    
+    # Older PDFs predate thumbnails; render any that are missing so cards show
+    # a real preview instead of the grey placeholder.
+    if pdfs.backfill_thumbs(db):
+        storage.save_db(db)
+
     visible = [h for h in db['handouts'] if h.get('visible')]
     folders = storage.all_folders(db)
 

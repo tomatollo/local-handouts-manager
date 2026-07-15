@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'Import Library' | t }}</title>
+    {% include '_head.html' %}
+</head>
+<body>
+    <div class="wrap">
+        <p class="subtitle"><a href="{{ url_for('master.dm_panel') }}">&lsaquo; {{ "Back to Master's Screen" | t }}</a></p>
+        <h1>{{ 'Import a Library' | t }}</h1>
+        <p class="subtitle">{{ 'Upload a .zip you exported from another computer. Nothing is changed until you review and confirm.' | t }}</p>
+
+        {% if error %}
+        <div class="panel import-error"><strong>{{ "Couldn't read that file." | t }}</strong><br>{{ error }}</div>
+        {% endif %}
+
+        <div class="panel">
+            <form action="{{ url_for('master.import_library') }}" method="post" enctype="multipart/form-data">
+                <label for="bundle">{{ 'Export file (.zip)' | t }}</label>
+                <input type="file" id="bundle" name="bundle" accept=".zip" required>
+                <p class="subtitle">{{ "New handouts are added. Where the same handout exists on both sides but differs, you'll choose which version to keep." | t }}</p>
+                <button type="submit" class="btn btn--block">{{ 'Review import…' | t }}</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

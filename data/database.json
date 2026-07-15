@@ -8,22 +8,26 @@
         {
           "filename": "67643cb50409404ea100fb03812254f3_3.png",
           "reader": "image",
-          "description": "Aggiustato e pulito."
+          "description": "Aggiustato e pulito.",
+          "thumb": null
         },
         {
           "filename": "67643cb50409404ea100fb03812254f3_1.png",
           "reader": "image",
-          "description": "Retro con dedica: \"Con amore, da Ravaquirelle.\""
+          "description": "Retro con dedica: \"Con amore, da Ravaquirelle.\"",
+          "thumb": null
         },
         {
           "filename": "67643cb50409404ea100fb03812254f3_2.png",
           "reader": "image",
-          "description": "Pendente con 3 lacrime di sangue."
+          "description": "Pendente con 3 lacrime di sangue.",
+          "thumb": null
         },
         {
           "filename": "67643cb50409404ea100fb03812254f3_0.png",
           "reader": "image",
-          "description": "Pendente sporco e danneggiato."
+          "description": "Pendente sporco e danneggiato.",
+          "thumb": null
         }
       ],
       "visible": true,
@@ -31,7 +35,9 @@
       "session_number": 6,
       "session_title": "",
       "created_at": "2026-07-13T21:53:37.954628+00:00",
-      "tags": [],
+      "tags": [
+        "ulafiel"
+      ],
       "folders": [],
       "found_location": "",
       "found_date": "Un amuleto d'argento circolare con il simbolo di Selune su un lato, e la scritta \"Con amore, da Ravaquirelle.\" sull'altro lato",
@@ -46,7 +52,8 @@
         {
           "filename": "994356c3ea0c41a680fab643305567bc_0.png",
           "reader": "image",
-          "description": "Tarocco della Morte."
+          "description": "Tarocco della Morte.",
+          "thumb": null
         }
       ],
       "visible": true,
@@ -61,19 +68,20 @@
         "fb0f11ed86534aca9e85ddd229d197e5"
       ],
       "found_location": "1 km da Campo Vendetta",
-      "found_date": "30esimo giorno di Solealto 1493 DR",
+      "found_date": "30 Giorno di Solealto 1493 DR",
       "view_type": "carousel",
       "back_cover": null
     },
     {
       "id": "0705a0a322194e84bb77225e75e32783",
       "title": "Ricetta della Crostata Halfling Mele & More di Curedirosa",
-      "description": "Una ricetta particolare ritrovata nella tenda del Comandante del Guanto d'Arme Nill SpaccaOssa.",
+      "description": "Una ricetta particolare ritrovata nella tenda del Comandante del Guanto d'Arme Nill SpaccaOssa. Pronunciando \"Non farò di meno\", la lettera rivela un testo celato magicamente.",
       "files": [
         {
           "filename": "0705a0a322194e84bb77225e75e32783_0.pdf",
           "reader": "pdf",
-          "description": ""
+          "description": "Pagina 1: \"Ricetta della Crostata Halfling Mele & More di Cuore di rosa\" - \"Per preparare questa dolce, profumata e rustica delizia tipica delle tavole halfling, vi occorreranno: pasta per crostata, mele a fettine sottili, more fresche, zucchero, cannella, amido di mais, burro, uovo e un goccio di succo di limone. Procedimento: - In una grande ciotola mescolate zucchero, cannella e un cucchiaio di amido. Unite le fettine di mela e mescolate con delicatezza finché non iniziano a rilasciare un po’ di succo. - Stendetela prima sfoglia e sistematela in uno stampo da crostata lasciando il bordo leggermente sporgente. - In una ciotola unite le more con un cucchiaio, o due, di zucchero, l’amido rimasto e poche gocce di limone. - Versate le more nello stampo, creando un fondo uniforme. Se siete dotati di un minimo di talento magico, con un artificio druidico potete far sprigionare alle more un aroma ancora più fragrante. - Aggiungete sopra il composto di mele e qualche fiocchetto di burro. - Coprite con il secondo disco di pasta, tagliando l’eccesso e ripiegando i bordi per sigillare bene. - Infornate finché la crostata non diventa dorata e profumata *Gli halfling più impazienti si dilettano ad accelerare il processo tramite prestidigitazione, ma in questo caso non lo consigliamo, le ricette migliori sono preparate col tempo Perfetta per una merenda da fattoria halfling o per portare un tocco di magia semplice, sicura e decisamente golosa alla vostra tavola!\" - Simbolo di una torta rosso. Pagina 2: \"Alla cortese attenzione del Comandante Spacca Ossa e del Capitano Salhana del Guanto d'Arme, Chult\" - \"Vi invitiamo alla massima prudenza qualora doveste avvistare giganti del gelo nelle vostre peregrinazioni. Nonostante la loro temibile presenza, non sono venuti a Chult per seminare distruzione né per ostilità verso l’Ordine. Il loro unico obiettivo è Artus Cimber. Vi consigliamo pertanto di evitare ogni scontro diretto. Quando possibile, lasciateli proseguire e non interferite. Siamo consapevoli che la diplomazia non sempre ottiene i risultati sperati, ma in questo caso la fuga potrebbe essere la scelta più saggia. Inoltre confermiamo la presenza di Maghi Rossi del Thay nella penisola. Non disponiamo ancora di informazioni certe sul responsabile della loro spedizione sospettiamo che più gruppi indipendenti siano all’opera. Alcuni sembrano essere di poco conto, ma abbiamo forti ragioni di credere che almeno uno sia guidato da un diretto sottoposto di Szass Tam. Comprendiamo bene quanto Valentine sia motivo di seria preoccupazione, l’implicazione degli Zentahrin non è mai un piacere, ma finché non riusciremo a tagliare la testa non c’è molto da farci. Vi terremo informati man mano che emergono nuovi dettagli. Qualora il gruppo di cui ci avete parlato fosse interessato a collaborare, L’Angolo Colorato di Porto Nyanzaru sarà disposto ad accoglierli nuovamente ad ali aperte. Comprendiamo la vostra prudenza e il desiderio di metterli alla prova, il nostro arpista sarà felice di aiutarvi. - in servizio per la verità,\" - Simbolo degli arpisti in blu.",
+          "thumb": "0705a0a322194e84bb77225e75e32783_0.pdf.thumb.png"
         }
       ],
       "visible": true,
@@ -81,25 +89,35 @@
       "session_number": 9,
       "session_title": "",
       "created_at": "2026-07-13T22:01:52.501993+00:00",
-      "tags": [],
-      "folders": [],
+      "tags": [
+        "campo vendetta",
+        "nill spaccaossa",
+        "arpisti"
+      ],
+      "folders": [
+        "c70eb96310d9450dbbbdfd365c10e7c2"
+      ],
       "view_type": "carousel",
-      "back_cover": null
+      "back_cover": null,
+      "found_location": "Campo Vendetta",
+      "found_date": ""
     },
     {
       "id": "011fc723cda04053a1792bd74c6baa52",
-      "title": "Cubo di Pietra di Origine Sconosciuta",
-      "description": "Ritrovato a Nephropia, è desiderato dagli Yuan-ti per chissà quale ragione. Se illuminato da una fonte di luce magica però, rivela un bassorilievo di un Almiraji.",
+      "title": "Cubo di Pietra",
+      "description": "Desiderato dagli Yuan-ti e da Valentine. Sul lato vi è una scritta: \"Solo la luce benedetta da Mystra svela il segreto nascosto.\". Se illuminato da una fonte di luce magica però, rivela un bassorilievo.",
       "files": [
         {
           "filename": "011fc723cda04053a1792bd74c6baa52_0.png",
           "reader": "image",
-          "description": "Cubo di Pietra"
+          "description": "Cubo di Pietra liscio.",
+          "thumb": null
         },
         {
           "filename": "011fc723cda04053a1792bd74c6baa52_1.png",
           "reader": "image",
-          "description": ""
+          "description": "Cubo di Pietra con il basso rilievo di un almiraj.",
+          "thumb": null
         }
       ],
       "visible": true,
@@ -110,7 +128,9 @@
       "tags": [],
       "folders": [],
       "view_type": "carousel",
-      "back_cover": null
+      "back_cover": null,
+      "found_location": "Nephropia, nel retro del negozio di Chuka-Tuk.",
+      "found_date": "4 giorno della Dissolvenza 1943 DR"
     },
     {
       "id": "3e79d44c62e849e89c3dd4e2f6f1f3fd",
@@ -120,7 +140,8 @@
         {
           "filename": "3e79d44c62e849e89c3dd4e2f6f1f3fd_0.png",
           "reader": "image",
-          "description": "Tarocco della Luna, la luna è sporca di sangue."
+          "description": "Tarocco della Luna, la luna è sporca di sangue.",
+          "thumb": null
         }
       ],
       "visible": true,
@@ -134,7 +155,7 @@
       "session_number": 16,
       "session_title": "",
       "found_location": "1 km da Campo Vendetta",
-      "found_date": "1o giorno della Dissolvenza 1493 DR",
+      "found_date": "1 Giorno della Dissolvenza 1493 DR",
       "created_at": "2026-07-14T06:54:29.543712+00:00",
       "view_type": "carousel",
       "back_cover": null
@@ -147,10 +168,11 @@
         {
           "filename": "5e9dd1fdeae3442e81f183ea9483984d_0.png",
           "reader": "image",
-          "description": "\"Traduzione di Finian Stonefoot\" - \"Scuola di Waterdeep\" -  \"Sotto il sole che sbiadisce, dorme la città d’oro,  Nascosta alla vista finché il cielo non sanguinerà.  Nove vegliano il cammino, ma la loro voce è spezzata, Solo chi ne porta il tocco potrà varcare la soglia.  Quando l’occhio del destino si rifletterà nelle acque nere, La porta si spalancherà e il mondo tremerà.\""
+          "description": "\"Traduzione di Finian Stonefoot\" - \"Scuola di Waterdeep\" -  \"Sotto il sole che sbiadisce, dorme la città d’oro,  Nascosta alla vista finché il cielo non sanguinerà.  Nove vegliano il cammino, ma la loro voce è spezzata, Solo chi ne porta il tocco potrà varcare la soglia.  Quando l’occhio del destino si rifletterà nelle acque nere, La porta si spalancherà e il mondo tremerà.\"",
+          "thumb": null
         }
       ],
-      "visible": false,
+      "visible": true,
       "category": "Documento",
       "tags": [
         "fininan"
@@ -166,62 +188,1168 @@
     },
     {
       "id": "09b8b4d03c0049a4819ba91cab345380",
-      "title": "Libro1",
-      "description": "",
+      "title": "Quaderno di Virfang Silversong",
+      "description": "Il quaderno con i disegni e gli appunti di Virfang.",
       "files": [
         {
-          "filename": "09b8b4d03c0049a4819ba91cab345380_0.png",
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784059159_0.png",
           "reader": "image",
-          "description": ""
+          "description": "",
+          "thumb": null
         },
         {
-          "filename": "09b8b4d03c0049a4819ba91cab345380_2.png",
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784059270_0.png",
           "reader": "image",
-          "description": ""
+          "description": "",
+          "thumb": null
         },
         {
-          "filename": "09b8b4d03c0049a4819ba91cab345380_1.png",
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784046328_10.png",
           "reader": "image",
-          "description": ""
+          "description": "Lato Destro di un largo disegno panoramico delle Isole Moonshea: luna piena, portali di pietre anithci, lucciolee e un unicorno.",
+          "thumb": null
         },
         {
-          "filename": "09b8b4d03c0049a4819ba91cab345380_1784028451_1.png",
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784058498_0.png",
           "reader": "image",
-          "description": ""
+          "description": "",
+          "thumb": null
         },
         {
-          "filename": "09b8b4d03c0049a4819ba91cab345380_1784028451_0.png",
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784046328_6.png",
           "reader": "image",
-          "description": ""
+          "description": "Un ritratto dell'anziano Egthok.",
+          "thumb": null
         },
         {
-          "filename": "09b8b4d03c0049a4819ba91cab345380_1784028451_2.png",
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784046328_4.png",
           "reader": "image",
-          "description": ""
+          "description": "Un bozzetto di uno dei Pozzi Lunari delle Isole Moonshea.",
+          "thumb": null
         },
         {
-          "filename": "09b8b4d03c0049a4819ba91cab345380_1784028488_0.png",
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784046328_1.png",
           "reader": "image",
-          "description": ""
+          "description": "Una disegno Paesaggistico di una costa delle Isole Moonshae.",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784059598_1.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784059598_0.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784060684_0.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784046328_0.png",
+          "reader": "image",
+          "description": "Ritratto di Syndra Silvane, Goblin Batari, e Belva Distorcente.",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784061827_0.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784061827_1.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784046328_3.png",
+          "reader": "image",
+          "description": "Ulafiel, Koura e Timur attorno a uno Stegosauro dalle Scaglie di Cristallo Rosa. Lopi sullo sfondo che porge una pergamena a Finian.",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784046328_8.png",
+          "reader": "image",
+          "description": "Un bozzetto del Sogno con Ylwar di Virfang.",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784060221_4.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784057874_0.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784060221_3.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784057913_1.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784060221_0.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784057932_1.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784060221_2.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784057941_1.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784060221_1.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1784059932_1.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
         }
       ],
       "visible": true,
       "category": "Libro",
-      "tags": [],
+      "tags": [
+        "virfang"
+      ],
       "folders": [],
       "view_type": "book",
+      "session_number": 19,
+      "session_title": "Un nuovo compagno",
+      "found_location": "",
+      "found_date": "Solealto 1493 DR circa",
+      "created_at": "2026-07-14T11:26:36.491689+00:00",
+      "back_cover": {
+        "filename": "09b8b4d03c0049a4819ba91cab345380_back_0.png",
+        "reader": "image",
+        "description": "",
+        "thumb": null
+      }
+    },
+    {
+      "id": "e47d83c98c654f99bccbd49d27dc727a",
+      "title": "Foglio BelvaDistorcente",
+      "description": "Un messaggio rinvenuto nel collare di una Belva Distorcente abbattuta da Virfang quando è giunto nel Chult.",
+      "files": [
+        {
+          "filename": "e47d83c98c654f99bccbd49d27dc727a_0.png",
+          "reader": "image",
+          "description": "Un foglietto rovinato e sporco di sangue. Il messaggio recita: \"Il sangue che scorre è vita. Quello che sgorga ci rende vivi. Si sta avvicinando il momento, la luna si è tinta, venti albe sorgeranno prima che dobbiate iniziare a cacciare. Per quest'anno ci sono prede promettenti. Una preda singolare si aggira a Campo Vendetta. ABBI CURA DI INDETIFICARLA E PREPARARLA PER IL RITUALE.\" - Sullo sfondo si intravede un simbolo tinto col sangue: il simbolo di Malar",
+          "thumb": null
+        }
+      ],
+      "visible": true,
+      "category": "Documento",
+      "tags": [
+        "malar",
+        "belva distorcente",
+        "virfang"
+      ],
+      "folders": [],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": 1,
+      "session_title": "",
+      "found_location": "Qualche km da Campo Vendetta",
+      "found_date": "2 della Dissolvenza 1493 DR",
+      "created_at": "2026-07-14T16:46:45.518716+00:00"
+    },
+    {
+      "id": "66f8a277e7694142872518d36af5e434",
+      "title": "Lettera per Ylwar da Neilwil",
+      "description": "Una lettera consegnata a Virfang per Ylwar da Neilwil: \"Per quando la leggerà, digli di pronunciare il nostro saluto.",
+      "files": [
+        {
+          "filename": "66f8a277e7694142872518d36af5e434_0.pdf",
+          "reader": "pdf",
+          "description": "Una lettera con in basso l'emblema di Lathander. Recita una preghiera: \"O Lathander, Signore del Mattino, che porti luce là dove le ombre si annidano, che guidi i passi dei tuoi figli con la fiamma del rinnovamento, io ti rendo grazie. Ogni alba è un nuovo dono, ogni raggio è speranza, ogni giorno è l’occasione di ritrovare i lsentiero smarrito. Benedici i fratelli che camminano lontani, proteggi chi non vediamo, custodisci coloro che hai chiamato a portare il fuoco dell’aurora. Che la tua luce, o Padre del Giorno, raggiunga ogni terra del Faerûn, ché non c’è luogo che il sole non tocchi, e non c’è cuore che non possa risorgere.”",
+          "thumb": "66f8a277e7694142872518d36af5e434_0.pdf.thumb.png"
+        }
+      ],
+      "visible": true,
+      "category": "Documento",
+      "tags": [
+        "ylwar",
+        "virfang"
+      ],
+      "folders": [],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": 1,
+      "session_title": "",
+      "found_location": "Isole Moonshae",
+      "found_date": "1492 DR circa",
+      "created_at": "2026-07-14T16:53:47.795432+00:00"
+    },
+    {
+      "id": "28a7a1b9b81f4a87b5f07c025f08ee57",
+      "title": "Foglio BelvaDistorcente 2",
+      "description": "Un messaggio rinvenuto nel collare di una Belva Distorcente.",
+      "files": [
+        {
+          "filename": "28a7a1b9b81f4a87b5f07c025f08ee57_0.png",
+          "reader": "image",
+          "description": "Un foglietto rovinato e sporco di sangue. Il messaggio recita: \"Il figlio della luna è giunto a Chult. Dimentica la preda attuale. È il momento giusto per agire, il Fearun ha altro di cui preoccuparsi. Faremo rinascere l'ultimo pozzo sotto l'unica luna. Richiama i fratelli. E inizia la caccia. Va preparato il banchetto. Ci sono molte più  prede. LEI VERRÀ DA NOI. Ora, è ancora acerba... Mi ha deluso...\" - Sullo sfondo si intravede un simbolo tinto col sangue: il simbolo di Malar",
+          "thumb": null
+        }
+      ],
+      "visible": false,
+      "category": "Documento",
+      "tags": [
+        "malar",
+        "belva distorcente"
+      ],
+      "folders": [],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": null,
+      "session_title": "",
+      "found_location": "Foresta di Chult",
+      "found_date": "",
+      "created_at": "2026-07-14T16:56:05.048441+00:00"
+    },
+    {
+      "id": "91bf22ead2044d33a3b22c74c2a21efa",
+      "title": "Messaggio di Avvertimento",
+      "description": "Un messaggio rinvenuto su un Non Morto nel Bacino degli Aldani.",
+      "files": [
+        {
+          "filename": "91bf22ead2044d33a3b22c74c2a21efa_0.png",
+          "reader": "image",
+          "description": "Un foglietto rovinato e sporco. Il messaggio recita: \"Soffia vento marcio vicino al Quore. C'è solo morte là avanti. Girate i tacci e andatevene da questo bacino finché siete in tempo. Cancellato(Loro) Lei non vuole esser disturbata. Cancellato(dovete) Foreste Cancellato(meglio) bene a lasciarla in pace. Qui non ci sono tesori. Vi tengo d'occhio. Rispettate il Chult e forse non vi inghiottirà in un sol boccone.\" Sul lato destro è presente una macchia di inchiostro.",
+          "thumb": null
+        }
+      ],
+      "visible": false,
+      "category": "Documento",
+      "tags": [
+        "bacino degli aldani"
+      ],
+      "folders": [],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": 25,
+      "session_title": "",
+      "found_location": "Bacino degli Aldani",
+      "found_date": "6 giorno della Dissolvenza 1493 DR",
+      "created_at": "2026-07-14T16:59:00.730401+00:00"
+    },
+    {
+      "id": "c5751df609b24b639450435153c4f581",
+      "title": "Mappa Chult",
+      "description": "Legenda: Pallini Rossi - Accampamenti Valentine, Pallini Azzurri - Crateri, Rombo Giallo - Torre druidica, Fiore Bianco - Driadi, Cuore - Cuore di Ubtao",
+      "files": [
+        {
+          "filename": "c5751df609b24b639450435153c4f581_0.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        }
+      ],
+      "visible": true,
+      "category": "Mappa",
+      "tags": [
+        "mappa"
+      ],
+      "folders": [],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": 24,
+      "session_title": "",
+      "found_location": "",
+      "found_date": "",
+      "created_at": "2026-07-14T17:09:03.439239+00:00"
+    },
+    {
+      "id": "882f117adff84fab965723e07635fca4",
+      "title": "Tarocco del Diavolo",
+      "description": "Un Tarocco Magico, notato da Ylwar sotto il piede di  Timur mentre marciavano per la foresta di Chult.",
+      "files": [
+        {
+          "filename": "882f117adff84fab965723e07635fca4_0.png",
+          "reader": "image",
+          "description": "Tarocco del Daivolo.",
+          "thumb": null
+        }
+      ],
+      "visible": true,
+      "category": "Item",
+      "tags": [
+        "tarocchi"
+      ],
+      "folders": [
+        "fb0f11ed86534aca9e85ddd229d197e5"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": 13,
+      "session_title": "",
+      "found_location": "Foresta di Chult",
+      "found_date": "24 giorno di Solealto 1493 DR",
+      "created_at": "2026-07-14T17:25:20.318578+00:00"
+    },
+    {
+      "id": "f7d0a7bff8e042b5a5b1a28f2a3b3fd0",
+      "title": "Lettera Professor Frasterl",
+      "description": "Una lettera diretta a Valneinte dal Professor Frastel. Trovata in un cassetto chiuso a chiave in una tenda al cratere.",
+      "files": [
+        {
+          "filename": "f7d0a7bff8e042b5a5b1a28f2a3b3fd0_0.pdf",
+          "reader": "pdf",
+          "description": "Una lettera che recita: \"Von: Professor Frastel.\" - \"Vis: Signor Valentine\" - \"Liebster Herr Valentine, Io vi ringrazio infinitamente per il vostro großzügig sostegno ai mei esperimentos. Senza il vostro finanziamento, la zienza sarebbe ridotta a semplice... ehm... curiosität dilettantistica, ja ja…\" - \"Come da vostra cortese richiesta, ho sviluppato una Trivella con punta in Adamantio per sondare il meteorite, nonostante la harte del materiale. Il meccanismo è manovrabile tramite le leve interne; può ospitare due persone al suo interno, garantendo sicurezza e... diciamo... un certo brivido. Io ho aggiunto, benché non fosse richiesto, una Leva per l'autodistruzione, che può attivare una pergamena contenente una Palla di Fuoco. Curiosamente, è la stessa leva che attiva anche la protezione Magica... Nessuno dovrebbe confondere le due funzioni, ma, ehm... io un piccolissimo errore spererei... sarebbe spettacolare, ja ja!\" - \"Per le faccende più delicate, sto ancora indagando su chi possa essere l'infiltrato che ha prestato ai marmocchi aiuto nel vile omicidio dei vostri scagnozzi al Ponte del Terzo Windo... ehm, Terzo Vento. Al momento, nessuna pista concreta, leider…\" - \"I sistemi di Teletrasporto nel Chult avanzano, sebbene ci sia continuo sabotaggio... sembra esserci qualcuno molto curioso dei mei progressi.\" - \"Vi ringrazio anche per le risorse a Porto Nyanzaru succulente a dir poco! La qualità dei campioni è... ehm... eccellente per i mei esperimentos, davvero.\" - \"E se posso osare un piccolo favore wissenschaftlich, mi chiedevo se possiamo usare gli avventurieri come cavie: in particolare l'orco e la tartaruga. Il loro sangue potrebbe contenere esattamente quello che cerchiamo per aprire le porte. Naturalmente, la richiesta è puramente... scientifica... ja ja.\" - \"Resto, come sempre, vostro umilissimo und devotissimo servitore della Zienza, Professor Frastel... Auf wiedersehen!\"",
+          "thumb": "f7d0a7bff8e042b5a5b1a28f2a3b3fd0_0.pdf.thumb.png"
+        }
+      ],
+      "visible": true,
+      "category": "Documento",
+      "tags": [
+        "valentine",
+        "frastel"
+      ],
+      "folders": [
+        "cdc27d59c0f743888f5aae95a46f8cd7"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": 12,
+      "session_title": "",
+      "found_location": "Cratere di Drex",
+      "found_date": "25 giorno di Solealto 1493 DR",
+      "created_at": "2026-07-14T17:31:43.874851+00:00"
+    },
+    {
+      "id": "ea94a924c14944be8f8fdf32f560fc30",
+      "title": "Pagine 1-2, 3-4 del Diario di Valentine",
+      "description": "Una lettera diretta a Valneinte dal Professor Frastel. Trovate sulla scrivania in una tenda al cratere.",
+      "files": [
+        {
+          "filename": "ea94a924c14944be8f8fdf32f560fc30_0.pdf",
+          "reader": "pdf",
+          "description": "Oggi ho dedicato gran parte della giornata a osservare con attenzione i flussi commerciali verso Porto Nyanzaru. Le navi arrivano cariche di merci provenienti da ogni angolo del Chult, e ogni scambio racconta qualcosa dello stato della città e dei suoi abitanti. La città pulsa di vita propria, eppure, se la si osserva con sufficiente pazienza, ogni movimento svela schemi precisi: quali merci vengono privilegiate, quali rotte sono più frequentate, chi procede con calma e chi sembra muoversi a tentoni tra le responsabilità quotidiane. Alcuni principi parlano di espansione, altri di ricchezze nascoste. Tutto questo, combinato, disegna una trama che appare quasi naturale, come se la città respirasse secondo leggi proprie, indipendenti da chi la governa. È affascinante vedere come le rotte commerciali si intreccino senza bisogno di intervento apparente, e quanto ogni dettaglio, per quanto piccolo, contribuisca a mantenere l’equilibrio complessivo. Le carte per l’organizzazione delle prime pattuglie sono pronte per la firma. Ho studiato attentamente la sequenza delle istruzioni, la disposizione dei dettagli e i piccoli segnali nascosti tra le righe. La maggior parte degli osservatori li ignorerebbe, ma chi presta attenzione percepisce la logica sottostante. Dispiegate le prime pattuglie, arrestato qualche criminale, tutti penseranno sia conveniente investire sui miei uomini. Porto Nyanzaru mi si venderà all’insegna della sicurezza e del controllo, diventerà così parte della mia Macchina Industriale… Ho concesso al professore pazzo, Frastel, una possibilità di mostrare ciò che sa fare: i suoi esperimenti potranno contribuire a illuminare alcune dinamiche più oscure della città, benché nessuno debba ancora sapere fino a che punto possano spingersi. L’ho anche sfidato con una missione ardua: costruirmi una trivella con la punta in adamantio (già forgiare la punta sarà una sfida) così che io riesca a estrarre qualsiasi materiale sia caduto dal cielo. Comunque sia, anche le piccole interazioni dei mercanti rivelano rivalità, ambizioni e desideri non espressi. Un carico spostato, un accordo concluso frettolosamente, un pagamento ritardato: tutti segnali che permettono di leggere la direzione in cui la città si muove e le opportunità che si aprono quasi senza che nessuno se ne accorga. La città è viva, e chi sa osservare può anticiparne i movimenti. Io come un predatore in un cespuglio sono pronto a divorarmi la preda. Il Chult non mi fa paura, è solo una bestia da domare, nulla che un collare forgiato a dovere non possa permettermi di fare. Provo pietà per il Guanto d’Arme, così debole da offrirmi accordi diplomatici. Penso che li accetterò, non voglio davvero fare loro del male, posso considerarli alleati finché fa loro comodo, magari vorranno anche lro un Braccio Robotico d’Arme. hahaha alla fine sta iniziando ad andare di moda! Mi è giunta voce di cittadini interessati ad un trapianto... Non sono giocattoli dovrebbero saperlo. Questa mattina ho esaminato alcuni frammenti di scritture che erano giunti a me tramite i mercanti più discreti. In apparenza non erano che pergamene malridotte, con passaggi consumati dal tempo e dall’umidità. Tuttavia, tra le righe ho riconosciuto qualcosa di nuovo, un dettaglio che mi era sfuggito e che, a giudicare dalle lacune lasciate dagli studiosi, non era noto neppure a Finian Stonefoot. Una piccola parte di profezia che accenna alla Fontana della Vita, celata dove il respiro della giungla incontra il battito del commercio. Sono fortunato ad avere rotte commerciali che portano questi tesori dalla Baia di Chessenta, il fiume Giada a volte dona tesori inaspettati! Sono rimasto colpito poi dalla precisione di certi simboli: non si tratta solo di immagini poetiche, ma di riferimenti concreti, tradotti in forme che, a chi non è avvezzo a leggere tra le ombre, parrebbero semplici decorazioni. Io, al contrario, vi intravedo indicazioni geografiche sottili. Ovviamente non posso permettere che queste informazioni cadano nelle mani di quei disgraziati e di quel maledetto e puzzolente halfling. Li conserverò a mio sito non lontano da Porto Nyanzaru, un magazzino costruito ai margini della foresta, utilizzato regolarmente da mercanti che vivono in funzione del movimento delle loro merci. Nessuno di loro sospetta quanto sia singolare il luogo che presidiano con tanta naturalezza.La scoperta mi ha dato un senso di vantaggio raro. Non è la completezza di una rivelazione, ma il sapore di una chiave che si intravede appena tra le dita. Quando si ha accesso a ciò che altri ignorano, anche la più piccola informazione diventa leva capace di spostare il peso delle cose. È questo il valore reale della conoscenza: non l’accumulo sterile, ma l’uso al momento opportuno. Mi domando quanto ancora resterà celato dietro i simboli di quella pergamena. Ogni frase interrotta, ogni tratto sbiadito mi provoca più di quanto non appaghi. Domani tornerò a confrontare questo frammento con gli appunti già raccolti, nella speranza che altri dettagli, invisibili oggi, diventino evidenti con la giusta luce. La mia assistente, quella puzzolente drow, trova necessario trovare un piano per mettermi al sicuro quando sarà giunto il momento. Io non ho paura dei marmocchi ma non posso sporcarmi le mani, ho strumenti importanti da manovrare al magazzino, quindi per ora le darò corda... È molto utile... E carina... Forse meglio di Ulafiel... Spero non sia una tipa gelosa! HAHAHAHAH Chissà magari verrà a farmi visita ;)",
+          "thumb": "ea94a924c14944be8f8fdf32f560fc30_0.pdf.thumb.png"
+        }
+      ],
+      "visible": true,
+      "category": "Documento",
+      "tags": [
+        "valentine"
+      ],
+      "folders": [
+        "cdc27d59c0f743888f5aae95a46f8cd7"
+      ],
+      "view_type": "book",
+      "back_cover": null,
+      "session_number": 12,
+      "session_title": "",
+      "found_location": "Cratere di Drex",
+      "found_date": "25 giorno di Solealto 1493 DR",
+      "created_at": "2026-07-14T17:38:45.290457+00:00"
+    },
+    {
+      "id": "b96b1231e2004d2d873a8b3bb31de815",
+      "title": "Pagine 5-6 del Diario di Valentine",
+      "description": "Delle pagine del diario di Valentine. Trovate sulla scrivania in una tenda al cratere.",
+      "files": [
+        {
+          "filename": "b96b1231e2004d2d873a8b3bb31de815_0.pdf",
+          "reader": "pdf",
+          "description": "Porto Nyanzaru continua a mostrarsi come una fucina inesauribile di traffici, contatti e opportunità. La città sembra respirare al ritmo delle sue navi, eppure sotto questo battito regolare si muove sempre una corrente più profonda, invisibile a chi osserva soltanto la superficie. Oggi,tra le chiacchiere dei mercanti e il vociare delle banchine, è comparsa una figura curiosa: Volothamp Geddarm. È qui per far firmare copie della sua ultima opera, e come sempre raccoglie attorno a sé curiosi e perditempo. Mi diverte pensare che molti dei cittadini gli dedicheranno più attenzione di quanto non riservino alle decisioni che plasmano realmente il futuro della città. Forse è giusto così: il popolo ha bisogno di svaghi, come i bambini necessitano di fiabe prima di addormentarsi. Non posso fare a meno di chiedermi se persino quei quattro sciagurati che accompagnano Finian Stonefoot si lasceranno tentare dall’acquisto di un libro firmato. Forse qualche consiglio di viaggio mal confezionato potrebbe perfino salvar loro la pelle… benché, viste le loro capacità, il rischio che finiscano male resta comunque elevato. Certe pedine servono solo a ricordare quanto sia fragile la differenza tra chi osserva la scacchiera e chi vi si agita sopra senza comprendere le regole. Io, al contrario, continuo a consolidare il mio disegno. Le pattuglie che presto marceranno nelle strade daranno alla città un’impressione di ordine che neanche i Principi hanno saputo imporre. Gli scambi con i mercanti dipendenti dalle mie rotte si stanno intensificando; ognuno di loro pensa di guadagnarci, senza sospettare che ogni passo che muovono è già stato previsto. Persino il professore pazzo, con le sue invenzioni al limite del grottesco, si è dimostrato utile: la sua mente lavora come un ingranaggio instabile, ma un ingranaggio che, finché gira, produce movimento. È curioso osservare come anche i più deboli o i più eccentrici trovino posto in una macchina ben progettata. La città è la mia officina, e ogni elemento, dal mercante più influente al ladruncolo delle strade, può diventare una parte funzionale del processo. Chi non si adatta, inevitabilmente, si consuma. Gli dei sono utili a coloro che non sanno rimboccarsi e sporcarsi le mani... Eppure... Quella voce mi ha dato buoni consigli... Non so se è la mia mente geniale o qualcuno che mi sussurra dalle ombre... Sto tenendo questo diario per ricordarmi che le mie idee mi appartengono. PS. Il libro di Volo l’ho trovato sorprendentemente interessante, alcune delle belve descritte al suo interno, se lubrificate e scolpite per bene, possono diventare ingranaggi della grande macchina!",
+          "thumb": "b96b1231e2004d2d873a8b3bb31de815_0.pdf.thumb.png"
+        }
+      ],
+      "visible": true,
+      "category": "Documento",
+      "tags": [
+        "valentine"
+      ],
+      "folders": [
+        "cdc27d59c0f743888f5aae95a46f8cd7"
+      ],
+      "view_type": "book",
+      "back_cover": null,
+      "session_number": 12,
+      "session_title": "",
+      "found_location": "Cratere di Drex",
+      "found_date": "25 giorno di Solealto 1493 DR",
+      "created_at": "2026-07-14T17:43:55.451865+00:00"
+    },
+    {
+      "id": "54d1360b49954b448a79977050957f69",
+      "title": "Libro Verde di Nill Spaccaossa",
+      "description": "Un libro verde rinvenuto nella tenda del Comandante del Guanto d'Arme Nill Spaccaossa. Datato al 1364 DR.",
+      "files": [
+        {
+          "filename": "54d1360b49954b448a79977050957f69_0.png",
+          "reader": "image",
+          "description": "Copertina verde con rifiniture in oro. In rilievo il titolo: \"GUIDA DI VOLO AI SERPENTI E AI NAUFRAGI\", sotto in un ovale, il ritratto dell'autore: un umano chiamato Volothamp Geddarm.",
+          "thumb": null
+        }
+      ],
+      "visible": true,
+      "category": "Libro",
+      "tags": [
+        "volo",
+        "campo vendetta"
+      ],
+      "folders": [
+        "c70eb96310d9450dbbbdfd365c10e7c2"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": 9,
+      "session_title": "",
+      "found_location": "Campo Vendetta",
+      "found_date": "20 giorno di Solealto 1493 DR",
+      "created_at": "2026-07-14T17:47:49.291979+00:00"
+    },
+    {
+      "id": "bd7b2498feda4355b66d0a284ffdc84b",
+      "title": "Presentazione Maledizione della Morte",
+      "description": "Una presentazione tenuta da Syndra Silvane nel Tempio di Campo Vendetta.",
+      "files": [
+        {
+          "filename": "bd7b2498feda4355b66d0a284ffdc84b_0.jpg",
+          "reader": "image",
+          "description": "\"CHE SUCCEDE?\"",
+          "thumb": null
+        },
+        {
+          "filename": "bd7b2498feda4355b66d0a284ffdc84b_1.jpg",
+          "reader": "image",
+          "description": "\"MALEDIZIONE DELLA MORTE\" - un disegnino di due stick-man, uno di questi ha una corda rossa che lo tira verso il basso \"staccando\" la sua anima e trascinandola via.",
+          "thumb": null
+        },
+        {
+          "filename": "bd7b2498feda4355b66d0a284ffdc84b_2.jpg",
+          "reader": "image",
+          "description": "Mappa del Fearun. Il Chult è rosso, una miriade di fili rossi da tutto il Fearun giungo al Chult.",
+          "thumb": null
+        },
+        {
+          "filename": "bd7b2498feda4355b66d0a284ffdc84b_3.jpg",
+          "reader": "image",
+          "description": "Zoom sul Chult, diversi puntini neri, il più grande ha la scritta: \"OMU\".",
+          "thumb": null
+        },
+        {
+          "filename": "bd7b2498feda4355b66d0a284ffdc84b_4.jpg",
+          "reader": "image",
+          "description": "\"ACERERAK\" - Disegnino di uno scheletro con cappuccio.",
+          "thumb": null
+        },
+        {
+          "filename": "bd7b2498feda4355b66d0a284ffdc84b_5.jpg",
+          "reader": "image",
+          "description": "Un disegnino di quattro avventurieri e una freccia che indica una zigurat con scritto affianco \"OMU\".",
+          "thumb": null
+        }
+      ],
+      "visible": true,
+      "category": "Presentazione Magica",
+      "tags": [
+        "campo vendetta",
+        "syndra silvane"
+      ],
+      "folders": [
+        "c70eb96310d9450dbbbdfd365c10e7c2"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": 19,
+      "session_title": "Un nuovo Compagno",
+      "found_location": "Campo Vendetta",
+      "found_date": "2 giorno della Dissolvenza 1943 DR",
+      "created_at": "2026-07-14T17:52:24.700793+00:00"
+    },
+    {
+      "id": "5f4e8b2714a94da1a792cb4dac57dbc9",
+      "title": "Lettera per il Grande Fornaio Spatolossa",
+      "description": "Una lettera ambigua e particolare ritrovata nella tenda del Comandante del Guanto d'Arme Nill SpaccaOssa. Pronunciando \"Non farò di meno\", la lettera rivela un testo celato magicamente.",
+      "files": [
+        {
+          "filename": "5f4e8b2714a94da1a792cb4dac57dbc9_0.pdf",
+          "reader": "pdf",
+          "description": "Pagina 1: \"Per il Gran Fornaio Spatolossa dell’Ordine della Cucina Armata, Chult\" - \"I Pasticcioni stanno sperimentando attivamente nuove ricette a base di fragole nella pasticceria di Porto Croccanzaru. Alcuni dei nostri mastri dolciari hanno notato il celebre panettiere Santino Finfiasco accompagnato da un gruppo di promettenti apprendisti che gli fanno da assistenti. Uno dei nostri li ha osservati per parecchie giornate. Non sembrano impacciati, ma Loki, il dio verde, desta qualche preoccupazione: la sua tecnica è discutibile e certi suoi movimenti notturni in cucina sono al quanto insoliti. Stiamo cercando collaborazioni con la Confraternita delle Torte Segrete. Valberti, il famoso fornaio rivale, sta espandendo la sua pasticceria con troppa rapidità, e la sua influenza culinaria e commerciale è ora una minaccia concreta per l’equilibrio gastronomico.\" - \"- al servizio del gusto,\" -  Simbolo di una torta rosso. - Pagina 2: \"Per il Comandante Spacca Ossa dell’Ordine del Guanto D’Arme, Chult\"- \"Stiamo indagando attivamente sulle operazioni di Valentine a PortoNyanzaru. La sua crescente influenza economica e industriale rappresenta una minaccia concreta che non può essere sottovalutata. La sua espansione è rapida e ben orchestrata. Alcuni dei nostri agenti hanno recentemente individuato Finian Stonefoot, accompagnato da un gruppo di avventurieri che sembrano promettenti e che gli fanno da scorta. L'agente incaricato di questa comunicazione li ha seguiti per diverse notti, osservandoli attentamente. Non si direbbero una minaccia diretta, ma ci sono elementi che destano cautela. In particolare: Lopi, la piccola tartarugoide del gruppo, potrebbe nascondere qualcosa di oscuro. La sua storia personale presenta diverse lacune e i suoi ultimi movimenti, uniti a certi comportamenti notturni, non sono affatto incoraggianti. Stiamo iniziando a costruire i primi ponti diplomatici con la Ytepka, la Società dei Triceratopi, nella speranza di rafforzare la cooperazione locale. Ribadiamo che Valentine sta diventando troppo influente, e le sue operazioni meritano la massima attenzione da parte sia nostra che dell'Ordine.\" - \"- in servizio per la verità,\" - Simbolo degli arpisti in blu.",
+          "thumb": "5f4e8b2714a94da1a792cb4dac57dbc9_0.pdf.thumb.png"
+        }
+      ],
+      "visible": true,
+      "category": "Documento",
+      "tags": [
+        "campo vendetta",
+        "nill spaccaossa",
+        "arpisti"
+      ],
+      "folders": [
+        "c70eb96310d9450dbbbdfd365c10e7c2"
+      ],
+      "view_type": "book",
+      "back_cover": null,
+      "session_number": 9,
+      "session_title": "",
+      "found_location": "Campo Vendetta",
+      "found_date": "",
+      "created_at": "2026-07-14T18:13:31.518355+00:00"
+    },
+    {
+      "id": "6c101394e9674f9a86b146169c299baf",
+      "title": "Lettera ai Signori del Ponte del Terzo Vento",
+      "description": "Una lettera da Valentine rinvenuta sul cadavere di un incantatore con un braccio robotico e la V di Valentine.",
+      "files": [
+        {
+          "filename": "6c101394e9674f9a86b146169c299baf_1784053910_0.pdf",
+          "reader": "pdf",
+          "description": "\"Ai Signori del Ponte del Terzo Vento\" - \"Cordiali salutazioni, e che i vostri nuovi bracci siano ben lubrificati.\" - \"14° giorno del Mese di Sole Alto, 1493 DR\" - \"| \"Non ogni pietra regge l’arco del futuro.\" - Io\" - \"Eccoci, miei brillanti relitti del progresso, stavolta non vi mando a caccia di lucertole o di sacerdoti isterici. Vi mando a fare una cosa semplice: camperare un ponte. C'è un gruppo di avventurieri in arrivo - e non preoccupatevi, sembrano usciti da una caricatura di un bardo ubriaco. Sono cinque, semplici punti: - Uno: una druida. Ha tatuaggi verdi e ridicoli, una magia primitiva e debole, probabilmente parla con le locuste... Queste le assomigliano molto… - Due: un orco. Immagino sia lì per sollevare cose e ringhiare. È duro da uccidere, sopratutto finché gli altri sono in piedi. - Tre: una tartaruga. Infantile. Non chiedetemi di spiegarvelo. - Quattro: un vecchio decrepito, utile quanto una fiala d’acqua santa in un’eruzione lavica. Rappresenta però un fastidioso sassolino nella scarpa. - Cinque: il motivo per cui siete lì — Finian Stonefoot. Lo voglio vivo. Sano sarebbe un bonus. Respirante è obbligatorio. Se muore, uno di voi muore al suo posto. Sarà una questione d’equilibrio, chiamiamola così.\" - \"Fate ciò che volete con gli altri. Schiacciateli, sezionateli, studiateli, teneteli per farvi compagnia nelle pause. Sopratutto l’elfa, lei potrebbe essere un interessante bocconcino... Sentitevi liberi di sperimentare con i nuovi bracci - l’ultima versione dovrebbe reagire bene con l’acido. Se l’orco sopravvive abbastanza a lungo da farvi sudare, prendete nota. Potrebbe tornare utile. La tartaruga… fateci qualcosa di creativo. Voglio ridere. Questo non è il fallimentare teatrino di Porto Nyanzaru. Non state rimpiazzando tre mediocri fannulloni con più entusiasmo che competenza. Quei tre non sono nemmeno tornati, peraltro. Non mi piace quando la merce difettosa non torna in fabbrica. C’è da dire che hanno trucchetti interessanti, vediamo come si difendono dalle loro stesse lame... Dite alla vostra maga di non risparmiarli. Li voglio fuori dai piedi. Occhi aperti. Nonostante la loro ridicolaggine apparente, il fatto che i vostri predecessori siano finiti letteralmente nel nulla mi costringe a supporre che questo gruppo abbia più denti di quanto sembri. Fate sembrare il tutto un’incidente… organico. Un agguato di qualche tribù selvatica, magari. Siate creativi ma non fate i poeti. Che la scintilla del futuro vi illumini.\" - \"Valentine, Detentore del Primo Ingranaggio, Ingegnere del Vero Ordine, Portavoce del Meccanismo Invisibile, Sterminatore di Chimere.\"",
+          "thumb": "6c101394e9674f9a86b146169c299baf_1784053910_0.pdf.thumb.png"
+        }
+      ],
+      "visible": true,
+      "category": "Documento",
+      "tags": [
+        "valentine"
+      ],
+      "folders": [
+        "cdc27d59c0f743888f5aae95a46f8cd7"
+      ],
+      "view_type": "book",
+      "back_cover": null,
+      "session_number": 4,
+      "session_title": "",
+      "found_location": "Foreste di Chult (Ponte del Terzo Vento)",
+      "found_date": "17 giorno di Solealto 1493 DR",
+      "created_at": "2026-07-14T18:29:06.394981+00:00"
+    },
+    {
+      "id": "6075d057d7e143bbb21cb6dc0c6c6b11",
+      "title": "Lettera a Kaelen Crepuscolo dall'Enclave di Smeraldo",
+      "description": "Una lettera dall'Enclave di Smeraldo, che è stata consegnata a Kaelen il 17 giorno di Solealto 1493 DR.",
+      "files": [
+        {
+          "filename": "6075d057d7e143bbb21cb6dc0c6c6b11_0.pdf",
+          "reader": "pdf",
+          "description": "\"All'attenzione di Kaelen Verdecrepuscolo\" - \"Guardia della Soglia Verde\" - \"Profondità nord-occidentali dell'Underdark, regione di Chult\" - \"Dalla mano dell’Enclave di Smeraldo\" - \"14° giorno del Mese di Sole Alto, 1493 DR\" - \"| “Non ogni radice sostiene l’albero che ha piantato.” – Vecchio detto dell’Est.\" - \"Druido Verdecrepuscolo, L'Enclave ha valutato con attenzione la posizione della Soglia Verde e il suo valore strategico per l’equilibrio naturale. Dopo un attento riesame dei nostri doveri più pressanti, è stato stabilito che la regione da te protetta non rientra più nelle priorità attuali del Circolo. Il tuo impegno, per quanto apprezzabile, ha prodotto risultati… sufficienti, ma le tue comunicazioni recenti sono apparse inquinate da interpretazioni personali delle direttive del Circolo. Alcuni tuoi resoconti, mostrano una certa drammatizzazione che non si confà alla compostezza druidica. Siamo certi comprenderai che, per il bene dell’equilibrio globale e per evitare fraintendimenti futuri, ogni supporto al tuo presidio sarà sospeso fino a data da definirsi. Ti invitiamo a non contattare ulteriormente le radici dell’Enclave finché non verrai nuovamente interpellato. Possa la linfa scorrere dove è necessaria.\" - \"- Firmato in nome dell’Enclave di Smeraldo Tholivar delle Fronde Gialle, Segretario Temporaneo del Circolo Occidentale\"",
+          "thumb": "6075d057d7e143bbb21cb6dc0c6c6b11_0.pdf.thumb.png"
+        }
+      ],
+      "visible": true,
+      "category": "Documento",
+      "tags": [
+        "enclave di smeraldo"
+      ],
+      "folders": [],
+      "view_type": "book",
+      "back_cover": null,
+      "session_number": 5,
+      "session_title": "Il Grande Fungo",
+      "found_location": "Foreste di Chult (Ponte del Terzo Vento)",
+      "found_date": "20 giorno di Solealto 1493 DR",
+      "created_at": "2026-07-14T18:34:09.500040+00:00"
+    },
+    {
+      "id": "31bcefb3ec394b419d4c28bdac9b5e09",
+      "title": "Panno Elfico",
+      "description": "Un panno elfico con una scritta in Druidico.",
+      "files": [
+        {
+          "filename": "31bcefb3ec394b419d4c28bdac9b5e09_0.png",
+          "reader": "image",
+          "description": "Un panno verde con un ricamo d'orato, un filo unico composto da diverse foglie.",
+          "thumb": null
+        }
+      ],
+      "visible": true,
+      "category": "Item",
+      "tags": [],
+      "folders": [],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": 14,
+      "session_title": "",
+      "found_location": "Torre Druidica",
+      "found_date": "28 giorno di Solealto 1493 DR",
+      "created_at": "2026-07-14T18:46:01.691893+00:00"
+    },
+    {
+      "id": "aefb588d0f2f4465a1a954798009c473",
+      "title": "Graffito di Pelor",
+      "description": "Il simbolo sacro di Pelor, un dio sconosciuto, rinvenuto al Piano Intermedio della Torre Druidica.",
+      "files": [
+        {
+          "filename": "aefb588d0f2f4465a1a954798009c473_0.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        }
+      ],
+      "visible": true,
+      "category": "",
+      "tags": [],
+      "folders": [],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": 14,
+      "session_title": "",
+      "found_location": "Torre Druidica",
+      "found_date": "28 giorno di Solealto 1493 DR",
+      "created_at": "2026-07-14T18:48:31.176060+00:00"
+    },
+    {
+      "id": "0914c3e313244e98b25315d0a4ddddd1",
+      "title": "Taglia Lopi",
+      "description": "Un annuncio di Taglia posta su Lopi, portato da Porto Nyanzaru e visto nella tenda del Comandante del Guanto d'Arme Nill Spaccaossa.",
+      "files": [
+        {
+          "filename": "0914c3e313244e98b25315d0a4ddddd1_0.png",
+          "reader": "image",
+          "description": "\"RICERCATO\" - \"per duplice omicidio\" - Ritratto a di Lopi - \"MORTO O VIVO\" - \"ricompensa: 150 mo\"",
+          "thumb": null
+        }
+      ],
+      "visible": true,
+      "category": "Documento",
+      "tags": [
+        "campo vendetta",
+        "porto nyanzaru",
+        "lopi",
+        "nill spaccaossa"
+      ],
+      "folders": [
+        "c70eb96310d9450dbbbdfd365c10e7c2"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": 17,
+      "session_title": "Un ultimo saluto",
+      "found_location": "Campo Vendetta",
+      "found_date": "1 giorno della Dissolvenza 1943 DR",
+      "created_at": "2026-07-14T18:51:23.189567+00:00"
+    },
+    {
+      "id": "d8a1e08a088746c4953c9efb7e8adb8f",
+      "title": "Taglia Ulafiel",
+      "description": "Un annuncio di Taglia posta su Ulafiel, portato da Porto Nyanzaru e visto nella tenda del Comandante del Guanto d'Arme Nill Spaccaossa.",
+      "files": [
+        {
+          "filename": "d8a1e08a088746c4953c9efb7e8adb8f_0.png",
+          "reader": "image",
+          "description": "\"RICERCATO\" - \"per duplice omicidio\" - Ritratto a di Ulafiel - \"MORTO O VIVO\" - \"ricompensa: 1500 mo\"",
+          "thumb": null
+        }
+      ],
+      "visible": true,
+      "category": "Documento",
+      "tags": [
+        "campo vendetta",
+        "porto nyanzaru",
+        "ulafiel",
+        "nill spaccaossa"
+      ],
+      "folders": [
+        "c70eb96310d9450dbbbdfd365c10e7c2"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": 17,
+      "session_title": "Un ultimo saluto",
+      "found_location": "Campo Vendetta",
+      "found_date": "1 giorno della Dissolvenza 1943 DR",
+      "created_at": "2026-07-14T18:53:02.920641+00:00"
+    },
+    {
+      "id": "52ac4c7e13934795b1bf557d785752c6",
+      "title": "Taglia Timur",
+      "description": "Un annuncio di Taglia posta su Timur, portato da Porto Nyanzaru e visto nella tenda del Comandante del Guanto d'Arme Nill Spaccaossa.",
+      "files": [
+        {
+          "filename": "52ac4c7e13934795b1bf557d785752c6_0.png",
+          "reader": "image",
+          "description": "\"RICERCATO\" - \"per duplice omicidio\" - Ritratto a di Timur - \"MORTO O VIVO\" - \"ricompensa: 1500 mo\"",
+          "thumb": null
+        }
+      ],
+      "visible": true,
+      "category": "Documento",
+      "tags": [
+        "campo vendetta",
+        "porto nyanzaru",
+        "timur",
+        "nill spaccaossa"
+      ],
+      "folders": [
+        "c70eb96310d9450dbbbdfd365c10e7c2"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": 17,
+      "session_title": "Un ultimo saluto",
+      "found_location": "Campo Vendetta",
+      "found_date": "1 giorno della Dissolvenza 1943 DR",
+      "created_at": "2026-07-14T18:54:44.582854+00:00"
+    },
+    {
+      "id": "d7aa2dcf5f014348ac5b6ef170c5782f",
+      "title": "Taglia Ylwar",
+      "description": "Un annuncio di Taglia posta su Ylwar, portato da Porto Nyanzaru e visto nella tenda del Comandante del Guanto d'Arme Nill Spaccaossa.",
+      "files": [
+        {
+          "filename": "d7aa2dcf5f014348ac5b6ef170c5782f_0.png",
+          "reader": "image",
+          "description": "\"RICERCATO\" - \"per duplice omicidio\" - Ritratto a di Ylwar - \"MORTO O VIVO\" - \"ricompensa: 750 mo\"",
+          "thumb": null
+        }
+      ],
+      "visible": true,
+      "category": "Documento",
+      "tags": [
+        "campo vendetta",
+        "porto nyanzaru",
+        "ylwar",
+        "nill spaccaossa"
+      ],
+      "folders": [
+        "c70eb96310d9450dbbbdfd365c10e7c2"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": 17,
+      "session_title": "Un ultimo saluto",
+      "found_location": "Campo Vendetta",
+      "found_date": "1 giorno della Dissolvenza 1943 DR",
+      "created_at": "2026-07-14T18:55:47.452388+00:00"
+    },
+    {
+      "id": "1c163fd0217f4be5bb7df97418d9d86d",
+      "title": "Mappa Rich Joe",
+      "description": "Una mappa trovata da Lopi nella tenda di Rich Joe a Campo Vendetta",
+      "files": [
+        {
+          "filename": "1c163fd0217f4be5bb7df97418d9d86d_0.png",
+          "reader": "image",
+          "description": "Una mappa della porzione nord del Chult. Sono indicati diversi posti: Le Montagne  Mizstcliff, PortoNyaznaru, Jericho, Campo Vendetta, Fiume Soshenstar, Fiume Tiryki, Mbala.",
+          "thumb": null
+        }
+      ],
+      "visible": true,
+      "category": "Mappa",
+      "tags": [
+        "campo vendetta",
+        "rich joe",
+        "mappa"
+      ],
+      "folders": [
+        "c70eb96310d9450dbbbdfd365c10e7c2"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": 19,
+      "session_title": "Un nuovo compagno",
+      "found_location": "Campo Vendetta",
+      "found_date": "2 giorno della Dissolvenza 1943 DR",
+      "created_at": "2026-07-14T19:01:06.245304+00:00"
+    },
+    {
+      "id": "0625b4578717417bb0226a9a69dcbc98",
+      "title": "Lettera per Lopi da Finian Stonefoot",
+      "description": "Una lettera inviata prima dell'arrivo del gruppo e di Finian a Porto Nyanzaru",
+      "files": [
+        {
+          "filename": "0625b4578717417bb0226a9a69dcbc98_0.pdf",
+          "reader": "pdf",
+          "description": "\"Alla Stimatissima Guida, Lopi,\" - \"Oh, che emozione! Che trepidazione! Il gran giorno della nostra mirabolante impresa è alle porte, e io, Finian Stonefoot, umile esploratore e ardito indagatore delle memorie sepolte, fremo come una foglia nella brezza estiva del Chult!\" - \"Or dunque, mia nobile guida, il fato e le correnti ci condurranno prestamente a Porto Nyanzaru, ove la nostra imbarcazione getterà l'ancora nel porto principale. Ahimè, benché le storie da voi narrate siano gesta degne d’un cantico, ignoro quale sembianza vi appartenga! Così vi chiedo di farvi notare al nostro sbarco! Potete sventolare un vessillo? Oppure declamare un verso ispirato? Siate creativa, mia enigmatica salvatrice, ché io, e la mia illustre compagnia - un Umano d’intelletto affilato, un’Orco di vigore prodigioso e un’Elfa d’ineffabile grazia - vi cercheremo con occhi ardenti di speranza!\" - \"Attendendo il fatidico incontro, col cuore palpitante,\" - \"Finian Stonefoot, Scopritore d’Arcani e Cartografo dell’Ignoto\"",
+          "thumb": "0625b4578717417bb0226a9a69dcbc98_0.pdf.thumb.png"
+        }
+      ],
+      "visible": true,
+      "category": "Documento",
+      "tags": [
+        "fininan",
+        "lopi",
+        "porto nyanzaru"
+      ],
+      "folders": [],
+      "view_type": "book",
+      "back_cover": null,
+      "session_number": 1,
+      "session_title": "",
+      "found_location": "",
+      "found_date": "Solealto 1493 DR circa",
+      "created_at": "2026-07-14T19:11:32.778868+00:00"
+    },
+    {
+      "id": "dc5533959bdc41f8997e73bf573fc70d",
+      "title": "Salida - Biglietto da visita Guida",
+      "description": "Il biglietto da visita di Salida",
+      "files": [
+        {
+          "filename": "dc5533959bdc41f8997e73bf573fc70d_0.png",
+          "reader": "image",
+          "description": "\"Ho guidato molte spedizioni nelle terre selvagge di Chult. Conosco sentieri segreti che non compaiono su nessuna mappa. Assumere altri a proprio rischio e pericolo.\" - \"Azaka ed Eku hanno condotto spedizioni nella giungla che non hanno mai fatto ritorno. Faroul e Gondolo sono ciarlatani, schietti e semplici. Old Hew soffre di febbre della nebbia blu, ne sono sicura. Musharib è un nano albino e non ci si può fidare di loro. E ho sentito dire che Nebbia di Fiume e Fiasco di Vino hanno debiti con gli Zhentarim.\" - \"Cinque monete d'oro al giorno sono un prezzo basso da pagare per le vostre vite. Spendi il tuo oro saggiamente.\"",
+          "thumb": null
+        }
+      ],
+      "visible": false,
+      "category": "Biglietto",
+      "tags": [
+        "salida",
+        "guida"
+      ],
+      "folders": [
+        "b68a1bde2f49467986385ae807150ace"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
       "session_number": null,
       "session_title": "",
       "found_location": "",
       "found_date": "",
-      "created_at": "2026-07-14T11:26:36.491689+00:00",
-      "back_cover": null
+      "created_at": "2026-07-14T19:17:11.567005+00:00"
+    },
+    {
+      "id": "8fe1436546ba4c97b89497ae0d41fa7f",
+      "title": "Nebbia e Fiasco - Biglietto da visita Guida",
+      "description": "Il biglietto da visita di Nebbia di Fiume e Fiasco di Vino",
+      "files": [
+        {
+          "filename": "8fe1436546ba4c97b89497ae0d41fa7f_0.png",
+          "reader": "image",
+          "description": "\"Attenti a Jobal e ai suoi tirapidi di no-buoni!\" - \"Quel principe mercante è come un sacco di serpenti, come lo sono la maggior parte delle sue 'guide'. Se scegli noi non ti porteremo mai fuori strada.\" - \" 'Nebbia e Fiasco sono all'altezza del compito!' \" - \"Questo è il nostro motto! Chult è il nostro parco giochi. Siamo veloci, affidabili e sappiamo cosa stiamo facendo. Cinque pezzi d'oro al giorno e un anticipo di 30 giorni è ciò che chiedono i tirapiedi di Jobal\" - \"Siamo felici di fungere da guide per soli 4 pezzi d'oro al giorno senza pagamento anticipato. Ancora meglio, rinunceremo completamente alla tariffa per quote uguali di qualunque tesoro aiutiamo a trovare.\"",
+          "thumb": null
+        }
+      ],
+      "visible": false,
+      "category": "Biglietto",
+      "tags": [
+        "nebbia",
+        "fiasco",
+        "guida"
+      ],
+      "folders": [
+        "b68a1bde2f49467986385ae807150ace"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": null,
+      "session_title": "",
+      "found_location": "",
+      "found_date": "",
+      "created_at": "2026-07-14T19:18:39.353183+00:00"
+    },
+    {
+      "id": "a32b4b9e43c347f288128bc734bf6ab1",
+      "title": "Qawasha e Kupalué - Biglietto da vista Guida",
+      "description": "Il biglietto da visita di Quawasha e Kuplué",
+      "files": [
+        {
+          "filename": "a32b4b9e43c347f288128bc734bf6ab1_0.png",
+          "reader": "image",
+          "description": "\"Io, Quawasha, sono un druido e un membro dell'Enclave di Smeraldo. Cerco di liberare Chult, la mia patria, dalla minaccia non morta che minaccia di sradicare ogni forma di vita. Il mio vegepigmeo Kuplué ci conosce bene la flora e la fauna locale. Chult è la nostra casa e possiamo guidarti come nessun altro può fare.\" - \"La nostra tariffa è di 5 monete d'oro al giorno, ma tale importo è negoziabile se sei disposto a distruggere qualsiasi non morto che potremo incontrare. Forse insieme potremo ricevere la benedizione degli spiriti chwinga che vegliano su questa terra sacra.\"",
+          "thumb": null
+        }
+      ],
+      "visible": false,
+      "category": "Biglietto",
+      "tags": [
+        "qawasha",
+        "kupalué",
+        "enclave di smeraldo",
+        "guida"
+      ],
+      "folders": [
+        "b68a1bde2f49467986385ae807150ace"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": null,
+      "session_title": "",
+      "found_location": "",
+      "found_date": "",
+      "created_at": "2026-07-14T19:19:57.043173+00:00"
+    },
+    {
+      "id": "2b114d48ea884efa94207134254a331a",
+      "title": "Musharib - Biglietto da visita Guida",
+      "description": "Il biglietto da visita di Musharib",
+      "files": [
+        {
+          "filename": "2b114d48ea884efa94207134254a331a_0.png",
+          "reader": "image",
+          "description": "\"La giungla è la mia casa. Lo conosco bene. Posso guidarti ovunque a Chult per una tariffa di 5 monete d'oro al giorno.\" - \"Se l'avventura è ciò che cerchi, unisciti alla mia missione per riconquistare Hrakhamar, la fucina ancestrale del mio clan. Un'eruzione vulcanica ci costrinse ad abbandonarlo molti anni fa. Le novità di fuoco che da allora hanno preso il sopravvento devono essere scacciate o distrutte. Come minimo dobbiamo intrufolarci e recuperare una reliquia conosciuta come il Guanto di Moradin. Ai tironi di fuoco non deve essere permesso di tenerlo!\" - \"Se ami la razza nanica, allora ascolta la mia supplica e unisciti a me nel restituire Hrankhamer ai legittimi proprietari. Rinuncerò al mio compenso per la tua promessa di assistenza.\"",
+          "thumb": null
+        }
+      ],
+      "visible": false,
+      "category": "Biglietto",
+      "tags": [
+        "musharib",
+        "guida"
+      ],
+      "folders": [
+        "b68a1bde2f49467986385ae807150ace"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": null,
+      "session_title": "",
+      "found_location": "",
+      "found_date": "",
+      "created_at": "2026-07-14T19:20:35.107527+00:00"
+    },
+    {
+      "id": "59b6a3e42c5546809d82b698d4f48874",
+      "title": "Hew Hackinstone - Biglietto da visita Guida",
+      "description": "Il biglietto da visita di Hew Hackinstone",
+      "files": [
+        {
+          "filename": "59b6a3e42c5546809d82b698d4f48874_0.png",
+          "reader": "image",
+          "description": "\"Sono stato in cima a ogni montagna di Chult. Conosco ogni gola e crepaccio, ogni altopiano e sentiero. La mia memoria è una trappola di ferro. Non dimentico nulla. Fidati di un nao, lo dico sempre, perché un nano non ti guiderà mai nella direzione sbagliata. Senza paura, io sono.\" - \"Non c'è drago, bestia o orrore non morto che mi spaventa. Vuoi un pericolo? NO! Tu vuoi un nano e io sono il nano più duro in circolazione. Un drago rosso mi ha staccato il braccio con un morso, eppure eccomi qui! Ci vuole più di un drago a fermare Hew Hackinstone!\" - \"Addebito 5 monete d'oro al gionro e mi aspetto un pagamento anticipato di 30 giorni. La migliore moneta che tu abbia mai speso, te lo prometto!\"",
+          "thumb": null
+        }
+      ],
+      "visible": false,
+      "category": "Biglietto",
+      "tags": [
+        "hew hackinstone",
+        "guida"
+      ],
+      "folders": [
+        "b68a1bde2f49467986385ae807150ace"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": null,
+      "session_title": "",
+      "found_location": "",
+      "found_date": "",
+      "created_at": "2026-07-14T19:21:17.065085+00:00"
+    },
+    {
+      "id": "568041382f6a4dc29416a0de0d42bc13",
+      "title": "Faroul e Gondolo - Biglietto da visita Guida",
+      "description": "Il biglietto da visita di Faroul e Gondolo",
+      "files": [
+        {
+          "filename": "568041382f6a4dc29416a0de0d42bc13_0.png",
+          "reader": "image",
+          "description": "\"Perchè pagare per una guida quando puoi averne DUE allo stesso prezzo! Abbiamo l'intelligenza, il bene e I nostri triceratopi!\" - \"I tesori abbondano! Quando avremo finito di condurti a tutti I siti antichi e I luoghi sacri di cui siamo a conoscenza, nuoterai nell'oro e nella magia. Tutte le altre guide ti guideranno in tondo e ti faranno fare tutto il lavoro. Non lasciarti ingannare! Quando torneremo a Porto Nyanzaru, avrai storie e fortune sufficienti per durare una vita intera.\" - \"Il nostro prezzo è di 5 pezzi d'oro al giorno, con un pagamento anticipato di 30 giorni, ma siamo lieti di ridurre la nostra tariffa per parti uguali di qualsiasi tesoro trovato.\"",
+          "thumb": null
+        }
+      ],
+      "visible": false,
+      "category": "Biglietto",
+      "tags": [
+        "faroul",
+        "gondolo",
+        "guida"
+      ],
+      "folders": [
+        "b68a1bde2f49467986385ae807150ace"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": null,
+      "session_title": "",
+      "found_location": "",
+      "found_date": "",
+      "created_at": "2026-07-14T19:22:03.726617+00:00"
+    },
+    {
+      "id": "361ed060cbe6465a8333b351814a3330",
+      "title": "Eku - Biglietto da visita Guida",
+      "description": "Il biglietto da visita di Eku",
+      "files": [
+        {
+          "filename": "361ed060cbe6465a8333b351814a3330_0.png",
+          "reader": "image",
+          "description": "\"Mentre il richiamo di saccheggiare l'antichità del Chult è una tentazione, mi rivolgo a coloro he trovano appagamento nel fare il bene nel mondo.\" - \"Cerco di liberare la giungla dal male.\" - \"Ci sono molte rovine e antichi templi che devono esseere recuperati, affinché gli spiriti della natura possano ritornare a loro luoghi sacri e vivere in pace.\" - \"Ci sono impostori malvagi che cercano di accecarti con promesse d'oro, ma guideranno solo la tua gola verso le loro lame!\" - \"Le mie tariffe standard sono 5 monete d'oro al giorno, con un pagamento anticipato a 30 giorni. Una piccola parte va a ripagare il principe mercante Jobal. Il resto lo do in beneficienza.\"",
+          "thumb": null
+        }
+      ],
+      "visible": false,
+      "category": "Biglietto",
+      "tags": [
+        "eku",
+        "guida"
+      ],
+      "folders": [
+        "b68a1bde2f49467986385ae807150ace"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": null,
+      "session_title": "",
+      "found_location": "",
+      "found_date": "",
+      "created_at": "2026-07-14T19:22:48.474880+00:00"
+    },
+    {
+      "id": "c793dfadaee04ead97d5774c64c2f394",
+      "title": "Azaka Stormfang - Biglietto da visita Guida",
+      "description": "Il biglietto da visita di Azaka Stormfang",
+      "files": [
+        {
+          "filename": "c793dfadaee04ead97d5774c64c2f394_0.png",
+          "reader": "image",
+          "description": "\"Se hai bisogno di una guida per attraversare vivo la giungla, non cercare oltre. Sono nata nella giungla. Conosco bene I suoi pericoli e come evitarli al meglio. Se scegli me, puoi stare certo che il tuo gruppo è in buone mani.\" - \"Addebito 5 monete d'oro al giorno e richiedo un pagamento anticipato di 30 giorni.\" - \"Agli avventurieri che mi aiuteranno in una ricerca personale, rinuncerò al mio compenso e li guiderò in luoghi che nessun altro ha trovato. Questa ricerca ci porterà a Firefinger.\" - \"I malvagi pterafolk che si annidano su Firefinger mi hanno rubato una maschera di legno e la rivoglio.\"",
+          "thumb": null
+        }
+      ],
+      "visible": false,
+      "category": "Biglietto",
+      "tags": [
+        "azaka stormfang",
+        "guida"
+      ],
+      "folders": [
+        "b68a1bde2f49467986385ae807150ace"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": null,
+      "session_title": "",
+      "found_location": "",
+      "found_date": "",
+      "created_at": "2026-07-14T19:23:28.144523+00:00"
+    },
+    {
+      "id": "e5ba5ad8c9d54edf8c00be1a12b9771f",
+      "title": "Shago - Biglietto da visita Guida",
+      "description": "Il biglietto da visita di Shago",
+      "files": [
+        {
+          "filename": "e5ba5ad8c9d54edf8c00be1a12b9771f_0.png",
+          "reader": "image",
+          "description": "\"Chiedi a qualsiasi membro dei Pugni Fiammanti: sono il migliore che ci sia! Non prestare attenzione alle guida a Porto Nyanzaru. Sono molli e deboli. Ti poretrò ovunque tu abbia bisogno di andare. Firefinger, Kir Sabal, i Picchi delle Fiamme: non importa. Chult è pieno di meraviglie e Shago conosce ogni strada! non ho paura dei dinosauri, degli insetti o del duro lavoro. Posso remare su una canoa, accendere un fuoco, procurarti del cibo commestibile nella giungla più profonda, qualunque cosa ti serva posso farla. La giungla è invasa da ghouls e zombie, ma io ho un braccio forte e il cuore di un tirannosauro. Insieme conquisteremo questa terra!\" - \"Cinque monete d'oro e 30 giorni di anticipo. Per questa cifra ottieni la migliore guida. Per questa cifra ottieni il potente Shago!\"",
+          "thumb": null
+        }
+      ],
+      "visible": false,
+      "category": "Biglietto",
+      "tags": [
+        "shago",
+        "gida"
+      ],
+      "folders": [
+        "b68a1bde2f49467986385ae807150ace"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": null,
+      "session_title": "",
+      "found_location": "",
+      "found_date": "",
+      "created_at": "2026-07-14T19:24:02.251650+00:00"
+    },
+    {
+      "id": "6813ad0ea6764ef78af7faede961c65d",
+      "title": "Pergamena Antica Aldana",
+      "description": "Una pergamena antica rappresentante la storia di un antenato degli aldani fatta vedere in confidenza a Lopi da Koura.",
+      "files": [
+        {
+          "filename": "6813ad0ea6764ef78af7faede961c65d_0.png",
+          "reader": "image",
+          "description": "Un entità verde, con occhi gialli e rossi al centro. Circondata da guerrieri gialli che impugnano spade rosa.",
+          "thumb": null
+        }
+      ],
+      "visible": true,
+      "category": "Documento",
+      "tags": [
+        "bacino degli aldani",
+        "lopi"
+      ],
+      "folders": [],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": 22,
+      "session_title": "",
+      "found_location": "Nephropia",
+      "found_date": "3 giorno della Dissolvenza 1943 DR",
+      "created_at": "2026-07-14T19:28:28.442439+00:00"
+    },
+    {
+      "id": "f27e8330b8f245f38e6a4729f1fbba60",
+      "title": "V - Simbolo di Valentine",
+      "description": "Il marchio di Valentine, trovato sulle armi e la roba di sua produzione",
+      "files": [
+        {
+          "filename": "f27e8330b8f245f38e6a4729f1fbba60_0.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        }
+      ],
+      "visible": true,
+      "category": "",
+      "tags": [
+        "valentine"
+      ],
+      "folders": [
+        "cdc27d59c0f743888f5aae95a46f8cd7"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": 1,
+      "session_title": "",
+      "found_location": "Porto Nyanzaru",
+      "found_date": "7 giorno di Solealto 1493 DR",
+      "created_at": "2026-07-14T19:34:30.763637+00:00"
     }
   ],
   "folders": [
     {
       "id": "fb0f11ed86534aca9e85ddd229d197e5",
       "name": "Tarocchi"
+    },
+    {
+      "id": "cdc27d59c0f743888f5aae95a46f8cd7",
+      "name": "Valentine"
+    },
+    {
+      "id": "c70eb96310d9450dbbbdfd365c10e7c2",
+      "name": "Campo Vendetta"
+    },
+    {
+      "id": "b68a1bde2f49467986385ae807150ace",
+      "name": "Guide"
     }
-  ]
+  ],
+  "settings": {
+    "theme": "out-of-the-abyss"
+  }
 }

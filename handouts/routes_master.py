@@ -1,12 +1,21 @@
 """Master-facing routes: dashboard, upload, edit, publish toggle, delete."""
 
+import os
+import uuid
+
 from flask import (Blueprint, render_template, request, redirect,
-                   url_for, abort)
+                   url_for, abort, Response)
 
 from . import storage
 from . import organize
+from . import transfer
+from . import pdfs
+from . import theming
 
 bp = Blueprint('master', __name__)
+
+# Where uploaded import bundles are staged between the review + apply steps.
+IMPORT_TMP_DIR = os.path.join(storage.BASE_DIR, 'data', 'import_tmp')
 
 # Grouping modes the master can pick for its two lists.
 MASTER_MODES = ('recent', 'folder', 'tag', 'session')
@@ -37,7 +46,10 @@ def dm_panel():
                            tags=storage.all_tags(db),
                            folders=folders,
                            view_types=storage.VIEW_TYPES,
-                           default_view_type=storage.DEFAULT_VIEW_TYPE)
+                           default_view_type=storage.DEFAULT_VIEW_TYPE,
+                           themes=theming.theme_list(),
+                           theme_vars=theming.THEMES,
+                           current_theme=storage.get_theme(db))
 
 
 @bp.route('/upload', methods=['POST'])
@@ -59,6 +71,8 @@ def upload_handout():
     stored_files = storage.save_files(files, handout_id,
                                       descriptions=descriptions)
 
+    view_type = storage.clean_view_type(request.form.get('view_type'))
+
     # Optional back cover (only meaningful for the Book viewer).
     back_cover = None
     back_file = request.files.get('back_cover')
@@ -67,7 +81,27 @@ def upload_handout():
             abort(400, f'File type not allowed: {back_file.filename}')
         back_cover = storage.save_back_cover(back_file, handout_id)
 
+    # The Book viewer flips images, so any PDF becomes one image per page.
+    # Carousel keeps its PDFs and just gets thumbnails below.
+    if view_type == 'book':
+        stored_files, dropped = pdfs.expand_pdfs_for_book(
+            stored_files, handout_id)
+        storage.remove_files(dropped)
+        if back_cover and pdfs.is_pdf(back_cover):
+            pages, dropped = pdfs.expand_pdfs_for_book(
+                [back_cover], handout_id)
+            # A back cover is a single page: keep the first rendered page.
+            back_cover = pages[0]
+            storage.remove_files(dropped)
+
+    # Every remaining PDF gets a first-page thumbnail for its card preview.
+    pdfs.attach_thumbs(stored_files)
+    if back_cover:
+        pdfs.attach_thumbs([back_cover])
+
     db = storage.load_db()
+    if pdfs.backfill_thumbs(db):
+        storage.save_db(db)
     # Only keep folder ids that actually exist (guards against stale form data).
     folder_ids = storage.valid_folder_ids(
         db, request.form.getlist('folders'))
@@ -80,7 +114,7 @@ def upload_handout():
         'category': request.form.get('category', '').strip(),
         'tags': storage.parse_tags(request.form.get('tags')),
         'folders': folder_ids,
-        'view_type': storage.clean_view_type(request.form.get('view_type')),
+        'view_type': view_type,
         'back_cover': back_cover,
         'session_number': storage.parse_session_number(
             request.form.get('session_number')),
@@ -174,6 +208,23 @@ def edit_handout(handout_id):
             storage.remove_files([handout['back_cover']])
         handout['back_cover'] = storage.save_back_cover(back_file, handout_id)
 
+    # --- PDFs: Book needs images, so convert any PDF now. This also covers
+    # the Master switching an existing Carousel handout over to Book. ---
+    if handout['view_type'] == 'book':
+        handout['files'], dropped = pdfs.expand_pdfs_for_book(
+            handout['files'], handout_id)
+        storage.remove_files(dropped)
+        if handout.get('back_cover') and pdfs.is_pdf(handout['back_cover']):
+            pages, dropped = pdfs.expand_pdfs_for_book(
+                [handout['back_cover']], handout_id)
+            handout['back_cover'] = pages[0]
+            storage.remove_files(dropped)
+
+    # Any PDF still around (Carousel) gets a first-page thumbnail.
+    pdfs.attach_thumbs(handout['files'])
+    if handout.get('back_cover'):
+        pdfs.attach_thumbs([handout['back_cover']])
+
     # Drop legacy single-file keys now that files: [...] is authoritative.
     handout.pop('filename', None)
     handout.pop('reader', None)
@@ -233,3 +284,92 @@ def delete_folder(folder_id):
     storage.delete_folder(db, folder_id)
     storage.save_db(db)
     return redirect(url_for('master.dm_panel'))
+
+
+# --------------------------------------------------------------------------
+# Appearance. The theme is table-wide (players see it too), so it lives in
+# the DB rather than in a cookie like the per-user language.
+# --------------------------------------------------------------------------
+
+@bp.route('/settings/theme', methods=['POST'])
+def set_theme():
+    db = storage.load_db()
+    storage.set_theme(db, request.form.get('theme'))
+    storage.save_db(db)
+    return redirect(url_for('master.dm_panel'))
+
+
+# --------------------------------------------------------------------------
+# Export / import (move the whole library between computers).
+# Export is a plain download. Import is a two-step flow: upload -> review
+# conflicts -> apply, so nothing is overwritten without the Master's say-so.
+# --------------------------------------------------------------------------
+
+@bp.route('/export')
+def export_library():
+    data = transfer.export_bytes()
+    return Response(
+        data,
+        mimetype='application/zip',
+        headers={'Content-Disposition':
+                 'attachment; filename=handouts-export.zip'})
+
+
+@bp.route('/import', methods=['GET', 'POST'])
+def import_library():
+    if request.method == 'GET':
+        return render_template('master/import.html')
+
+    upload = request.files.get('bundle')
+    if not upload or not upload.filename:
+        abort(400, 'No file selected.')
+    zip_bytes = upload.read()
+
+    try:
+        report = transfer.analyze(zip_bytes)
+    except ValueError as exc:
+        return render_template('master/import.html', error=str(exc)), 400
+
+    # Stage the bundle so the apply step can read it back by token.
+    os.makedirs(IMPORT_TMP_DIR, exist_ok=True)
+    token = uuid.uuid4().hex
+    with open(os.path.join(IMPORT_TMP_DIR, token + '.zip'), 'wb') as f:
+        f.write(zip_bytes)
+
+    return render_template('master/import_review.html',
+                           token=token,
+                           new=report['new'],
+                           identical=report['identical'],
+                           conflicts=report['conflicts'])
+
+
+@bp.route('/import/apply', methods=['POST'])
+def import_apply():
+    token = request.form.get('token', '')
+    # Guard the token so it can only name a file inside the staging dir.
+    if not token or not token.isalnum():
+        abort(400, 'Invalid import token.')
+    staged = os.path.join(IMPORT_TMP_DIR, token + '.zip')
+    if not os.path.exists(staged):
+        abort(400, 'This import session has expired. Please upload again.')
+
+    with open(staged, 'rb') as f:
+        zip_bytes = f.read()
+
+    # Collect per-conflict choices: resolve_<id> = 'local' | 'imported'.
+    resolutions = {}
+    for key, value in request.form.items():
+        if key.startswith('resolve_'):
+            resolutions[key[len('resolve_'):]] = value
+
+    try:
+        summary = transfer.apply_import(zip_bytes, resolutions)
+    except ValueError as exc:
+        abort(400, str(exc))
+    finally:
+        try:
+            os.remove(staged)
+        except OSError:
+            pass
+
+    return render_template('master/import_done.html', summary=summary)

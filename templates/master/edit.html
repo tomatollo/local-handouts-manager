@@ -1,48 +1,53 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Edit Handout</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>{{ 'Edit Handout' | t }}</title>
+    {% include '_head.html' %}
 </head>
 <body>
     <div class="wrap">
-        <h1>Edit Handout &#9998;</h1>
-        <p class="subtitle"><a href="{{ url_for('master.dm_panel') }}">&lsaquo; Back to Master's Screen</a></p>
+        <div class="hub-top">
+            <div>
+                <h1>{{ 'Edit Handout' | t }} &#9998;</h1>
+                <p class="subtitle"><a href="{{ url_for('master.dm_panel') }}">&lsaquo; {{ "Back to Master's Screen" | t }}</a></p>
+            </div>
+            {% include '_lang_switch.html' %}
+        </div>
 
         <div class="panel">
             <h2>{{ handout.title }}</h2>
             <form action="{{ url_for('master.edit_handout', handout_id=handout.id) }}" method="post" enctype="multipart/form-data">
-                <label for="title">Title</label>
+                <label for="title">{{ 'Title' | t }}</label>
                 <input type="text" id="title" name="title" value="{{ handout.title }}" required>
 
-                <label for="description">Description (optional)</label>
+                <label for="description">{{ 'Description' | t }} <span class="hint">{{ 'optional' | t }}</span></label>
                 <input type="text" id="description" name="description" value="{{ handout.description }}">
 
-                <label for="category">Category (optional)</label>
+                <label for="category">{{ 'Category' | t }} <span class="hint">{{ 'optional' | t }}</span></label>
                 <input type="text" id="category" name="category" list="category-list" value="{{ handout.category }}">
                 <datalist id="category-list">
                     {% for c in categories %}<option value="{{ c }}">{% endfor %}
                 </datalist>
 
-                <label for="tags">Tags (optional, comma-separated)</label>
+                <label for="tags">{{ 'Tags' | t }} <span class="hint">{{ 'comma-separated' | t }}</span></label>
                 <input type="text" id="tags" name="tags" list="tag-list"
                        value="{{ handout.tags | join(', ') }}" placeholder="map, kingdom, cursed">
                 <datalist id="tag-list">
-                    {% for t in tags %}<option value="{{ t }}">{% endfor %}
+                    {% for tg in tags %}<option value="{{ tg }}">{% endfor %}
                 </datalist>
 
-                <label for="view_type">Viewer</label>
+                <label for="view_type">{{ 'Viewer' | t }}</label>
                 <select id="view_type" name="view_type">
                     {% for vt in view_types %}
                     <option value="{{ vt }}" {% if handout.view_type == vt %}selected{% endif %}>{{ vt|capitalize }}</option>
                     {% endfor %}
                 </select>
 
-                <label>Folders (optional)</label>
+                <label>{{ 'Folders' | t }} <span class="hint">{{ 'optional' | t }}</span></label>
                 {% if folders %}
-                <p class="subtitle">A handout can live in several folders.</p>
+                <p class="subtitle">{{ 'A handout can live in several folders.' | t }}</p>
                 <div class="folder-picker">
                     {% for fo in folders %}
                     <label class="folder-choice">
@@ -53,40 +58,42 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="subtitle">No folders yet &mdash; create some on the Master's Screen.</p>
+                <p class="subtitle">{{ "No folders yet — create some on the Master's Screen." | t }}</p>
                 {% endif %}
 
-                <label for="session_number">Session Number (optional)</label>
+                <label for="session_number">{{ 'Session #' | t }} <span class="hint">{{ 'optional' | t }}</span></label>
                 <input type="number" id="session_number" name="session_number" min="1" step="1"
                        value="{{ handout.session_number if handout.session_number is not none else '' }}">
 
-                <label for="session_title">Session Title (optional)</label>
+                <label for="session_title">{{ 'Session Title' | t }} <span class="hint">{{ 'optional' | t }}</span></label>
                 <input type="text" id="session_title" name="session_title" value="{{ handout.session_title }}">
 
-                <label for="found_location">Place of Discovery (optional)</label>
+                <label for="found_location">{{ 'Place of Discovery' | t }} <span class="hint">{{ 'optional' | t }}</span></label>
                 <input type="text" id="found_location" name="found_location" value="{{ handout.found_location }}">
 
-                <label for="found_date">Date of Discovery (optional)</label>
+                <label for="found_date">{{ 'Date of Discovery' | t }} <span class="hint">{{ 'optional' | t }}</span></label>
                 <input type="text" id="found_date" name="found_date" value="{{ handout.found_date }}">
 
-                <label>Current Files</label>
-                <p class="subtitle">Drag by the handle to reorder. The first file is the cover. Tick to remove on save.</p>
+                <label>{{ 'Current Files' | t }}</label>
+                <p class="subtitle">{{ 'Drag by the handle to reorder. The first file is the cover. Tick to remove on save.' | t }}</p>
                 <div class="edit-grid" id="file-reorder">
                     {% for f in handout.files %}
                     <div class="edit-file" draggable="true" data-filename="{{ f.filename }}">
                         <span class="edit-file__handle" aria-hidden="true">&#8942;&#8942;</span>
                         {% if f.reader == 'image' %}
                         <img src="{{ url_for('static', filename='uploads/' ~ f.filename) }}" alt="">
+                        {% elif f.thumb %}
+                        <img src="{{ url_for('static', filename='uploads/' ~ f.thumb) }}" alt="">
                         {% else %}
                         <div class="edit-file__pdf">PDF</div>
                         {% endif %}
                         <label class="edit-file__desc">
-                            <span>Description</span>
+                            <span>{{ 'Description' | t }}</span>
                             <input type="text" name="desc_{{ f.filename }}" value="{{ f.description }}"
-                                   placeholder="What players see for this file">
+                                   placeholder="{{ 'What players see for this file' | t }}">
                         </label>
                         <label class="edit-file__remove">
-                            <input type="checkbox" name="remove" value="{{ f.filename }}"> Remove
+                            <input type="checkbox" name="remove" value="{{ f.filename }}"> {{ 'Remove' | t }}
                         </label>
                     </div>
                     {% endfor %}
@@ -98,30 +105,32 @@
                     {% endfor %}
                 </div>
 
-                <label for="file">Add More Files (optional)</label>
+                <label for="file">{{ 'Add More Files' | t }} <span class="hint">{{ 'optional' | t }}</span></label>
                 <input type="file" id="file" name="files" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf" multiple>
                 <!-- One description input per newly-picked file, filled in by JS. -->
                 <div id="new-desc" class="new-desc"></div>
 
-                <label>Back Cover (Book viewer, optional)</label>
+                <label>{{ 'Back Cover' | t }} <span class="hint">{{ 'Book viewer, optional' | t }}</span></label>
                 {% if handout.back_cover %}
                 <div class="back-cover-current">
                     {% if handout.back_cover.reader == 'image' %}
                     <img src="{{ url_for('static', filename='uploads/' ~ handout.back_cover.filename) }}" alt="Back cover">
+                    {% elif handout.back_cover.thumb %}
+                    <img src="{{ url_for('static', filename='uploads/' ~ handout.back_cover.thumb) }}" alt="Back cover">
                     {% else %}
                     <div class="edit-file__pdf">PDF</div>
                     {% endif %}
                     <label class="edit-file__remove">
-                        <input type="checkbox" name="remove_back_cover" value="1"> Remove back cover
+                        <input type="checkbox" name="remove_back_cover" value="1"> {{ 'Remove back cover' | t }}
                     </label>
                 </div>
-                <p class="subtitle">Upload a new file to replace it:</p>
+                <p class="subtitle">{{ 'Upload a new file to replace it:' | t }}</p>
                 {% endif %}
                 <input type="file" id="back_cover" name="back_cover" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf">
-                <p class="subtitle">Shown as the last page in the Book viewer.</p>
+                <p class="subtitle">{{ 'Shown as the last page in the Book viewer.' | t }}</p>
 
                 <label>&nbsp;</label>
-                <button type="submit" class="btn btn--block">Save Changes</button>
+                <button type="submit" class="btn btn--block">{{ 'Save Changes' | t }}</button>
             </form>
         </div>
     </div>
@@ -188,6 +197,8 @@
             // ---- Description inputs for newly-added files -----------------
             var picker = document.getElementById('file');
             var newDesc = document.getElementById('new-desc');
+            // Placeholder is written from JS, so it comes translated from the server.
+            var DESC_PLACEHOLDER = {{ 'Description (optional)' | t | tojson }};
             if (picker && newDesc) {
                 picker.addEventListener('change', function () {
                     newDesc.innerHTML = '';
@@ -199,7 +210,7 @@
                         var inp = document.createElement('input');
                         inp.type = 'text';
                         inp.name = 'new_desc';
-                        inp.placeholder = 'Description (optional)';
+                        inp.placeholder = DESC_PLACEHOLDER;
                         wrap.appendChild(name);
                         wrap.appendChild(inp);
                         newDesc.appendChild(wrap);

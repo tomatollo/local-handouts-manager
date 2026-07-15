@@ -1,0 +1,10 @@
+{# Language switcher: per-user, so it's a plain link carrying ?lang=.
+   `request.args` is merged in so switching language never drops the current
+   view state (?by=, ?q=). #}
+<div class="lang-switch" role="group" aria-label="{{ 'Language' | t }}">
+    {% for code, label in languages.items() %}
+    <a class="lang-switch__btn {% if lang == code %}lang-switch__btn--active{% endif %}"
+       href="{{ url_for(request.endpoint, **dict(request.view_args, **dict(request.args, lang=code))) }}"
+       {% if lang == code %}aria-current="true"{% endif %}>{{ label }}</a>
+    {% endfor %}
+</div>

@@ -1,32 +1,34 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ folder.name }} &mdash; Collection</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>{{ folder.name }} &mdash; {{ 'Collection' | t }}</title>
+    {% include '_head.html' %}
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/page-flip.css') }}">
 </head>
 <body>
     <div class="wrap">
         <div class="hub-top">
             <div>
-                <p class="subtitle"><a href="{{ url_for('player.home', by='folder') }}">&lsaquo; All collections</a></p>
+                <p class="subtitle"><a href="{{ url_for('player.home', by='folder') }}">&lsaquo; {{ 'All collections' | t }}</a></p>
                 <h1>{{ folder.name }}</h1>
-                <p class="subtitle">{{ handouts|length }} handout{{ '' if handouts|length == 1 else 's' }} in this collection.</p>
+                {# Count only; a pluralised sentence wouldn't survive translation cleanly. #}
+                <p class="subtitle">{{ handouts|length }}</p>
             </div>
-            <button type="button" class="btn" id="browse-btn" aria-controls="drawer" aria-expanded="false">&#9776; Browse</button>
+            <button type="button" class="btn" id="browse-btn" aria-controls="drawer" aria-expanded="false">&#9776; {{ 'Browse' | t }}</button>
         </div>
 
         <div class="hub-toolbar">
-            <div class="view-switch" role="group" aria-label="View mode">
-                <button type="button" class="btn btn--ghost view-btn" data-view="rows">Rows</button>
-                <button type="button" class="btn btn--ghost view-btn" data-view="cards">Cards</button>
+            <div class="view-switch" role="group" aria-label="{{ 'View mode' | t }}">
+                <button type="button" class="btn btn--ghost view-btn" data-view="rows">{{ 'Rows' | t }}</button>
+                <button type="button" class="btn btn--ghost view-btn" data-view="cards">{{ 'Cards' | t }}</button>
             </div>
+            {% include '_lang_switch.html' %}
         </div>
 
         {% if not handouts %}
-        <div class="empty">This collection is empty.</div>
+        <div class="empty">{{ 'This collection is empty.' | t }}</div>
         {% else %}
         <div class="view--cards hub-list">
             {% for h in handouts %}
@@ -43,6 +45,9 @@
                     {% if cover.reader == 'image' %}
                     <img src="{{ url_for('static', filename='uploads/' ~ cover.filename) }}"
                          alt="{{ cover.description or h.title }}">
+                    {% elif cover.thumb %}
+                    <img src="{{ url_for('static', filename='uploads/' ~ cover.thumb) }}"
+                         alt="{{ cover.description or h.title }}">
                     {% else %}
                     <div class="h-thumb--pdf">PDF</div>
                     {% endif %}
@@ -53,8 +58,8 @@
                     {% if h.description %}<div class="h-desc">{{ h.description }}</div>{% endif %}
                     <div class="h-meta">
                         {% if h.category %}<span class="tag">{{ h.category }}</span>{% endif %}
-                        {% if h.session_number %}<span class="tag tag--session">Session {{ h.session_number }}</span>{% endif %}
-                        {% for t in h.tags %}<span class="tag tag--tag">{{ t }}</span>{% endfor %}
+                        {% if h.session_number %}<span class="tag tag--session">{{ 'Session' | t }} {{ h.session_number }}</span>{% endif %}
+                        {% for tg in h.tags %}<span class="tag tag--tag">{{ tg }}</span>{% endfor %}
                     </div>
                 </div>
             </div>
@@ -66,30 +71,30 @@
     {# ---- Browse drawer: search box is global (searches everything) ---- #}
     <div id="drawer" class="drawer" hidden aria-hidden="true">
         <div class="drawer__backdrop" data-drawer-close></div>
-        <div class="drawer__panel" role="dialog" aria-modal="true" aria-label="Browse handouts">
+        <div class="drawer__panel" role="dialog" aria-modal="true" aria-label="{{ 'Browse handouts' | t }}">
             <div class="drawer__head">
-                <h2>Browse</h2>
-                <button type="button" class="lightbox__close" data-drawer-close aria-label="Close">&times;</button>
+                <h2>{{ 'Browse' | t }}</h2>
+                <button type="button" class="lightbox__close" data-drawer-close aria-label="{{ 'Close' | t }}">&times;</button>
             </div>
 
             <form action="{{ url_for('player.home') }}" method="get" class="drawer__search">
                 <input type="hidden" name="by" value="recent">
-                <label for="q">Search everything</label>
-                <input type="text" id="q" name="q" placeholder="Title, tag, session...">
-                <button type="submit" class="btn btn--block">Search</button>
+                <label for="q">{{ 'Search everything' | t }}</label>
+                <input type="text" id="q" name="q" placeholder="{{ 'Title, tag, session...' | t }}">
+                <button type="submit" class="btn btn--block">{{ 'Search' | t }}</button>
             </form>
 
             {% set modes = [('folder','Folders'), ('session','Sessions'), ('tag','Tags'), ('recent','Recent')] %}
             <div class="drawer__section">
-                <h3>Organize by</h3>
+                <h3>{{ 'Organize by' | t }}</h3>
                 {% for key, label in modes %}
-                <a class="drawer__link" href="{{ url_for('player.home', by=key) }}">{{ label }}</a>
+                <a class="drawer__link" href="{{ url_for('player.home', by=key) }}">{{ label | t }}</a>
                 {% endfor %}
             </div>
 
             {% if folders %}
             <div class="drawer__section">
-                <h3>Folders</h3>
+                <h3>{{ 'Folders' | t }}</h3>
                 {% for fo in folders %}
                 <a class="drawer__link {% if fo.id == folder.id %}drawer__link--active{% endif %}"
                    href="{{ url_for('player.folder', folder_id=fo.id) }}">{{ fo.name }}</a>
@@ -99,10 +104,10 @@
 
             {% if tags %}
             <div class="drawer__section">
-                <h3>Tags</h3>
+                <h3>{{ 'Tags' | t }}</h3>
                 <div class="drawer__tags">
-                    {% for t in tags %}
-                    <a class="tag tag--tag" href="{{ url_for('player.home', by='tag', q=t) }}">{{ t }}</a>
+                    {% for tg in tags %}
+                    <a class="tag tag--tag" href="{{ url_for('player.home', by='tag', q=tg) }}">{{ tg }}</a>
                     {% endfor %}
                 </div>
             </div>

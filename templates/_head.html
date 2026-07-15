@@ -1,0 +1,14 @@
+{# Shared <head> bits: stylesheet, the global theme's fonts, and the theme's
+   token overrides. Included by every page so a theme change repaints the whole
+   app (master and player alike) with no per-template work.
+
+   The <style> block comes AFTER style.css so its :root wins the cascade.
+
+   Both values are marked |safe because they are CSS and a URL, not HTML, and
+   theming.py builds them from a fixed table -- no user input reaches them.
+   Without |safe, Jinja escapes the quotes in font names to &#39; and the &
+   separators in the fonts URL to &amp;. That silently kills the fonts while
+   leaving the (quote-free) colours working. #}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ theme_fonts_url | safe }}">
+<style>{{ theme_css | safe }}</style>

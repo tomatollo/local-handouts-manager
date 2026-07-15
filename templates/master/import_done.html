@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'Import Complete' | t }}</title>
+    {% include '_head.html' %}
+</head>
+<body>
+    <div class="wrap">
+        <h1>{{ 'Import Complete' | t }}</h1>
+        <div class="panel">
+            {# Label + count rather than a sentence, so it translates cleanly. #}
+            <div class="h-meta">
+                <span class="tag">{{ 'Added' | t }} {{ summary.added }}</span>
+                <span class="tag">{{ 'Replaced' | t }} {{ summary.replaced }}</span>
+                <span class="tag">{{ 'Kept local' | t }} {{ summary.kept_local }}</span>
+            </div>
+            <a href="{{ url_for('master.dm_panel') }}" class="btn btn--block">{{ "Back to Master's Screen" | t }}</a>
+        </div>
+    </div>
+</body>
+</html>

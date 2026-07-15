@@ -1,20 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Master Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>{{ 'Master Dashboard' | t }}</title>
+    {% include '_head.html' %}
 </head>
 <body>
     {# ---- Reusable handout row/card. Carries data-search for live filtering. ---- #}
     {% macro handout_item(h) %}
     {% set cover = h.files[0] %}
-    <div class="h-item {% if h.visible %}h-item--public{% endif %}"
+    <div class="h-item"
          data-search="{{ (h.title ~ ' ' ~ h.description ~ ' ' ~ h.category ~ ' ' ~ (h.tags | join(' ')) ~ ' ' ~ (h.session_title or '') ~ ' Session ' ~ (h.session_number or '')) | lower }}">
         <div class="h-thumb">
             {% if cover.reader == 'image' %}
             <img src="{{ url_for('static', filename='uploads/' ~ cover.filename) }}"
+                 alt="{{ cover.description or h.title }}">
+            {% elif cover.thumb %}
+            {# Rendered first page of the PDF, so the card shows a real preview #}
+            <img src="{{ url_for('static', filename='uploads/' ~ cover.thumb) }}"
                  alt="{{ cover.description or h.title }}">
             {% else %}
             <div class="h-thumb--pdf">PDF</div>
@@ -26,29 +30,28 @@
             <div class="h-title">{{ h.title }}</div>
             {% if h.description %}<div class="h-desc">{{ h.description }}</div>{% endif %}
             <div class="h-meta">
-                <span class="pill {% if h.visible %}pill--on{% else %}pill--off{% endif %}">
-                    {% if h.visible %}PUBLIC{% else %}HIDDEN{% endif %}
-                </span>
                 {% if h.category %}<span class="tag">{{ h.category }}</span>{% endif %}
-                {% if h.session_number %}<span class="tag tag--session">Session {{ h.session_number }}</span>{% endif %}
-                {% for t in h.tags %}<span class="tag tag--tag">{{ t }}</span>{% endfor %}
+                {% if h.session_number %}<span class="tag tag--session">{{ 'Session' | t }} {{ h.session_number }}</span>{% endif %}
+                {% for tg in h.tags %}<span class="tag tag--tag">{{ tg }}</span>{% endfor %}
                 <span class="tag tag--viewer">{{ h.view_type | capitalize }}</span>
             </div>
         </div>
 
         <div class="h-actions">
-            <a href="{{ url_for('master.edit_handout', handout_id=h.id) }}" class="btn btn--ghost btn--block">Edit</a>
+            <a href="{{ url_for('master.edit_handout', handout_id=h.id) }}" class="btn btn--ghost btn--block">{{ 'Edit' | t }}</a>
+            {# The handout title is appended to the translated prompt rather than
+               interpolated into it, so no sentence needs a placeholder. #}
             <form method="post" action="{{ url_for('master.toggle_visibility', handout_id=h.id) }}"
-                  {% if not h.visible %}data-confirm="Are you sure you want to publish &quot;{{ h.title }}&quot; to the players?"{% endif %}>
+                  {% if not h.visible %}data-confirm="{{ 'Are you sure you want to publish this handout to the players?' | t }} &mdash; {{ h.title }}"{% endif %}>
                 {% if h.visible %}
-                <button type="submit" class="btn btn--ghost btn--block">Unpublish</button>
+                <button type="submit" class="btn btn--ghost btn--block">{{ 'Unpublish' | t }}</button>
                 {% else %}
-                <button type="submit" class="btn btn--block">Publish</button>
+                <button type="submit" class="btn btn--block">{{ 'Publish' | t }}</button>
                 {% endif %}
             </form>
             <form method="post" action="{{ url_for('master.delete_handout', handout_id=h.id) }}"
-                  data-confirm="Delete &quot;{{ h.title }}&quot; permanently? This removes the file too.">
-                <button type="submit" class="btn btn--danger btn--block">Delete</button>
+                  data-confirm="{{ 'Delete this handout permanently? This removes the file too.' | t }} &mdash; {{ h.title }}">
+                <button type="submit" class="btn btn--danger btn--block">{{ 'Delete' | t }}</button>
             </form>
         </div>
     </div>
@@ -73,8 +76,13 @@
     {% endmacro %}
 
     <div class="wrap">
-        <h1>Master's Screen &#128065;</h1>
-        <p class="subtitle">Forge scrolls and ancient tomes from here.</p>
+        <div class="hub-top">
+            <div>
+                <h1>{{ "Master's Screen" | t }} &#128065;</h1>
+                <p class="subtitle">{{ 'Forge scrolls and ancient tomes from here.' | t }}</p>
+            </div>
+            {% include '_lang_switch.html' %}
+        </div>
 
         <div class="master-layout">
             {# ============ LEFT: the two lists (hidden over public) ============ #}
@@ -82,38 +90,38 @@
                 <div class="panel">
                     <div class="list-toolbar">
                         <input type="search" id="handout-search" class="list-search"
-                               placeholder="Search handouts..." aria-label="Search handouts">
+                               placeholder="{{ 'Search handouts...' | t }}" aria-label="{{ 'Search handouts' | t }}">
                         <div class="toolbar-right">
                             <div class="group-switch">
                                 {% set gmodes = [('recent','Recent'), ('folder','Folders'), ('tag','Tags'), ('session','Sessions')] %}
                                 {% for key, label in gmodes %}
                                 <a class="btn btn--ghost group-btn {% if mode == key %}group-btn--active{% endif %}"
-                                   href="{{ url_for('master.dm_panel', by=key) }}">{{ label }}</a>
+                                   href="{{ url_for('master.dm_panel', by=key) }}">{{ label | t }}</a>
                                 {% endfor %}
                             </div>
-                            <div class="view-switch" role="group" aria-label="View mode">
-                                <button type="button" class="btn btn--ghost view-btn" data-view="rows">Rows</button>
-                                <button type="button" class="btn btn--ghost view-btn" data-view="cards">Cards</button>
+                            <div class="view-switch" role="group" aria-label="{{ 'View mode' | t }}">
+                                <button type="button" class="btn btn--ghost view-btn" data-view="rows">{{ 'Rows' | t }}</button>
+                                <button type="button" class="btn btn--ghost view-btn" data-view="cards">{{ 'Cards' | t }}</button>
                             </div>
                         </div>
                     </div>
-                    <p class="subtitle no-results" id="no-results" hidden>No handouts match your search.</p>
+                    <p class="subtitle no-results" id="no-results" hidden>{{ 'No handouts match your search.' | t }}</p>
 
                     <section class="list-section">
                         <div class="panel-head">
-                            <h2>Hidden <span class="count-badge">{{ hidden_count }}</span></h2>
+                            <h2>{{ 'Hidden' | t }} <span class="count-badge">{{ hidden_count }}</span></h2>
                         </div>
                         <div class="list-scope dm-list" data-scope="hidden">
-                            {{ group_list(hidden_groups, "Nothing hidden. Everything is public.") }}
+                            {{ group_list(hidden_groups, 'Nothing hidden. Everything is public.' | t) }}
                         </div>
                     </section>
 
                     <section class="list-section">
                         <div class="panel-head">
-                            <h2>Public <span class="count-badge">{{ public_count }}</span></h2>
+                            <h2>{{ 'Public' | t }} <span class="count-badge">{{ public_count }}</span></h2>
                         </div>
                         <div class="list-scope dm-list" data-scope="public">
-                            {{ group_list(public_groups, "Nothing published yet.") }}
+                            {{ group_list(public_groups, 'Nothing published yet.' | t) }}
                         </div>
                     </section>
                 </div>
@@ -122,22 +130,22 @@
             {# ============ RIGHT: create form + folder management ============ #}
             <div class="master-aside">
                 <div class="panel">
-                    <h2>Upload a Handout</h2>
+                    <h2>{{ 'Upload a Handout' | t }}</h2>
                     <form action="{{ url_for('master.upload_handout') }}" method="post"
                           enctype="multipart/form-data" class="form-grid">
                         <div class="field field--wide">
-                            <label for="title">Title</label>
+                            <label for="title">{{ 'Title' | t }}</label>
                             <input type="text" id="title" name="title" placeholder="Old Kingdom Map" required>
                         </div>
 
                         <div class="field field--wide">
-                            <label for="description">Description</label>
+                            <label for="description">{{ 'Description' | t }}</label>
                             <input type="text" id="description" name="description"
                                    placeholder="A weathered map of the fallen kingdom.">
                         </div>
 
                         <div class="field">
-                            <label for="category">Category</label>
+                            <label for="category">{{ 'Category' | t }}</label>
                             <input type="text" id="category" name="category" list="category-list"
                                    placeholder="Map, NPC...">
                             <datalist id="category-list">
@@ -146,7 +154,7 @@
                         </div>
 
                         <div class="field">
-                            <label for="view_type">Viewer</label>
+                            <label for="view_type">{{ 'Viewer' | t }}</label>
                             <select id="view_type" name="view_type">
                                 {% for vt in view_types %}
                                 <option value="{{ vt }}" {% if vt == default_view_type %}selected{% endif %}>{{ vt|capitalize }}</option>
@@ -155,7 +163,7 @@
                         </div>
 
                         <div class="field field--wide">
-                            <label for="tags">Tags <span class="hint">comma-separated</span></label>
+                            <label for="tags">{{ 'Tags' | t }} <span class="hint">{{ 'comma-separated' | t }}</span></label>
                             <input type="text" id="tags" name="tags" list="tag-list"
                                    placeholder="map, kingdom, cursed">
                             <datalist id="tag-list">
@@ -164,7 +172,7 @@
                         </div>
 
                         <div class="field field--wide">
-                            <label>Folders</label>
+                            <label>{{ 'Folders' | t }}</label>
                             {% if folders %}
                             <div class="folder-picker">
                                 {% for fo in folders %}
@@ -174,75 +182,119 @@
                                 {% endfor %}
                             </div>
                             {% else %}
-                            <p class="subtitle">No folders yet &mdash; create one below.</p>
+                            <p class="subtitle">{{ 'No folders yet — create one below.' | t }}</p>
                             {% endif %}
                         </div>
 
                         <div class="field">
-                            <label for="session_number">Session #</label>
+                            <label for="session_number">{{ 'Session #' | t }}</label>
                             <input type="number" id="session_number" name="session_number" min="1" step="1" placeholder="1">
                         </div>
 
                         <div class="field">
-                            <label for="session_title">Session Title</label>
+                            <label for="session_title">{{ 'Session Title' | t }}</label>
                             <input type="text" id="session_title" name="session_title" placeholder="The Sunless Citadel">
                         </div>
 
                         <div class="field">
-                            <label for="found_location">Place of Discovery</label>
+                            <label for="found_location">{{ 'Place of Discovery' | t }}</label>
                             <input type="text" id="found_location" name="found_location" placeholder="Port Nyanzaru">
                         </div>
 
                         <div class="field">
-                            <label for="found_date">Date of Discovery</label>
+                            <label for="found_date">{{ 'Date of Discovery' | t }}</label>
                             <input type="text" id="found_date" name="found_date" placeholder="15 Kythorn, 1492 DR">
                         </div>
 
                         <div class="field field--wide">
-                            <label for="file">Files <span class="hint">images or PDF</span></label>
+                            <label for="file">{{ 'Files' | t }} <span class="hint">{{ 'images or PDF' | t }}</span></label>
                             <input type="file" id="file" name="files"
                                    accept=".png,.jpg,.jpeg,.gif,.webp,.pdf" multiple required>
-                            <p class="subtitle">Select several images to build a carousel or book.</p>
+                            <p class="subtitle">{{ 'Select several images to build a carousel or book.' | t }}</p>
                         </div>
 
                         <div class="field field--wide">
-                            <label for="back_cover">Back Cover <span class="hint">Book viewer, optional</span></label>
+                            <label for="back_cover">{{ 'Back Cover' | t }} <span class="hint">{{ 'Book viewer, optional' | t }}</span></label>
                             <input type="file" id="back_cover" name="back_cover"
                                    accept=".png,.jpg,.jpeg,.gif,.webp,.pdf">
-                            <p class="subtitle">Shown as the last page in the Book viewer.</p>
+                            <p class="subtitle">{{ 'Shown as the last page in the Book viewer.' | t }}</p>
                         </div>
 
                         <div class="field field--wide">
-                            <button type="submit" class="btn btn--block">Forge Handout</button>
+                            <button type="submit" class="btn btn--block">{{ 'Forge Handout' | t }}</button>
                         </div>
                     </form>
                 </div>
 
                 <div class="panel">
-                    <h2>Folders</h2>
-                    <p class="subtitle">Group handouts any way you like. A handout can sit in several folders.</p>
+                    <h2>{{ 'Folders' | t }}</h2>
+                    <p class="subtitle">{{ 'Group handouts any way you like. A handout can sit in several folders.' | t }}</p>
 
                     <form action="{{ url_for('master.create_folder') }}" method="post" class="folder-new">
-                        <input type="text" name="name" placeholder="New folder name" required aria-label="New folder name">
-                        <button type="submit" class="btn">Add</button>
+                        <input type="text" name="name" placeholder="{{ 'New folder name' | t }}" required aria-label="{{ 'New folder name' | t }}">
+                        <button type="submit" class="btn">{{ 'Add' | t }}</button>
                     </form>
 
+                    {# Pulled out so the apostrophe doesn't fight the attribute quotes. #}
+                    {% set del_folder_msg = "Delete this folder? Handouts stay, they're just unfiled from it." | t %}
                     {% if folders %}
                     <div class="folder-list">
                         {% for fo in folders %}
                         <div class="folder-row">
                             <form action="{{ url_for('master.rename_folder', folder_id=fo.id) }}" method="post" class="folder-rename">
-                                <input type="text" name="name" value="{{ fo.name }}" aria-label="Folder name">
-                                <button type="submit" class="btn btn--ghost">Rename</button>
+                                <input type="text" name="name" value="{{ fo.name }}" aria-label="{{ 'Folder name' | t }}">
+                                <button type="submit" class="btn btn--ghost">{{ 'Rename' | t }}</button>
                             </form>
                             <form action="{{ url_for('master.delete_folder', folder_id=fo.id) }}" method="post"
-                                  data-confirm="Delete the folder &quot;{{ fo.name }}&quot;? Handouts stay, they're just unfiled from it.">
-                                <button type="submit" class="btn btn--danger">Delete</button>
+                                  data-confirm="{{ del_folder_msg }} &mdash; {{ fo.name }}">
+                                <button type="submit" class="btn btn--danger">{{ 'Delete' | t }}</button>
                             </form>
                         </div>
                         {% endfor %}
                     </div>
                     {% endif %}
+                </div>
+
+                {# ---- Appearance: theme is global, language is this user's ---- #}
+                <div class="panel">
+                    <h2>{{ 'Appearance' | t }}</h2>
+
+                    <h3>{{ 'Theme' | t }}</h3>
+                    <p class="subtitle">{{ 'Colours and fonts for everyone — players see this too.' | t }}</p>
+                    <form action="{{ url_for('master.set_theme') }}" method="post">
+                        <div class="theme-picker">
+                            {% for th in themes %}
+                            <label class="theme-choice">
+                                <input type="radio" name="theme" value="{{ th.id }}"
+                                       {% if th.id == current_theme %}checked{% endif %}>
+                                <span class="theme-choice__body">
+                                    <span class="theme-choice__name">{{ th.name }}</span>
+                                    <span class="theme-choice__blurb">{{ th.blurb }}</span>
+                                    {# Swatches are inline styles on purpose: the colours
+                                       come from the theme table, not from the active theme. #}
+                                    <span class="theme-choice__swatches">
+                                        {% for key in ['--bg', '--bg-panel', '--accent', '--accent-2'] %}
+                                        <span class="theme-choice__swatch"
+                                              style="background: {{ theme_vars[th.id]['vars'][key] }}"></span>
+                                        {% endfor %}
+                                    </span>
+                                </span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        <button type="submit" class="btn btn--block">{{ 'Apply theme' | t }}</button>
+                    </form>
+
+                    <h3>{{ 'Interface language' | t }}</h3>
+                    <p class="subtitle">{{ 'Your own choice — it does not affect the players.' | t }}</p>
+                    {% include '_lang_switch.html' %}
+                </div>
+
+                <div class="panel">
+                    <h2>{{ 'Backup & Transfer' | t }}</h2>
+                    <p class="subtitle">{{ 'Move your whole library (handouts, images, folders) to another computer.' | t }}</p>
+                    <a href="{{ url_for('master.export_library') }}" class="btn btn--block">{{ 'Export everything (.zip)' | t }}</a>
+                    <a href="{{ url_for('master.import_library') }}" class="btn btn--ghost btn--block">{{ 'Import from a .zip…' | t }}</a>
                 </div>
             </div>
         </div>

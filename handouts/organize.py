@@ -43,13 +43,17 @@ def folder_cards(handouts, folders):
       {'id', 'name', 'count', 'covers': [file, ...],  # up to 4, for a 2x2 mosaic
        'is_orphans': bool}
     Real folders come first (alphabetical), then a virtual "Orphans" card if
-    any handout is orphans. Empty real folders are still shown (count 0) so the
-    master can see them; the Orphans card only appears when it has contents.
+    any handout is orphans. Folders with nothing in them are omitted: this is
+    the player view, so `handouts` only holds revealed items and an empty card
+    would just be a dead end. The master's dashboard groups folders separately
+    and still sees them all.
     """
     known_ids = {fo['id'] for fo in folders}
     cards = []
     for fo in sorted(folders, key=lambda f: f.get('name', '').lower()):
         items = _in_folder(handouts, fo['id'], known_ids)
+        if not items:
+            continue
         cards.append({
             'id': fo['id'],
             'name': fo['name'],
@@ -57,7 +61,7 @@ def folder_cards(handouts, folders):
             'covers': [h['files'][0] for h in items[:4] if h.get('files')],
             'is_orphans': False,
         })
-
+    
     orphans = _in_folder(handouts, ORPHANS_ID, known_ids)
     if orphans:
         cards.append({

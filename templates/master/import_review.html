@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'Review Import' | t }}</title>
+    {% include '_head.html' %}
+</head>
+<body>
+    <div class="wrap">
+        <p class="subtitle"><a href="{{ url_for('master.import_library') }}">&lsaquo; {{ 'Choose a different file' | t }}</a></p>
+        <h1>{{ 'Review Import' | t }}</h1>
+
+        <form action="{{ url_for('master.import_apply') }}" method="post">
+            <input type="hidden" name="token" value="{{ token }}">
+
+            <div class="panel">
+                <h2>{{ 'Summary' | t }}</h2>
+                {# Label + count, so no sentence needs pluralising per language. #}
+                <div class="h-meta">
+                    <span class="tag">{{ 'New handouts' | t }} {{ new|length }}</span>
+                    <span class="tag">{{ 'Identical (skipped)' | t }} {{ identical|length }}</span>
+                    <span class="tag tag--session">{{ 'Conflicts' | t }} {{ conflicts|length }}</span>
+                </div>
+            </div>
+
+            {% if new %}
+            <div class="panel">
+                <h2>{{ 'New handouts' | t }} <span class="count-badge">{{ new|length }}</span></h2>
+                <ul class="import-list">
+                    {% for h in new %}
+                    <li>{{ h.title }} <span class="tag tag--viewer">{{ h.view_type | capitalize }}</span></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if conflicts %}
+            <div class="panel">
+                <h2>{{ 'Conflicts' | t }} <span class="count-badge">{{ conflicts|length }}</span></h2>
+                <p class="subtitle">{{ 'These handouts exist on both sides but differ. Choose which to keep for each.' | t }}</p>
+                {% for cf in conflicts %}
+                <div class="conflict">
+                    <div class="conflict__row">
+                        <div class="conflict__side">
+                            <h4>{{ 'Local' | t }}</h4>
+                            <div class="h-title">{{ cf.local.title }}</div>
+                            <div class="h-meta">
+                                <span class="tag tag--viewer">{{ cf.local.view_type | capitalize }}</span>
+                                <span class="tag">{{ 'Files' | t }} {{ cf.local.files|length }}</span>
+                            </div>
+                        </div>
+                        <div class="conflict__side">
+                            <h4>{{ 'Imported' | t }}</h4>
+                            <div class="h-title">{{ cf.incoming.title }}</div>
+                            <div class="h-meta">
+                                <span class="tag tag--viewer">{{ cf.incoming.view_type | capitalize }}</span>
+                                <span class="tag">{{ 'Files' | t }} {{ cf.incoming.files|length }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="conflict__choice">
+                        <label class="radio-pill">
+                            <input type="radio" name="resolve_{{ cf.id }}" value="local" checked> {{ 'Keep Local' | t }}
+                        </label>
+                        <label class="radio-pill">
+                            <input type="radio" name="resolve_{{ cf.id }}" value="imported"> {{ 'Replace with imported' | t }}
+                        </label>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="panel">
+                <button type="submit" class="btn btn--block">{{ 'Apply import' | t }}</button>
+                <a href="{{ url_for('master.dm_panel') }}" class="btn btn--ghost btn--block">{{ 'Cancel' | t }}</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

@@ -11,6 +11,8 @@ from datetime import datetime, timezone
 
 from werkzeug.utils import secure_filename
 
+from . import theming
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, 'data', 'database.json')
 UPLOAD_DIR = os.path.join(BASE_DIR, 'static', 'uploads')
@@ -68,6 +70,11 @@ def _normalize(data):
     # DB-level: master-defined folders live at the root as {id, name}.
     data.setdefault('folders', [])
 
+    # DB-level: table-wide settings. Only the theme is global; language is a
+    # per-user cookie and deliberately never stored here.
+    settings = data.setdefault('settings', {})
+    settings['theme'] = theming.clean_theme(settings.get('theme'))
+
     for h in data.get('handouts', []):
         # Legacy single-file -> files: [...]
         if 'files' not in h:
@@ -82,6 +89,9 @@ def _normalize(data):
         for i, f in enumerate(h['files']):
             if 'description' not in f:
                 f['description'] = legacy_alt if i == 0 else ''
+            # PDFs may carry a rendered first-page thumbnail; images never do.
+            # Absent means "not generated yet", which callers handle.
+            f.setdefault('thumb', None)
         # alt_text is superseded by per-file descriptions; drop it once
         # migrated so it can't drift out of sync.
         h.pop('alt_text', None)
@@ -96,6 +106,9 @@ def _normalize(data):
         # Optional back cover (a single file entry or None). Shown as the very
         # last page in the Book viewer. Ignored by the carousel.
         h.setdefault('back_cover', None)
+        if h.get('back_cover'):
+            h['back_cover'].setdefault('description', '')
+            h['back_cover'].setdefault('thumb', None)
 
 
 def save_db(data):
@@ -109,6 +122,20 @@ def save_db(data):
 
 def find(db, handout_id):
     return next((h for h in db['handouts'] if h['id'] == handout_id), None)
+
+
+# --------------------------------------------------------------------------
+# Settings (global, master-controlled)
+# --------------------------------------------------------------------------
+
+def get_theme(db):
+    return theming.clean_theme(db.get('settings', {}).get('theme'))
+
+
+def set_theme(db, raw):
+    """Set the table-wide theme. Unknown ids collapse to the default."""
+    db.setdefault('settings', {})['theme'] = theming.clean_theme(raw)
+    return db['settings']['theme']
 
 
 def all_categories(db):
@@ -237,12 +264,20 @@ def save_files(file_storages, handout_id, prefix='', descriptions=None):
 
 
 def remove_files(file_entries):
-    """Delete stored files from disk, best-effort."""
+    """Delete stored files from disk, best-effort.
+
+    Also removes a PDF's generated thumbnail, if the entry carries one, so
+    rendered artefacts never outlive the file they belong to.
+    """
     for entry in file_entries:
-        try:
-            os.remove(os.path.join(UPLOAD_DIR, entry['filename']))
-        except OSError:
-            pass
+        names = [entry['filename']]
+        if entry.get('thumb'):
+            names.append(entry['thumb'])
+        for name in names:
+            try:
+                os.remove(os.path.join(UPLOAD_DIR, name))
+            except OSError:
+                pass
 
 
 def save_back_cover(file_storage, handout_id):
