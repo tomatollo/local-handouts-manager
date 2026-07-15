@@ -83,6 +83,12 @@
                 <input type="text" id="q" name="q" placeholder="{{ 'Title, tag, session...' | t }}">
                 <button type="submit" class="btn btn--block">{{ 'Search' | t }}</button>
             </form>
+            
+            {# App Guide for players #}
+            <div class="drawer__section">
+                <h3>{{ 'Help' | t }}</h3>
+                <a class="drawer__link" href="{{ url_for('app_guide') }}">📖 {{ 'App Guide' | t }}</a>
+            </div>
 
             {% set modes = [('folder','Folders'), ('session','Sessions'), ('tag','Tags'), ('recent','Recent')] %}
             <div class="drawer__section">
@@ -117,6 +123,10 @@
 
     <script src="{{ url_for('static', filename='vendor/page-flip.browser.js') }}"></script>
     {% include 'player/_lightbox.html' %}
+    {# Must follow the lightbox: the watcher drives it via window.Lightbox.
+       Included here too, not just on the hub: a player sitting in a folder is
+       still at the table and must receive the Master's POP. #}
+    {% include 'player/_pop.html' %}
 
     <script>
         (function () {

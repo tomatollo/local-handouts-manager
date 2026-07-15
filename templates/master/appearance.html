@@ -1,0 +1,58 @@
+{# Appearance settings. Previously the third panel down the dashboard's aside;
+   now a page of its own reached from the menu. The theme picker is wide, and
+   it finally has room to breathe: .theme-picker's auto-fit grid lays the seven
+   presets out in real columns instead of a single squeezed file. #}
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'Appearance' | t }}</title>
+    {% include '_head.html' %}
+</head>
+<body>
+    <div class="wrap">
+        <div class="hub-top">
+            <div>
+                <p class="subtitle"><a href="{{ url_for('master.dm_panel') }}">&lsaquo; {{ "Back to Master's Screen" | t }}</a></p>
+                <h1>{{ 'Appearance' | t }}</h1>
+            </div>
+            {% with active = 'appearance' %}{% include 'master/_menu.html' %}{% endwith %}
+        </div>
+
+        <div class="panel">
+            <h2>{{ 'Theme' | t }}</h2>
+            <p class="subtitle">{{ 'Colours and fonts for everyone — players see this too.' | t }}</p>
+            <form action="{{ url_for('master.set_theme') }}" method="post">
+                <div class="theme-picker">
+                    {% for th in themes %}
+                    <label class="theme-choice">
+                        <input type="radio" name="theme" value="{{ th.id }}"
+                               {% if th.id == current_theme %}checked{% endif %}>
+                        <span class="theme-choice__body">
+                            <span class="theme-choice__name">{{ th.name }}</span>
+                            <span class="theme-choice__blurb">{{ th.blurb }}</span>
+                            {# Swatches are inline styles on purpose: the colours
+                               come from the theme table, not from the active theme. #}
+                            <span class="theme-choice__swatches">
+                                {% for key in ['--bg', '--bg-panel', '--accent', '--accent-2'] %}
+                                <span class="theme-choice__swatch"
+                                      style="background: {{ theme_vars[th.id]['vars'][key] }}"></span>
+                                {% endfor %}
+                            </span>
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+                <button type="submit" class="btn btn--block">{{ 'Apply theme' | t }}</button>
+            </form>
+        </div>
+
+        <div class="panel">
+            <h2>{{ 'Interface language' | t }}</h2>
+            <p class="subtitle">{{ 'Your own choice — it does not affect the players.' | t }}</p>
+            {% include '_lang_switch.html' %}
+        </div>
+    </div>
+</body>
+</html>

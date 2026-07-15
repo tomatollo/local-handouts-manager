@@ -147,6 +147,12 @@
                 <button type="submit" class="btn btn--block">{{ 'Search' | t }}</button>
             </form>
 
+            {# App Guide for players #}
+            <div class="drawer__section">
+                <h3>{{ 'Help' | t }}</h3>
+                <a class="drawer__link" href="{{ url_for('app_guide') }}">📖 {{ 'App Guide' | t }}</a>
+            </div>
+
             <div class="drawer__section">
                 <h3>{{ 'Organize by' | t }}</h3>
                 {% for key, label in modes %}
@@ -179,6 +185,8 @@
 
     <script src="{{ url_for('static', filename='vendor/page-flip.browser.js') }}"></script>
     {% include 'player/_lightbox.html' %}
+    {# Must follow the lightbox: the watcher drives it via window.Lightbox. #}
+    {% include 'player/_pop.html' %}
 
     <script>
         (function () {

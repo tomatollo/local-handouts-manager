@@ -76,6 +76,23 @@ CATALOG = {
         'Publish': 'Pubblica',
         'Unpublish': 'Ritira',
         'Delete': 'Elimina',
+
+        # ---- POP handout ----
+        # 'POP' is left untranslated on purpose: it is the feature's name at
+        # the table, and the megaphone glyph carries the meaning anyway.
+        'POP': 'POP',
+        'Publish & POP': 'Pubblica e POP',
+        'Forge & POP': 'Forgia e POP',
+        'Pop to all players': 'Fai apparire a tutti i giocatori',
+        'Publishes immediately and shows it on every player screen.':
+            'Pubblica subito e lo mostra su ogni schermo dei giocatori.',
+        'Pop this handout onto every player screen now?':
+            'Far apparire ora questo documento su ogni schermo dei giocatori?',
+        'Publish this handout and pop it onto every player screen now?':
+            'Pubblicare questo documento e farlo apparire ora su ogni schermo dei giocatori?',
+        'Your Master is showing you something.':
+            'Il tuo Master ti sta mostrando qualcosa.',
+        'Open it': 'Apri',
         'Upload a Handout': 'Carica un Documento',
         'Title': 'Titolo',
         'Description': 'Descrizione',
@@ -116,6 +133,84 @@ CATALOG = {
         'Interface language': 'Lingua interfaccia',
         'Your own choice — it does not affect the players.':
             'Scelta personale — non influisce sui giocatori.',
+
+        # ---- Master: navigation menu ----
+        'Menu': 'Menù',
+        "Master's menu": 'Menù del Master',
+        'Handouts': 'Documenti',
+        'Settings': 'Impostazioni',
+        'Master Access': 'Accesso Master',
+        'Lock master mode': 'Blocca modalità Master',
+
+        # ---- Master: access / passphrase ----
+        'This area is for the Game Master.':
+            'Questa area è riservata al Master.',
+        'Passphrase': 'Passphrase',
+        'Unlock': 'Sblocca',
+        'That passphrase is not right.': 'La passphrase non è corretta.',
+        'Back to the Player Hub': "Torna all'Area Giocatori",
+        'The master side is currently unprotected.':
+            'Il lato Master non è attualmente protetto.',
+        'Until you set a passphrase, anyone on this Wi-Fi can open the Master Wiki and the dashboard.':
+            'Finché non imposti una passphrase, chiunque sia su questa rete Wi-Fi può aprire la Wiki del Master e il pannello.',
+        'Set a passphrase': 'Imposta una passphrase',
+        'Change passphrase': 'Cambia passphrase',
+        'One passphrase for the Master. Players never need it.':
+            'Una sola passphrase per il Master. Ai giocatori non serve mai.',
+        'Current passphrase': 'Passphrase attuale',
+        'New passphrase': 'Nuova passphrase',
+        'Save passphrase': 'Salva passphrase',
+        'This device': 'Questo dispositivo',
+        'Lock master mode if you hand this device to a player.':
+            'Blocca la modalità Master se passi questo dispositivo a un giocatore.',
+
+        # ---- Wiki: shared ----
+        'Wiki': 'Wiki',
+        'Players Wiki': 'Wiki Giocatori',
+        'Master Wiki': 'Wiki Master',
+        'Master Wiki (secret)': 'Wiki Master (segreta)',
+        'Quick reference for the campaign.':
+            'Consultazione rapida per la campagna.',
+        'What the party knows about the world.':
+            'Ciò che il gruppo sa del mondo.',
+        'Your own notes. Players never see these pages.':
+            'I tuoi appunti. I giocatori non vedono mai queste pagine.',
+        'Search the wiki...': 'Cerca nella wiki...',
+        'Search the wiki': 'Cerca nella wiki',
+        'Nothing written down yet.': 'Ancora nulla di scritto.',
+        'No pages here yet. Create the first one.':
+            'Ancora nessuna pagina. Creane una.',
+        'This page is empty.': 'Questa pagina è vuota.',
+        'Uncategorised': 'Senza categoria',
+        'Master only': 'Solo Master',
+
+        # ---- Wiki: editing ----
+        'New page': 'Nuova pagina',
+        'Edit page': 'Modifica pagina',
+        'Create page': 'Crea pagina',
+        # NB: not 'Summary' -- that key is already taken by the import review
+        # page ('Riepilogo'). Keys ARE the English source string, so one key
+        # cannot carry two meanings; the wiki's field is named distinctly.
+        'Page actions': 'Azioni pagina',
+        'Page summary': 'Sommario',
+        'One line shown in the index.':
+            "Una riga mostrata nell'indice.",
+        'The Emerald Enclave': 'Enclave di Smeraldo',
+        'Faction, Place, NPC...': 'Fazione, Luogo, PNG...',
+        'Body': 'Testo',
+        'Plain text. Line breaks are kept.':
+            'Testo semplice. Gli a capo vengono mantenuti.',
+        'Visible to': 'Visibile a',
+        'Moving a page to the Players Wiki reveals it to the whole table.':
+            "Spostare una pagina nella Wiki Giocatori la rivela a tutto il tavolo.",
+        'Reveal to players': 'Rivela ai giocatori',
+        'Hide from players': 'Nascondi ai giocatori',
+        'Move this page to the Players Wiki? They will be able to read it.':
+            'Spostare questa pagina nella Wiki Giocatori? Potranno leggerla.',
+        'Move this page back to the Master Wiki? Players will no longer see it.':
+            'Rispostare questa pagina nella Wiki Master? I giocatori non la vedranno più.',
+        'Delete this wiki page permanently?':
+            'Eliminare definitivamente questa pagina della wiki?',
 
         # ---- Master: confirmations ----
         'Are you sure you want to publish this handout to the players?':
@@ -168,11 +263,70 @@ CATALOG = {
         'Added': 'Aggiunti',
         'Replaced': 'Sostituiti',
         'Kept local': 'Tenuti locali',
+        'New wiki pages': 'Nuove pagine wiki',
+        'Wiki pages added': 'Pagine wiki aggiunte',
         'Keep Local': 'Tieni il locale',
         'Replace with imported': "Sostituisci con l'importato",
         'Apply import': 'Applica importazione',
         'Cancel': 'Annulla',
         'Import Complete': 'Importazione Completata',
+
+        # ---- Error Pages ----
+        'Page Not Found': 'Pagina Non Trovata',
+        'Critical Fail': 'Fallimento Critico',
+        'Natural 1 on Perception, you got lost. The room is shrouded in darkness, and the page you are looking for seems to have vanished into the Astral Plane or been devoured by a Mimic.': 
+        "1 Naturale in Percezione, ti sei perso. La stanza è avvolta dall'oscurità e la pagina che stai cercando sembra essere svanita nel Piano Astrale o divorata da un Mimic.",
+        'Flee the Dungeon (Home)': 'Fuggi dal Dungeon (Home)',
+        
+        # 400
+        'Wild Magic Surge': 'Impulso di Magia Selvaggia',
+        'You mixed up the spell components. Your request fizzled out in a shower of harmless sparks.': 
+            'Hai mescolato male le componenti dell\'incantesimo. La tua richiesta si è dissolta in una pioggia di scintille inoffensive.',
+            
+        # 401
+        'Failed Stealth Check': 'Fallimento in Furtività',
+        "'Halt! Who goes there?' The guards caught you trying to sneak in without the proper passphrase.": 
+            "'Alt! Chi va là?' Le guardie ti hanno sorpreso a intrufolarti senza la giusta parola d'ordine.",
+            
+        # 403
+        'Magic Circle': 'Cerchio Magico',
+        'A powerful barrier blocks your path. You lack the required alignment or level to enter this area.': 
+            "Una potente barriera sbarra la strada. Ti manca l'allineamento o il livello necessario per accedere a quest'area.",
+            
+        # 404
+        'Critical Fail': 'Fallimento Critico',
+        'Natural 1 on Perception, you got lost. The room is shrouded in darkness, and the page you are looking for seems to have vanished into the Astral Plane or been devoured by a Mimic.': 
+            "1 Naturale in Percezione, ti sei perso. La stanza è avvolta dall'oscurità e la pagina che stai cercando sembra essere svanita nel Piano Astrale o divorata da un Mimic.",
+            
+        # 500
+        'The Weave is Tearing': 'La Trama è Lacerata',
+        'The Dungeon Master spilled coffee on the campaign notes. The fabric of reality is temporarily unstable.': 
+            'Il Dungeon Master ha rovesciato il caffè sugli appunti della campagna. Il tessuto della realtà è temporaneamente instabile.',
+
+        # ---- App Guide ----
+        'App Guide': 'Guida all\'App',
+        'Help': 'Aiuto',
+        'Back to Dashboard': 'Torna al Pannello',
+        'For the Master': 'Per il Master',
+        'Uploading Handouts:': 'Caricare i Documenti:',
+        'Use the Dashboard to upload images or PDFs. You can assign them to folders, tag them, and write descriptions.': 
+            'Usa il Pannello per caricare immagini o PDF. Puoi assegnarli a cartelle, etichettarli e scrivere descrizioni.',
+        'Publishing vs Hidden:': 'Pubblicati vs Nascosti:',
+        'Newly uploaded handouts are hidden by default. Click the Publish button to reveal them.': 
+            'I nuovi documenti caricati sono nascosti di default. Clicca sul pulsante Pubblica per rivelarli.',
+        'The POP Feature (Broadcast):': 'La funzione POP (Trasmissione):',
+        'Click the POP button next to a handout. It will instantly pop up in full-screen on every player screen (expires in 2 minutes).': 
+            'Clicca sul pulsante POP accanto a un documento. Apparirà istantaneamente a schermo intero su tutti gli schermi dei giocatori (scade dopo 2 minuti).',
+        'For the Players': 'Per i Giocatori',
+        'The Hub:': 'L\'Area Principale:',
+        'The main page displays all the handouts the Master has revealed to you.': 
+            'La pagina principale mostra tutti i documenti che il Master ti ha rivelato.',
+        'Navigation:': 'Navigazione:',
+        'You can browse by Folder, by Session, or search by tags and keywords.': 
+            'Puoi sfogliare per Cartella, per Sessione, o cercare per etichette e parole chiave.',
+        'Real-time Reveals:': 'Rivelazioni in Tempo Reale:',
+        'Keep your tab open! If the Master triggers a POP broadcast, the handout will appear automatically.': 
+            'Tieni la scheda aperta! Se il Master avvia una trasmissione POP, il documento apparirà automaticamente.',
     },
 }
 

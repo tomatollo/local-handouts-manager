@@ -1,0 +1,68 @@
+{# Master Access: the passphrase that separates the Master from the table.
+
+   This page exists because the Master Wiki raised the stakes. While the master
+   side only held management controls, an unlocked panel was merely untidy;
+   now it holds campaign secrets, so the app needs a real gate and needs to say
+   plainly when that gate is missing. #}
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'Master Access' | t }}</title>
+    {% include '_head.html' %}
+</head>
+<body>
+    <div class="wrap">
+        <div class="hub-top">
+            <div>
+                <p class="subtitle"><a href="{{ url_for('master.dm_panel') }}">&lsaquo; {{ "Back to Master's Screen" | t }}</a></p>
+                <h1>{{ 'Master Access' | t }}</h1>
+            </div>
+            {% with active = 'security' %}{% include 'master/_menu.html' %}{% endwith %}
+        </div>
+
+        {% if not passphrase_set %}
+        <div class="panel notice notice--warn">
+            <strong>{{ 'The master side is currently unprotected.' | t }}</strong>
+            <p class="subtitle">{{ 'Until you set a passphrase, anyone on this Wi-Fi can open the Master Wiki and the dashboard.' | t }}</p>
+        </div>
+        {% endif %}
+
+        <div class="panel">
+            <h2>{% if passphrase_set %}{{ 'Change passphrase' | t }}{% else %}{{ 'Set a passphrase' | t }}{% endif %}</h2>
+            <p class="subtitle">{{ 'One passphrase for the Master. Players never need it.' | t }}</p>
+
+            <form action="{{ url_for('master.set_passphrase') }}" method="post" class="form-grid">
+                {# Only asked once one exists: there is nothing to confirm on
+                   first run, and the route enforces the same rule. #}
+                {% if passphrase_set %}
+                <div class="field field--wide">
+                    <label for="current">{{ 'Current passphrase' | t }}</label>
+                    <input type="password" id="current" name="current" required>
+                </div>
+                {% endif %}
+
+                <div class="field field--wide">
+                    <label for="passphrase">{{ 'New passphrase' | t }}</label>
+                    <input type="password" id="passphrase" name="passphrase" required>
+                </div>
+
+                <div class="field field--wide">
+                    <button type="submit" class="btn btn--block">{{ 'Save passphrase' | t }}</button>
+                </div>
+            </form>
+        </div>
+
+        {% if passphrase_set %}
+        <div class="panel">
+            <h2>{{ 'This device' | t }}</h2>
+            <p class="subtitle">{{ 'Lock master mode if you hand this device to a player.' | t }}</p>
+            <form method="post" action="{{ url_for('master.lock') }}">
+                <button type="submit" class="btn btn--ghost btn--block">{{ 'Lock master mode' | t }}</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

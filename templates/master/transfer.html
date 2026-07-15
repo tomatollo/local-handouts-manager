@@ -1,0 +1,34 @@
+{# Backup & Transfer. Was the last panel in the dashboard aside; a page now,
+   since export/import is a between-sessions chore rather than a table action. #}
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'Backup & Transfer' | t }}</title>
+    {% include '_head.html' %}
+</head>
+<body>
+    <div class="wrap">
+        <div class="hub-top">
+            <div>
+                <p class="subtitle"><a href="{{ url_for('master.dm_panel') }}">&lsaquo; {{ "Back to Master's Screen" | t }}</a></p>
+                <h1>{{ 'Backup & Transfer' | t }}</h1>
+            </div>
+            {% with active = 'transfer' %}{% include 'master/_menu.html' %}{% endwith %}
+        </div>
+
+        <div class="panel">
+            <h2>{{ 'Export everything (.zip)' | t }}</h2>
+            <p class="subtitle">{{ 'Move your whole library (handouts, images, folders) to another computer.' | t }}</p>
+            <a href="{{ url_for('master.export_library') }}" class="btn btn--block">{{ 'Export everything (.zip)' | t }}</a>
+        </div>
+
+        <div class="panel">
+            <h2>{{ 'Import Library' | t }}</h2>
+            <p class="subtitle">{{ 'Upload a .zip you exported from another computer. Nothing is changed until you review and confirm.' | t }}</p>
+            <a href="{{ url_for('master.import_library') }}" class="btn btn--ghost btn--block">{{ 'Import from a .zip…' | t }}</a>
+        </div>
+    </div>
+</body>
+</html>

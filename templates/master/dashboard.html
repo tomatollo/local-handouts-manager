@@ -41,14 +41,29 @@
             <a href="{{ url_for('master.edit_handout', handout_id=h.id) }}" class="btn btn--ghost btn--block">{{ 'Edit' | t }}</a>
             {# The handout title is appended to the translated prompt rather than
                interpolated into it, so no sentence needs a placeholder. #}
-            <form method="post" action="{{ url_for('master.toggle_visibility', handout_id=h.id) }}"
-                  {% if not h.visible %}data-confirm="{{ 'Are you sure you want to publish this handout to the players?' | t }} &mdash; {{ h.title }}"{% endif %}>
-                {% if h.visible %}
+            {% if h.visible %}
+            <form method="post" action="{{ url_for('master.toggle_visibility', handout_id=h.id) }}">
                 <button type="submit" class="btn btn--ghost btn--block">{{ 'Unpublish' | t }}</button>
-                {% else %}
-                <button type="submit" class="btn btn--block">{{ 'Publish' | t }}</button>
-                {% endif %}
             </form>
+            {# Only public handouts can be popped -- the route rejects hidden
+               ones, so offering the button there would be a dead end. #}
+            <form method="post" action="{{ url_for('master.pop_handout', handout_id=h.id) }}"
+                  data-confirm="{{ 'Pop this handout onto every player screen now?' | t }} &mdash; {{ h.title }}">
+                <button type="submit" class="btn btn--pop btn--block"
+                        title="{{ 'Pop to all players' | t }}">&#128226; {{ 'POP' | t }}</button>
+            </form>
+            {% else %}
+            <form method="post" action="{{ url_for('master.publish_handout', handout_id=h.id) }}"
+                  data-confirm="{{ 'Are you sure you want to publish this handout to the players?' | t }} &mdash; {{ h.title }}">
+                <button type="submit" class="btn btn--block">{{ 'Publish' | t }}</button>
+            </form>
+            {# Same route, plus the pop flag: publish and pop in one click. #}
+            <form method="post" action="{{ url_for('master.publish_handout', handout_id=h.id) }}"
+                  data-confirm="{{ 'Publish this handout and pop it onto every player screen now?' | t }} &mdash; {{ h.title }}">
+                <input type="hidden" name="pop" value="1">
+                <button type="submit" class="btn btn--pop btn--block">&#128226; {{ 'Publish & POP' | t }}</button>
+            </form>
+            {% endif %}
             <form method="post" action="{{ url_for('master.delete_handout', handout_id=h.id) }}"
                   data-confirm="{{ 'Delete this handout permanently? This removes the file too.' | t }} &mdash; {{ h.title }}">
                 <button type="submit" class="btn btn--danger btn--block">{{ 'Delete' | t }}</button>
@@ -81,8 +96,21 @@
                 <h1>{{ "Master's Screen" | t }} &#128065;</h1>
                 <p class="subtitle">{{ 'Forge scrolls and ancient tomes from here.' | t }}</p>
             </div>
-            {% include '_lang_switch.html' %}
+            {# The language switcher moved INTO the menu with the other
+               preferences; the header now carries one control, not two. #}
+            {% with active = 'dashboard' %}{% include 'master/_menu.html' %}{% endwith %}
         </div>
+
+        {# First run: the master side is open to the whole Wi-Fi until a
+           passphrase exists. Say so here rather than only on the settings
+           page the Master has no reason to visit yet. #}
+        {% if not passphrase_set %}
+        <div class="panel notice notice--warn">
+            <strong>{{ 'The master side is currently unprotected.' | t }}</strong>
+            <p class="subtitle">{{ 'Until you set a passphrase, anyone on this Wi-Fi can open the Master Wiki and the dashboard.' | t }}</p>
+            <a class="btn" href="{{ url_for('master.security') }}">{{ 'Set a passphrase' | t }}</a>
+        </div>
+        {% endif %}
 
         <div class="master-layout">
             {# ============ LEFT: the two lists (hidden over public) ============ #}
@@ -220,8 +248,22 @@
                             <p class="subtitle">{{ 'Shown as the last page in the Book viewer.' | t }}</p>
                         </div>
 
+                        {# Two submits, one form. The plain one keeps the old
+                           behaviour (upload hidden, publish later); the second
+                           sets `pop` so upload_handout publishes and pops in a
+                           single step. A checkbox would be quieter, but this is
+                           the one control that reveals a handout the instant it
+                           is created, so it says so on its face. #}
                         <div class="field field--wide">
                             <button type="submit" class="btn btn--block">{{ 'Forge Handout' | t }}</button>
+                        </div>
+
+                        <div class="field field--wide">
+                            <button type="submit" name="pop" value="1" class="btn btn--pop btn--block"
+                                    data-confirm="{{ 'Publish this handout and pop it onto every player screen now?' | t }}">
+                                &#128226; {{ 'Forge & POP' | t }}
+                            </button>
+                            <p class="subtitle">{{ 'Publishes immediately and shows it on every player screen.' | t }}</p>
                         </div>
                     </form>
                 </div>
@@ -255,47 +297,11 @@
                     {% endif %}
                 </div>
 
-                {# ---- Appearance: theme is global, language is this user's ---- #}
-                <div class="panel">
-                    <h2>{{ 'Appearance' | t }}</h2>
-
-                    <h3>{{ 'Theme' | t }}</h3>
-                    <p class="subtitle">{{ 'Colours and fonts for everyone — players see this too.' | t }}</p>
-                    <form action="{{ url_for('master.set_theme') }}" method="post">
-                        <div class="theme-picker">
-                            {% for th in themes %}
-                            <label class="theme-choice">
-                                <input type="radio" name="theme" value="{{ th.id }}"
-                                       {% if th.id == current_theme %}checked{% endif %}>
-                                <span class="theme-choice__body">
-                                    <span class="theme-choice__name">{{ th.name }}</span>
-                                    <span class="theme-choice__blurb">{{ th.blurb }}</span>
-                                    {# Swatches are inline styles on purpose: the colours
-                                       come from the theme table, not from the active theme. #}
-                                    <span class="theme-choice__swatches">
-                                        {% for key in ['--bg', '--bg-panel', '--accent', '--accent-2'] %}
-                                        <span class="theme-choice__swatch"
-                                              style="background: {{ theme_vars[th.id]['vars'][key] }}"></span>
-                                        {% endfor %}
-                                    </span>
-                                </span>
-                            </label>
-                            {% endfor %}
-                        </div>
-                        <button type="submit" class="btn btn--block">{{ 'Apply theme' | t }}</button>
-                    </form>
-
-                    <h3>{{ 'Interface language' | t }}</h3>
-                    <p class="subtitle">{{ 'Your own choice — it does not affect the players.' | t }}</p>
-                    {% include '_lang_switch.html' %}
-                </div>
-
-                <div class="panel">
-                    <h2>{{ 'Backup & Transfer' | t }}</h2>
-                    <p class="subtitle">{{ 'Move your whole library (handouts, images, folders) to another computer.' | t }}</p>
-                    <a href="{{ url_for('master.export_library') }}" class="btn btn--block">{{ 'Export everything (.zip)' | t }}</a>
-                    <a href="{{ url_for('master.import_library') }}" class="btn btn--ghost btn--block">{{ 'Import from a .zip…' | t }}</a>
-                </div>
+                {# Appearance (theme + language) and Backup & Transfer used to
+                   sit here. They are once-a-session-at-most controls that were
+                   pushing the upload form and folder list off-screen, so they
+                   now live behind the menu at master.appearance and
+                   master.transfer_page. #}
             </div>
         </div>
     </div>
@@ -348,6 +354,16 @@
             document.querySelectorAll('form[data-confirm]').forEach(function (form) {
                 form.addEventListener('submit', function (e) {
                     if (!window.confirm(form.dataset.confirm)) e.preventDefault();
+                });
+            });
+
+            // Same, but per-button: the upload form has two submits and only
+            // "Forge & POP" needs confirming, so the prompt cannot live on the
+            // form. Bound on click rather than submit because only the clicked
+            // button knows which action is being taken.
+            document.querySelectorAll('button[data-confirm]').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    if (!window.confirm(btn.dataset.confirm)) e.preventDefault();
                 });
             });
         })();

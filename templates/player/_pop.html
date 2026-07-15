@@ -1,0 +1,138 @@
+{# POP watcher: polls /api/pop and opens the shared lightbox when the Master
+   broadcasts a handout. Include AFTER player/_lightbox.html -- it drives that
+   lightbox through window.Lightbox and does no rendering of its own. #}
+
+{# Announces a POP that arrived while the player was reading something else.
+   aria-live so a screen reader reports it without stealing focus. #}
+<div id="pop-banner" class="pop-banner" hidden role="status" aria-live="polite">
+    <span class="pop-banner__text">{{ 'Your Master is showing you something.' | t }}</span>
+    <button type="button" class="btn pop-banner__btn" id="pop-banner-open">{{ 'Open it' | t }}</button>
+    <button type="button" class="pop-banner__close" id="pop-banner-dismiss"
+            aria-label="{{ 'Close' | t }}">&times;</button>
+</div>
+
+<script>
+    (function () {
+        if (!window.Lightbox) return;   // no lightbox on this page, nothing to drive
+
+        var POP_URL = "{{ url_for('player.pop_status') }}";
+        // 3s: a POP is a piece of table theatre, so it should land while the
+        // Master is still saying "look at this". Cheap enough on a LAN with a
+        // handful of players, since the response is a few hundred bytes.
+        var INTERVAL = 3000;
+        // Remembered per device so a reload doesn't replay the POP the player
+        // already saw and dismissed. sessionStorage (not localStorage) so a
+        // new tab for the next session starts clean.
+        var SEEN_KEY = 'pop-seen-seq';
+
+        var banner = document.getElementById('pop-banner');
+        var openBtn = document.getElementById('pop-banner-open');
+        var dismissBtn = document.getElementById('pop-banner-dismiss');
+
+        var pending = null;     // payload waiting behind the banner
+        var timer = null;
+        var bannerTimer = null; // drops the banner when the POP ages out
+
+        function seenSeq() {
+            return parseInt(sessionStorage.getItem(SEEN_KEY) || '0', 10) || 0;
+        }
+        function markSeen(seq) {
+            sessionStorage.setItem(SEEN_KEY, String(seq));
+        }
+
+        function hideBanner() {
+            banner.hidden = true;
+            pending = null;
+            if (bannerTimer !== null) { clearTimeout(bannerTimer); bannerTimer = null; }
+        }
+
+        function showPop(data, seq) {
+            // Mark before opening: if the player closes the modal instantly,
+            // the next poll must not treat this POP as unseen and reopen it.
+            markSeen(seq);
+            hideBanner();
+            window.Lightbox.openData(data);
+        }
+
+        function offerPop(data, seq, expiresIn) {
+            // The player is mid-handout. Yanking the lightbox out from under
+            // them would be worse than a moment's delay, so queue it behind a
+            // banner they can act on when ready.
+            pending = { data: data, seq: seq };
+            banner.hidden = false;
+
+            // The banner must not outlive the POP: an offer still sitting there
+            // after the TTL would open a reveal the table has moved past. Drop
+            // it exactly when the server would stop serving it, and count it as
+            // seen -- the player was told, and the moment has passed.
+            if (bannerTimer !== null) clearTimeout(bannerTimer);
+            bannerTimer = setTimeout(function () {
+                markSeen(seq);
+                hideBanner();
+            }, Math.max(0, expiresIn) * 1000);
+        }
+
+        function handle(payload) {
+            if (!payload) return;
+            // No live POP. Record the seq anyway: it may be one that expired
+            // before this device ever saw it, and re-asking about it is noise.
+            if (!payload.handout) {
+                if (payload.seq > seenSeq()) markSeen(payload.seq);
+                return;
+            }
+            if (payload.seq <= seenSeq()) return;      // already handled
+            // Server says it is live but with no life left: treat as expired
+            // rather than racing it.
+            if (!payload.expires_in || payload.expires_in <= 0) {
+                markSeen(payload.seq);
+                return;
+            }
+
+            if (window.Lightbox.isOpen()) {
+                offerPop(payload.handout, payload.seq, payload.expires_in);
+            } else {
+                showPop(payload.handout, payload.seq);
+            }
+        }
+
+        function poll() {
+            fetch(POP_URL, { headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(handle)
+                // A failed poll is normal (laptop asleep, Wi-Fi dropped, server
+                // restarting mid-session). Stay silent and try again next tick;
+                // the state is on the server, so nothing is lost by missing one.
+                .catch(function () { /* ignore */ });
+        }
+
+        openBtn.addEventListener('click', function () {
+            if (pending) showPop(pending.data, pending.seq);
+        });
+        dismissBtn.addEventListener('click', function () {
+            // Dismissing the banner still counts as handled: the player was
+            // told and said no. Re-popping is the Master's call.
+            if (pending) markSeen(pending.seq);
+            hideBanner();
+        });
+
+        function start() {
+            if (timer === null) timer = setInterval(poll, INTERVAL);
+        }
+        function stop() {
+            if (timer !== null) { clearInterval(timer); timer = null; }
+        }
+
+        // Don't poll a tab nobody is looking at; phones at the table spend most
+        // of the session with the screen off. On return, poll at once rather
+        // than waiting out an interval -- the POP may have fired while away,
+        // and it is still on the server waiting to be found.
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) { stop(); }
+            else { poll(); start(); }
+        });
+
+        // First poll on load catches a POP fired before this page existed.
+        poll();
+        start();
+    })();
+</script>

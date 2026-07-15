@@ -21,6 +21,7 @@
                     <span class="tag">{{ 'New handouts' | t }} {{ new|length }}</span>
                     <span class="tag">{{ 'Identical (skipped)' | t }} {{ identical|length }}</span>
                     <span class="tag tag--session">{{ 'Conflicts' | t }} {{ conflicts|length }}</span>
+                    <span class="tag">{{ 'New wiki pages' | t }} {{ new_wiki|length }}</span>
                 </div>
             </div>
 
@@ -69,6 +70,29 @@
                     </div>
                 </div>
                 {% endfor %}
+            </div>
+            {% endif %}
+
+            {# Wiki pages ride along with the bundle. They are listed rather
+               than merely counted, and each says which wiki it will land in:
+               importing someone else's secrets without noticing would be a
+               nasty surprise mid-campaign. Pages already present are left
+               alone, so nothing here can overwrite the Master's own notes. #}
+            {% if new_wiki %}
+            <div class="panel">
+                <h2>{{ 'New wiki pages' | t }} <span class="count-badge">{{ new_wiki|length }}</span></h2>
+                <ul class="import-list">
+                    {% for p in new_wiki %}
+                    <li>
+                        {{ p.title }}
+                        {% if p.scope == 'master' %}
+                        <span class="tag tag--session">{{ 'Master Wiki' | t }}</span>
+                        {% else %}
+                        <span class="tag tag--viewer">{{ 'Players Wiki' | t }}</span>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
             </div>
             {% endif %}
 

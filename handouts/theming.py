@@ -83,18 +83,18 @@ THEMES = {
     'out-of-the-abyss': {
         'name': 'Out of the Abyss',
         'blurb': 'Underdark: obsidian dark, drow violet, fungal neon.',
-        'fonts': ('Almendra Display', 'Cormorant Garamond'),
-        'scale': 1.6,
+        'fonts': ('Metamorphous', 'Cardo'),
+        'scale': 1.5,
         'vars': {
-            '--bg': '#0a0a0c',          # obsidian
-            '--bg-panel': '#1a1224',    # drow violet
-            '--ink': '#ded5e3',         # pale lilac
-            '--ink-dim': '#857996',
-            '--accent': '#1fb89d',      # bioluminescent cyan
-            '--accent-2': '#74c94d',    # toxic fungus green
-            '--border': '#040406',
+            '--bg': '#09080b',          
+            '--bg-panel': '#17131e',
+            '--ink': '#e6e3eb',
+            '--ink-dim': '#9890a3',
+            '--accent': '#9b6bd9',
+            '--accent-2': '#32b88b',
+            '--border': '#000000',
             '--shadow': '#000000',
-            '--good': '#2fa373',
+            '--good': '#469c76',
         },
     },
     'tomb-of-annihilation': {
@@ -180,6 +180,8 @@ _FONT_QUERY = {
     'Pirata One': 'family=Pirata+One',
     'UnifrakturMaguntia': 'family=UnifrakturMaguntia',
     'Press Start 2P': 'family=Press+Start+2P',
+    'Metamorphous': 'family=Metamorphous',
+    'Cardo': 'family=Cardo:ital,wght@0,400;0,700;1,400',
 }
 
 

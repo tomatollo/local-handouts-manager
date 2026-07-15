@@ -1,4 +1,8 @@
-"""Master-facing routes: dashboard, upload, edit, publish toggle, delete."""
+"""Master-facing routes: dashboard, upload, edit, publish toggle, delete.
+
+Every route here is behind auth.master_required. The one exception is the
+unlock pair below, which by definition must be reachable while locked.
+"""
 
 import os
 import uuid
@@ -6,6 +10,7 @@ import uuid
 from flask import (Blueprint, render_template, request, redirect,
                    url_for, abort, Response)
 
+from . import auth
 from . import storage
 from . import organize
 from . import transfer
@@ -21,7 +26,77 @@ IMPORT_TMP_DIR = os.path.join(storage.BASE_DIR, 'data', 'import_tmp')
 MASTER_MODES = ('recent', 'folder', 'tag', 'session')
 
 
+# --------------------------------------------------------------------------
+# Unlocking. These two are deliberately NOT guarded: the unlock page is how a
+# locked Master gets in, and locking is safe to call in any state.
+# --------------------------------------------------------------------------
+
+@bp.route('/unlock', methods=['GET', 'POST'])
+def unlock():
+    """Ask for the master passphrase and unlock this browser's session.
+
+    `next` is carried through the form so the Master returns to whatever they
+    were aiming at. It is validated as a relative path before use: an
+    attacker-supplied absolute URL here would turn the login into an open
+    redirect.
+    """
+    db = storage.load_db()
+    target = request.values.get('next', '')
+    # Only same-site, root-relative paths. '//host' is protocol-relative and
+    # would leave the site, so it is rejected along with anything absolute.
+    if not target.startswith('/') or target.startswith('//'):
+        target = url_for('master.dm_panel')
+
+    if request.method == 'GET':
+        return render_template('master/unlock.html',
+                               configured=auth.is_configured(db),
+                               next=target)
+
+    if auth.check_passphrase(db, request.form.get('passphrase')):
+        auth.unlock()
+        return redirect(target)
+
+    return render_template('master/unlock.html',
+                           configured=auth.is_configured(db),
+                           next=target,
+                           error=True), 403
+
+
+@bp.route('/lock', methods=['POST'])
+def lock():
+    """Drop master rights (e.g. before handing the laptop round the table)."""
+    auth.lock()
+    return redirect(url_for('player.home'))
+
+
+@bp.route('/settings/passphrase', methods=['POST'])
+@auth.master_required
+def set_passphrase():
+    """Set or change the master passphrase.
+
+    Changing it requires knowing the current one; setting it for the first
+    time does not, since there is nothing to know yet and the first-run state
+    is already open by design (see auth.is_master).
+    """
+    db = storage.load_db()
+    if auth.is_configured(db):
+        if not auth.check_passphrase(db, request.form.get('current')):
+            abort(403, 'The current passphrase is wrong.')
+
+    if not auth.set_passphrase(db, request.form.get('passphrase')):
+        abort(400, 'A passphrase is required.')
+    storage.save_db(db)
+    # The session that just set the passphrase is, definitionally, the Master.
+    auth.unlock()
+    return redirect(url_for('master.dm_panel'))
+
+
+# --------------------------------------------------------------------------
+# Dashboard + library management. All guarded.
+# --------------------------------------------------------------------------
+
 @bp.route('/dm-panel')
+@auth.master_required
 def dm_panel():
     db = storage.load_db()
     folders = storage.all_folders(db)
@@ -47,12 +122,13 @@ def dm_panel():
                            folders=folders,
                            view_types=storage.VIEW_TYPES,
                            default_view_type=storage.DEFAULT_VIEW_TYPE,
-                           themes=theming.theme_list(),
-                           theme_vars=theming.THEMES,
-                           current_theme=storage.get_theme(db))
+                           # The theme picker moved to master.appearance, so
+                           # the dashboard no longer needs the theme table.
+                           passphrase_set=auth.is_configured(db))
 
 
 @bp.route('/upload', methods=['POST'])
+@auth.master_required
 def upload_handout():
     title = request.form.get('title', '').strip()
     if not title:
@@ -105,12 +181,18 @@ def upload_handout():
     # Only keep folder ids that actually exist (guards against stale form data).
     folder_ids = storage.valid_folder_ids(
         db, request.form.getlist('folders'))
+
+    # "Forge & POP" both publishes and pops in one click. Uploads are hidden by
+    # default, so this is the one place where a new handout can arrive already
+    # visible -- and it only does so on an explicit, separately-labelled button.
+    pop_now = bool(request.form.get('pop'))
+
     db['handouts'].append({
         'id': handout_id,
         'title': title,
         'description': request.form.get('description', '').strip(),
         'files': stored_files,
-        'visible': False,
+        'visible': pop_now,
         'category': request.form.get('category', '').strip(),
         'tags': storage.parse_tags(request.form.get('tags')),
         'folders': folder_ids,
@@ -123,11 +205,16 @@ def upload_handout():
         'found_date': request.form.get('found_date', '').strip(),
         'created_at': storage.now_iso(),
     })
+
+    if pop_now:
+        storage.set_pop(db, handout_id)
+
     storage.save_db(db)
     return redirect(url_for('master.dm_panel'))
 
 
 @bp.route('/edit/<handout_id>', methods=['GET', 'POST'])
+@auth.master_required
 def edit_handout(handout_id):
     db = storage.load_db()
     handout = storage.find(db, handout_id)
@@ -233,17 +320,79 @@ def edit_handout(handout_id):
 
 
 @bp.route('/toggle/<handout_id>', methods=['POST'])
+@auth.master_required
 def toggle_visibility(handout_id):
     db = storage.load_db()
     handout = storage.find(db, handout_id)
     if handout is None:
         abort(404, 'Handout not found.')
     handout['visible'] = not handout.get('visible', False)
+
+    # Unpublishing the handout that is currently popped must also retire the
+    # POP. The player endpoint re-checks `visible` and would refuse to serve
+    # it anyway, but leaving a pointer to a hidden handout lying around in the
+    # DB invites the next reader of this code to trust it.
+    if not handout['visible'] and \
+            storage.pop_state(db).get('handout_id') == handout_id:
+        storage.clear_pop(db)
+
+    storage.save_db(db)
+    return redirect(url_for('master.dm_panel'))
+
+
+@bp.route('/pop/<handout_id>', methods=['POST'])
+@auth.master_required
+def pop_handout(handout_id):
+    """Force an already-public handout onto every player's screen.
+
+    Publishing and popping are kept as separate routes even though the
+    dashboard can fire both at once (see `publish` below): popping is not a
+    property of publishing, it is a thing the Master does repeatedly to a
+    handout that is already public -- when the party finally reaches the room
+    the map belongs to, and again ten minutes later when nobody looked.
+
+    A hidden handout cannot be popped. Popping is a reveal, and revealing via
+    a route whose name says 'pop' would be a surprising way to publish.
+    """
+    db = storage.load_db()
+    handout = storage.find(db, handout_id)
+    if handout is None:
+        abort(404, 'Handout not found.')
+    if not handout.get('visible'):
+        abort(400, 'Publish this handout before popping it to the players.')
+
+    storage.set_pop(db, handout_id)
+    storage.save_db(db)
+    return redirect(url_for('master.dm_panel'))
+
+
+@bp.route('/publish/<handout_id>', methods=['POST'])
+@auth.master_required
+def publish_handout(handout_id):
+    """Publish a hidden handout, optionally popping it in the same click.
+
+    Distinct from `toggle_visibility`, which flips whichever way the handout
+    is currently facing. This one only ever publishes, because "publish and
+    pop" must not silently mean "unpublish and pop" if the Master double-
+    clicks or the page was stale.
+    """
+    db = storage.load_db()
+    handout = storage.find(db, handout_id)
+    if handout is None:
+        abort(404, 'Handout not found.')
+
+    handout['visible'] = True
+    # The POP is recorded only after `visible` is set, so the state the player
+    # endpoint reads is never "popped but still hidden".
+    if request.form.get('pop'):
+        storage.set_pop(db, handout_id)
+
     storage.save_db(db)
     return redirect(url_for('master.dm_panel'))
 
 
 @bp.route('/delete/<handout_id>', methods=['POST'])
+@auth.master_required
 def delete_handout(handout_id):
     db = storage.load_db()
     handout = storage.find(db, handout_id)
@@ -253,6 +402,11 @@ def delete_handout(handout_id):
     if handout.get('back_cover'):
         storage.remove_files([handout['back_cover']])
     db['handouts'].remove(handout)
+
+    # Never leave the POP pointing at a handout that no longer exists.
+    if storage.pop_state(db).get('handout_id') == handout_id:
+        storage.clear_pop(db)
+
     storage.save_db(db)
     return redirect(url_for('master.dm_panel'))
 
@@ -263,6 +417,7 @@ def delete_handout(handout_id):
 # --------------------------------------------------------------------------
 
 @bp.route('/folders/create', methods=['POST'])
+@auth.master_required
 def create_folder():
     db = storage.load_db()
     storage.create_folder(db, request.form.get('name', ''))
@@ -271,6 +426,7 @@ def create_folder():
 
 
 @bp.route('/folders/rename/<folder_id>', methods=['POST'])
+@auth.master_required
 def rename_folder(folder_id):
     db = storage.load_db()
     storage.rename_folder(db, folder_id, request.form.get('name', ''))
@@ -279,6 +435,7 @@ def rename_folder(folder_id):
 
 
 @bp.route('/folders/delete/<folder_id>', methods=['POST'])
+@auth.master_required
 def delete_folder(folder_id):
     db = storage.load_db()
     storage.delete_folder(db, folder_id)
@@ -287,16 +444,56 @@ def delete_folder(folder_id):
 
 
 # --------------------------------------------------------------------------
+# Settings pages. These used to be panels crowding the dashboard; each is now
+# its own page reached from the menu, so the dashboard can be just the lists
+# and the upload form.
+# --------------------------------------------------------------------------
+
+@bp.route('/dm-panel/appearance')
+@auth.master_required
+def appearance():
+    """Theme + interface language, moved off the dashboard."""
+    db = storage.load_db()
+    return render_template('master/appearance.html',
+                           themes=theming.theme_list(),
+                           theme_vars=theming.THEMES,
+                           current_theme=storage.get_theme(db))
+
+
+@bp.route('/dm-panel/transfer')
+@auth.master_required
+def transfer_page():
+    """Export / import entry point, moved off the dashboard.
+
+    Named `transfer_page` rather than `transfer` so it cannot shadow the
+    `transfer` module imported at the top of this file.
+    """
+    return render_template('master/transfer.html')
+
+
+@bp.route('/dm-panel/security')
+@auth.master_required
+def security():
+    """Where the Master sets or changes the passphrase."""
+    db = storage.load_db()
+    return render_template('master/security.html',
+                           passphrase_set=auth.is_configured(db))
+
+
+# --------------------------------------------------------------------------
 # Appearance. The theme is table-wide (players see it too), so it lives in
 # the DB rather than in a cookie like the per-user language.
 # --------------------------------------------------------------------------
 
 @bp.route('/settings/theme', methods=['POST'])
+@auth.master_required
 def set_theme():
     db = storage.load_db()
     storage.set_theme(db, request.form.get('theme'))
     storage.save_db(db)
-    return redirect(url_for('master.dm_panel'))
+    # Back to the appearance page, which is where the form now lives, so the
+    # Master can see the new theme applied without navigating.
+    return redirect(url_for('master.appearance'))
 
 
 # --------------------------------------------------------------------------
@@ -306,6 +503,7 @@ def set_theme():
 # --------------------------------------------------------------------------
 
 @bp.route('/export')
+@auth.master_required
 def export_library():
     data = transfer.export_bytes()
     return Response(
@@ -316,6 +514,7 @@ def export_library():
 
 
 @bp.route('/import', methods=['GET', 'POST'])
+@auth.master_required
 def import_library():
     if request.method == 'GET':
         return render_template('master/import.html')
@@ -340,10 +539,12 @@ def import_library():
                            token=token,
                            new=report['new'],
                            identical=report['identical'],
-                           conflicts=report['conflicts'])
+                           conflicts=report['conflicts'],
+                           new_wiki=report['new_wiki'])
 
 
 @bp.route('/import/apply', methods=['POST'])
+@auth.master_required
 def import_apply():
     token = request.form.get('token', '')
     # Guard the token so it can only name a file inside the staging dir.

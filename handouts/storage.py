@@ -25,6 +25,19 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf'}
 VIEW_TYPES = ('carousel', 'book')
 DEFAULT_VIEW_TYPE = 'carousel'
 
+# Key under `settings` holding the current POP broadcast (see pop_state).
+POP_KEY = 'pop'
+
+# How long a POP stays live, in seconds.
+#
+# A POP is a moment at the table ("look at this, now"), not a piece of state.
+# Without an expiry the stored pointer stays true forever, so every player who
+# joined, reloaded or woke their phone hours later got the modal again -- the
+# handout is still popped, as far as the DB is concerned. Two minutes is long
+# enough to cover a latecomer or a phone that was asleep during the reveal, and
+# short enough that the POP is over before the scene is.
+POP_TTL_SECONDS = 120
+
 
 def clean_view_type(raw):
     """Return a valid view_type, falling back to the default for junk input.
@@ -71,9 +84,22 @@ def _normalize(data):
     data.setdefault('folders', [])
 
     # DB-level: table-wide settings. Only the theme is global; language is a
-    # per-user cookie and deliberately never stored here.
+    # per-user cookie and deliberately never stored here. The settings dict
+    # also holds the master passphrase hash + session secret (see auth.py),
+    # which are left untouched here: they are opaque to display code.
     settings = data.setdefault('settings', {})
     settings['theme'] = theming.clean_theme(settings.get('theme'))
+
+    # DB-level: the current POP broadcast. `seq` is a monotonic counter that
+    # only ever grows; clients compare it against the last one they showed to
+    # tell a fresh POP from one they have already handled. Persisting it (as
+    # opposed to keeping it in memory) means a player who loads the hub late,
+    # or whose phone was asleep, still receives the POP the Master fired, and
+    # that a server restart does not replay an old one.
+    pop = settings.setdefault(POP_KEY, {})
+    pop.setdefault('seq', 0)
+    pop.setdefault('handout_id', None)
+    pop.setdefault('at', None)
 
     for h in data.get('handouts', []):
         # Legacy single-file -> files: [...]
@@ -136,6 +162,106 @@ def set_theme(db, raw):
     """Set the table-wide theme. Unknown ids collapse to the default."""
     db.setdefault('settings', {})['theme'] = theming.clean_theme(raw)
     return db['settings']['theme']
+
+
+# --------------------------------------------------------------------------
+# POP broadcasts (global, master-controlled)
+#
+# A POP is "the Master wants this handout on every screen, now". It is stored
+# rather than pushed: there is no socket to push down, and storing it makes the
+# feature independent of who happened to be connected at the moment it fired.
+#
+# Only the newest POP is kept. The Master popping a second handout supersedes
+# the first -- there is no queue, because a queue would mean players silently
+# working through a backlog of dramatic reveals in the wrong order.
+# --------------------------------------------------------------------------
+
+def pop_state(db):
+    """The current POP as {seq, handout_id, at}. Never None (see _normalize)."""
+    return db.get('settings', {}).get(POP_KEY, {
+        'seq': 0, 'handout_id': None, 'at': None})
+
+
+def pop_age_seconds(pop, now=None):
+    """Seconds since `pop` was fired, or None if that can't be determined.
+
+    Returns None -- not 0 -- when `at` is missing or unparseable, so callers
+    must decide explicitly what an unknown age means rather than inheriting a
+    "fresh" answer by accident (see pop_is_live, which treats it as expired).
+
+    `now` is injectable so the TTL can be tested without sleeping.
+    """
+    at = (pop or {}).get('at')
+    if not at:
+        return None
+    try:
+        fired = datetime.fromisoformat(at)
+    except (TypeError, ValueError):
+        # A hand-edited or truncated timestamp. Unknown age, not zero.
+        return None
+    # Records written before the TTL existed may be naive; assume UTC, which is
+    # what now_iso() has always produced.
+    if fired.tzinfo is None:
+        fired = fired.replace(tzinfo=timezone.utc)
+    now = now or datetime.now(timezone.utc)
+    return (now - fired).total_seconds()
+
+
+def pop_is_live(pop, now=None):
+    """True if `pop` still points at something and hasn't aged out.
+
+    Fails closed on every uncertainty: no handout, no timestamp, an unreadable
+    timestamp, or a clock that has jumped backwards all count as "not live".
+    The cost of a false negative is a POP the Master re-fires; the cost of a
+    false positive is a stale modal ambushing a player mid-session, which is
+    the bug this exists to kill.
+    """
+    pop = pop or {}
+    if not pop.get('handout_id'):
+        return False
+    age = pop_age_seconds(pop, now)
+    if age is None:
+        return False
+    # A negative age means the POP is stamped in the future -- a clock change,
+    # or a DB copied from another machine. Don't trust it.
+    if age < 0:
+        return False
+    return age < POP_TTL_SECONDS
+
+
+def set_pop(db, handout_id):
+    """Record a POP for `handout_id` and return the new state.
+
+    Bumping `seq` is what actually notifies players: they poll for it and act
+    on any value above the last one they showed. The counter is bumped even
+    when the same handout is popped twice in a row, so a Master re-popping to
+    catch a distracted table still reaches screens that already dismissed it.
+    """
+    settings = db.setdefault('settings', {})
+    current = settings.setdefault(POP_KEY, {'seq': 0})
+    settings[POP_KEY] = {
+        'seq': current.get('seq', 0) + 1,
+        'handout_id': handout_id,
+        'at': now_iso(),
+    }
+    return settings[POP_KEY]
+
+
+def clear_pop(db):
+    """Retire the current POP without rewinding `seq`.
+
+    Called when the popped handout is deleted or unpublished. `seq` keeps
+    climbing so clients that already showed this POP never see it again, while
+    clients still polling simply find nothing to open.
+    """
+    settings = db.setdefault('settings', {})
+    current = settings.setdefault(POP_KEY, {'seq': 0})
+    settings[POP_KEY] = {
+        'seq': current.get('seq', 0) + 1,
+        'handout_id': None,
+        'at': None,
+    }
+    return settings[POP_KEY]
 
 
 def all_categories(db):

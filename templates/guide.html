@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'App Guide' | t }}</title>
+    {% include '_head.html' %}
+</head>
+<body>
+    <div class="wrap" style="max-width: 800px; margin: 0 auto; padding: 2rem;">
+        <div class="hub-top">
+            <div>
+                <h1>📖 {{ 'App Guide' | t }}</h1>
+            </div>
+            {# Pulsante dinamico: riporta il Master alla dashboard, i giocatori all'hub #}
+            {% if is_master %}
+            <a href="{{ url_for('player.home') }}" class="btn">{{ "Back to the Player Hub" | t }}</a>
+            {% else %}
+            <a href="{{ url_for('master.dm_panel') }}" class="btn">{{ 'Back to Dashboard' | t }}</a>
+            {% endif %}
+        </div>
+
+        <div class="panel" style="margin-top: 2rem;">
+            <h2>{{ 'For the Players' | t }} 🎲</h2>
+            <ul style="line-height: 1.6; padding-left: 1.5rem;">
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'The Hub:' | t }}</strong> {{ 'The main page displays all the handouts the Master has revealed to you.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Navigation:' | t }}</strong> {{ 'You can browse by Folder, by Session, or search by tags and keywords.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Real-time Reveals:' | t }}</strong> {{ 'Keep your tab open! If the Master triggers a POP broadcast, the handout will appear automatically.' | t }}</li>
+            </ul>
+        </div>
+
+        
+        <div class="panel" style="margin-top: 2rem;">
+            <h2>{{ 'For the Master' | t }} 🐉</h2>
+            <ul style="line-height: 1.6; padding-left: 1.5rem;">
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Uploading Handouts:' | t }}</strong> {{ 'Use the Dashboard to upload images or PDFs. You can assign them to folders, tag them, and write descriptions.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Publishing vs Hidden:' | t }}</strong> {{ 'Newly uploaded handouts are hidden by default. Click the Publish button to reveal them.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'The POP Feature (Broadcast):' | t }}</strong> {{ 'Click the POP button next to a handout. It will instantly pop up in full-screen on every player screen (expires in 2 minutes).' | t }}</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

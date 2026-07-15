@@ -1,0 +1,42 @@
+{# The gate. Reached whenever a locked session asks for a master route; `next`
+   carries where they were headed so unlocking lands them there rather than
+   dumping them on the dashboard.
+
+   No menu include here: the menu is for the master side, and by definition
+   whoever is looking at this page has not proven they belong to it. #}
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'Master Access' | t }}</title>
+    {% include '_head.html' %}
+</head>
+<body>
+    <div class="wrap wrap--narrow">
+        <h1>{{ "Master's Screen" | t }} &#128274;</h1>
+        <p class="subtitle">{{ 'This area is for the Game Master.' | t }}</p>
+
+        {% if error %}
+        <div class="panel notice notice--error">
+            <strong>{{ 'That passphrase is not right.' | t }}</strong>
+        </div>
+        {% endif %}
+
+        <div class="panel">
+            <form method="post" action="{{ url_for('master.unlock') }}">
+                <input type="hidden" name="next" value="{{ next }}">
+                <label for="passphrase">{{ 'Passphrase' | t }}</label>
+                {# autofocus: this page has exactly one thing to do. #}
+                <input type="password" id="passphrase" name="passphrase" required autofocus>
+                <p class="subtitle"></p>
+                <button type="submit" class="btn btn--block">{{ 'Unlock' | t }}</button>
+            </form>
+        </div>
+
+        <p class="subtitle">
+            <a href="{{ url_for('player.home') }}">&lsaquo; {{ 'Back to the Player Hub' | t }}</a>
+        </p>
+    </div>
+</body>
+</html>

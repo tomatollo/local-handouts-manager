@@ -22,6 +22,26 @@ MANIFEST_NAME = 'database.json'
 # Folder inside the bundle that holds the graphics.
 BUNDLE_UPLOADS = 'uploads/'
 
+# Settings that must never leave this machine. A bundle is carried on a USB
+# stick or emailed, so it is treated as public: the passphrase hash would be
+# offered up for offline cracking, and the session signing key is worse still
+# -- anyone holding it can forge an `is_master` cookie without ever knowing the
+# passphrase. The theme is genuinely portable and stays.
+PRIVATE_SETTINGS = ('master_passphrase_hash', 'secret_key')
+
+
+def _public_db(db):
+    """A copy of the DB safe to write into an export bundle.
+
+    Only `settings` is filtered; handouts, folders and wiki pages travel whole.
+    The copy is shallow apart from `settings`, which is the only thing rebuilt,
+    so nothing here mutates the caller's DB.
+    """
+    out = dict(db)
+    out['settings'] = {k: v for k, v in db.get('settings', {}).items()
+                       if k not in PRIVATE_SETTINGS}
+    return out
+
 
 def _handout_filenames(h):
     """Every stored filename a handout references (pages + back cover).
@@ -45,14 +65,15 @@ def _handout_filenames(h):
 def export_bytes():
     """Build the export .zip in memory and return its raw bytes.
 
-    Includes the normalized database and every upload it references. Files that
-    are referenced but missing on disk are simply skipped (best-effort).
+    Includes the normalized database (minus this machine's credentials, see
+    PRIVATE_SETTINGS) and every upload it references. Files that are referenced
+    but missing on disk are simply skipped (best-effort).
     """
     db = storage.load_db()
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
         zf.writestr(MANIFEST_NAME,
-                    json.dumps(db, indent=2, ensure_ascii=False))
+                    json.dumps(_public_db(db), indent=2, ensure_ascii=False))
         seen = set()
         for h in db['handouts']:
             for name in _handout_filenames(h):
@@ -116,6 +137,7 @@ def analyze(zip_bytes):
         'identical': [id, ...],                 # same id, same content (skip)
         'conflicts': [{'id', 'local', 'incoming'}, ...],  # same id, differ
         'incoming_folders': [...],              # folders from the bundle
+        'new_wiki':  [incoming wiki page, ...], # wiki pages not present locally
       }
     Nothing is written; this only inspects.
     """
@@ -133,11 +155,20 @@ def analyze(zip_bytes):
         else:
             conflicts.append({'id': h['id'], 'local': cur, 'incoming': h})
 
+    # Wiki pages are reported but not conflict-resolved: they are small, plain
+    # text and cheap to re-edit, so the flow stays simple -- brand-new pages
+    # are added and anything already present is left alone. The Master keeps
+    # their own version rather than being asked page by page.
+    local_wiki_ids = {p['id'] for p in local.get('wiki', [])}
+    new_wiki = [p for p in incoming.get('wiki', [])
+                if p['id'] not in local_wiki_ids]
+
     return {
         'new': new,
         'identical': identical,
         'conflicts': conflicts,
         'incoming_folders': incoming.get('folders', []),
+        'new_wiki': new_wiki,
     }
 
 
@@ -166,6 +197,10 @@ def apply_import(zip_bytes, resolutions):
       files extracted). 'local' (or missing/unknown): left untouched.
     - Folders: any incoming folder whose id is not present locally is added,
       so folder memberships carried on imported handouts still resolve.
+    - Wiki: incoming pages whose id is not present locally are added, scope
+      and all. Existing ids are left alone (see analyze).
+    - Settings are NOT merged: the theme is a local choice, and the bundle
+      deliberately carries no credentials (see PRIVATE_SETTINGS).
     Returns a summary dict of counts.
     """
     incoming, zf = _read_bundle(zip_bytes)
@@ -206,5 +241,16 @@ def apply_import(zip_bytes, resolutions):
             else:
                 kept += 1
 
+    # Wiki pages: add the ones we don't have. Their scope rides along with the
+    # record, so a master page stays a master page across the transfer.
+    local_wiki_ids = {p['id'] for p in db.get('wiki', [])}
+    wiki_added = 0
+    for p in incoming.get('wiki', []):
+        if p['id'] not in local_wiki_ids:
+            db.setdefault('wiki', []).append(p)
+            local_wiki_ids.add(p['id'])
+            wiki_added += 1
+
     storage.save_db(db)
-    return {'added': added, 'replaced': replaced, 'kept_local': kept}
+    return {'added': added, 'replaced': replaced, 'kept_local': kept,
+            'wiki_added': wiki_added}

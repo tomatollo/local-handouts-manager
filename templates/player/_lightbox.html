@@ -1,6 +1,9 @@
 {# Shared player lightbox: opened by any .handout-card. The card carries
    data-view (carousel|book) and optionally data-back (back-cover file).
-   Requires vendor/page-flip.browser.js to be loaded before this include. #}
+   Requires vendor/page-flip.browser.js to be loaded before this include.
+
+   Also exposes window.Lightbox.openData(payload) so the POP watcher can open
+   a handout that has no card on this page (see player/_pop.html). #}
 <div id="lightbox" class="lightbox" hidden aria-hidden="true">
     <div class="lightbox__backdrop" data-close></div>
     <div class="lightbox__dialog" role="dialog" aria-modal="true">
@@ -55,6 +58,10 @@
         var view = 'carousel';
         var index = 0;        // carousel file index
         var pageFlip = null;  // StPageFlip instance (book mode)
+        // Set per-open by the POP watcher so it can drop its banner when the
+        // player dismisses the modal, however they dismissed it (button,
+        // backdrop and Escape all funnel through close()).
+        var onClose = null;
 
         function makeImage(f) {
             var img = document.createElement('img');
@@ -194,23 +201,25 @@
         }
 
         // ---- open / close ----
-        function open(card) {
-            try { files = JSON.parse(card.getAttribute('data-files')); }
-            catch (e) { files = []; }
-            if (!files.length) return;
-            try {
-                var b = card.getAttribute('data-back');
-                back = b ? JSON.parse(b) : null;
-            } catch (e) { back = null; }
 
-            view = card.getAttribute('data-view') || 'carousel';
+        // The single rendering path. Takes a plain object rather than a DOM
+        // node so that a POP -- which arrives as JSON from /api/pop and may
+        // reference a handout with no card on this page -- opens through
+        // exactly the same code as a click, including book mode, PDFs and
+        // back covers. `open(card)` below just adapts a card into this shape.
+        function openData(data) {
+            files = (data && data.files) || [];
+            if (!files.length) return false;
+            back = (data && data.back_cover) || null;
+
+            view = (data && data.view_type) || 'carousel';
             index = 0;
             dialog.setAttribute('data-view', view);
 
-            titleEl.textContent = card.getAttribute('data-title') || '';
-            var desc = card.getAttribute('data-desc') || '';
-            var loc = card.getAttribute('data-location') || '';
-            var date = card.getAttribute('data-date') || '';
+            titleEl.textContent = (data && data.title) || '';
+            var desc = (data && data.description) || '';
+            var loc = (data && data.found_location) || '';
+            var date = (data && data.found_date) || '';
             var parts = [];
             if (loc) parts.push(T.foundAt + ' ' + loc);
             if (date) parts.push(date);
@@ -223,13 +232,33 @@
             box.hidden = false;
             box.setAttribute('aria-hidden', 'false');
             document.body.style.overflow = 'hidden';
+            return true;
         }
+
+        function open(card) {
+            var data = {};
+            try { data.files = JSON.parse(card.getAttribute('data-files')); }
+            catch (e) { data.files = []; }
+            try {
+                var b = card.getAttribute('data-back');
+                data.back_cover = b ? JSON.parse(b) : null;
+            } catch (e) { data.back_cover = null; }
+
+            data.view_type = card.getAttribute('data-view') || 'carousel';
+            data.title = card.getAttribute('data-title') || '';
+            data.description = card.getAttribute('data-desc') || '';
+            data.found_location = card.getAttribute('data-location') || '';
+            data.found_date = card.getAttribute('data-date') || '';
+            openData(data);
+        }
+
         function close() {
             destroyBook();
             box.hidden = true;
             box.setAttribute('aria-hidden', 'true');
             media.innerHTML = '';
             document.body.style.overflow = '';
+            if (onClose) { var cb = onClose; onClose = null; cb(); }
         }
 
         infoBtn.addEventListener('click', function () {
@@ -268,5 +297,19 @@
             if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1);
             startX = null;
         });
+
+        // Public surface, kept minimal on purpose: the POP watcher needs to
+        // open a handout it received as JSON and to know when it was closed.
+        // Everything else stays private to this closure.
+        window.Lightbox = {
+            // openData(payload, onCloseCallback) -> true if it opened.
+            openData: function (data, cb) {
+                var opened = openData(data);
+                onClose = opened ? (cb || null) : null;
+                return opened;
+            },
+            close: close,
+            isOpen: function () { return !box.hidden; }
+        };
     })();
 </script>

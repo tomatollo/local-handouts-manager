@@ -1379,3 +1379,257 @@ a.tag { text-decoration: none; }
 }
 
 .theme-choice__swatch { width: 14px; height: 14px; }
+
+/* =====================================================================
+   MASTER MENU (hamburger) + SETTINGS PAGES
+   The dashboard had accreted a theme picker, an export panel and a
+   language switcher on top of its two lists and its upload form. Those
+   moved behind this menu, which reuses the player drawer's .drawer /
+   .drawer__panel rules wholesale -- only the trigger button is new.
+   ===================================================================== */
+
+/* Sits in .hub-top next to the title, exactly like the player's Browse
+   button, so both sides of the app open their drawer from the same spot. */
+.menu-btn { flex: 0 0 auto; }
+
+/* The narrow single-column pages (unlock) don't want the full 1100px. */
+.wrap--narrow { max-width: 520px; }
+
+/* ---- Notices (first-run warning, wrong passphrase) ---------------- */
+/* A panel that needs to be read before the page under it. Colour carries
+   the meaning, so the border does the talking rather than a big icon. */
+.notice { border-color: var(--accent); }
+.notice strong {
+  font-family: var(--font-display);
+  font-size: calc(0.6rem * var(--display-scale));
+  color: var(--accent);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.notice .subtitle { margin: 8px 0 12px; }
+.notice--warn { border-color: var(--accent); }
+.notice--error { border-color: var(--accent-2); }
+.notice--error strong { color: var(--accent-2); }
+
+/* Password fields aren't in the base input selector list, which predates
+   them; without this they'd render as unstyled native boxes. */
+input[type="password"],
+input[type="search"],
+input[type="number"],
+textarea {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 16px;              /* keeps iOS from zooming on focus */
+  color: var(--ink);
+  background: var(--bg);
+  border: var(--px) solid var(--border);
+  box-shadow: inset var(--px) var(--px) 0 0 rgba(0,0,0,0.4);
+  min-height: var(--tap);
+  padding: 10px;
+}
+input[type="password"]:focus,
+input[type="search"]:focus,
+input[type="number"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* The wiki body editor: long-form, so it gets room and a body face. */
+textarea {
+  resize: vertical;
+  line-height: 1.6;
+  min-height: 220px;
+}
+
+/* =====================================================================
+   WIKI
+   Text-first, unlike the handout hub: no thumbnails, so the cards are
+   sized by their words. Mobile-first single column, splitting into a
+   flowing grid once there's room.
+   ===================================================================== */
+
+.wiki-search {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  margin: 12px 0;
+}
+.wiki-search input { margin: 0; flex: 1 1 auto; min-width: 0; }
+.wiki-search .btn { flex: 0 0 auto; }
+
+.wiki-group { margin-bottom: 20px; }
+
+.wiki-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+@media (min-width: 768px) {
+  .wiki-list { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+}
+
+.wiki-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  min-width: 0;
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--bg-panel);
+  border: var(--px) solid var(--border);
+  box-shadow: var(--px) var(--px) 0 0 var(--shadow);
+}
+@media (hover: hover) {
+  .wiki-card:hover { border-color: var(--accent); }
+}
+.wiki-card__title {
+  font-family: var(--font-display);
+  font-size: calc(0.6rem * var(--display-scale));
+  line-height: 1.5;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.wiki-card__summary {
+  color: var(--ink-dim);
+  font-style: italic;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+/* The page body. Plain text from a textarea, so newlines are the only
+   formatting there is -- pre-wrap is what makes them survive. */
+.wiki-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin-top: 12px;
+  line-height: 1.7;
+}
+
+/* A master-scope page, flagged so it can't be mistaken for a player one
+   while screen-sharing. Ember red rather than gold: this is a warning. */
+.wiki-scope-flag {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: calc(0.5rem * var(--display-scale));
+  color: var(--ink);
+  background: var(--accent-2);
+  border: 2px solid var(--border);
+  padding: 6px 10px;
+  margin: 0 0 12px;
+}
+
+.wiki-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: stretch;
+}
+.wiki-actions .btn { flex: 0 0 auto; }
+
+/* The two big choices on the wiki hub. */
+.wiki-pick {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 768px) {
+  .wiki-pick { grid-template-columns: 1fr 1fr; }
+}
+.wiki-pick__card {
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+  margin: 0;
+}
+@media (hover: hover) {
+  .wiki-pick__card:hover { border-color: var(--accent); }
+}
+.wiki-pick__card h2 { margin-top: 0; }
+
+/* =====================================================================
+   POP HANDOUT
+   The Master forcing a handout onto every player screen. Two surfaces:
+   the POP buttons on the master dashboard, and the banner players get
+   when a POP lands while they are already reading something.
+   ===================================================================== */
+
+/* Ember red, like .btn--danger, because a POP is irreversible in the way
+   that matters at a table: once the players have seen it, they have seen
+   it. The megaphone glyph carries the meaning where the button shrinks to
+   ~0.5rem in the dashboard's card view and the label stops being legible. */
+.btn--pop {
+  background: var(--accent-2);
+  color: var(--ink);
+}
+@media (hover: hover) {
+  .btn--pop:hover { background: #d76a41; }
+}
+
+/* ---- Player: "a POP arrived" banner ----------------------------- */
+/* Only shown when the lightbox is already open, so it must clear the
+   lightbox's z-index (1000) rather than sit under the backdrop. */
+.pop-banner {
+  position: fixed;
+  z-index: 1100;
+  left: 12px;
+  right: 12px;
+  /* Bottom on phones: within thumb reach, and clear of the lightbox's
+     close button in the opposite corner. */
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-panel);
+  border: var(--px) solid var(--accent-2);
+  box-shadow: var(--px) var(--px) 0 0 var(--shadow);
+}
+.pop-banner[hidden] { display: none; }
+
+.pop-banner__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: calc(0.55rem * var(--display-scale));
+  line-height: 1.5;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.pop-banner__btn {
+  flex: 0 0 auto;
+  font-size: calc(0.55rem * var(--display-scale));
+  min-height: auto;
+  padding: 8px 10px;
+}
+
+.pop-banner__close {
+  flex: 0 0 auto;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  line-height: 1;
+  color: var(--ink);
+  background: transparent;
+  border: 2px solid var(--border);
+  min-width: var(--tap);
+  min-height: var(--tap);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (hover: hover) {
+  .pop-banner__close:hover { border-color: var(--accent-2); }
+}
+
+/* Laptops/tablets: the banner becomes a toast in the corner rather than a
+   full-width bar, which would look like a cookie notice on a wide screen. */
+@media (min-width: 768px) {
+  .pop-banner {
+    left: auto;
+    right: 16px;
+    bottom: 16px;
+    max-width: 420px;
+  }
+}

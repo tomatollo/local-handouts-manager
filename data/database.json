@@ -342,7 +342,7 @@
           "thumb": null
         }
       ],
-      "visible": true,
+      "visible": false,
       "category": "Libro",
       "tags": [
         "virfang"
@@ -1329,6 +1329,34 @@
       "found_location": "Porto Nyanzaru",
       "found_date": "7 giorno di Solealto 1493 DR",
       "created_at": "2026-07-14T19:34:30.763637+00:00"
+    },
+    {
+      "id": "5139116571c8407ba67ddc4bbf85a98d",
+      "title": "Tarocco del Matto",
+      "description": "Un Tarocco Magico, \"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\" .",
+      "files": [
+        {
+          "filename": "5139116571c8407ba67ddc4bbf85a98d_0.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        }
+      ],
+      "visible": false,
+      "category": "Item",
+      "tags": [
+        "tarocchi"
+      ],
+      "folders": [
+        "fb0f11ed86534aca9e85ddd229d197e5"
+      ],
+      "view_type": "carousel",
+      "back_cover": null,
+      "session_number": null,
+      "session_title": "",
+      "found_location": "",
+      "found_date": "",
+      "created_at": "2026-07-15T15:50:52.607385+00:00"
     }
   ],
   "folders": [
@@ -1350,6 +1378,14 @@
     }
   ],
   "settings": {
-    "theme": "out-of-the-abyss"
-  }
+    "theme": "tomb-of-annihilation",
+    "secret_key": "676e1289b202983a3c4d344b37984a3f6ff9f20db5c05ce4524dc6cacf58c509",
+    "pop": {
+      "seq": 2,
+      "handout_id": "0914c3e313244e98b25315d0a4ddddd1",
+      "at": "2026-07-15T12:01:51.588668+00:00"
+    },
+    "master_passphrase_hash": "scrypt:32768:8:1$4rIrihyxfZfFIh7V$c7900e81b5542078483b4b3bbcf969cdbea458840c9f51d8d4a581fca3b7b386a9de170df4b2ce490b51d68d4b893f64753a20319f31ab14da7f86a939c2cc65"
+  },
+  "wiki": []
 }

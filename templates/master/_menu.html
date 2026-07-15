@@ -1,0 +1,107 @@
+{# Master navigation drawer.
+
+   The dashboard had grown to hold everything at once: the two lists, the
+   upload form, folder management, the theme picker and the export/import
+   panel, all competing for the same screen. This menu is where the things the
+   Master touches once a session (or once a campaign) now live, leaving the
+   panel itself for the actions used constantly: search, publish, edit.
+
+   It reuses the player hub's .drawer / .drawer__panel machinery rather than
+   inventing a second slide-in: same CSS, same open/close behaviour, same
+   Escape handling, so both sides of the app feel identical.
+
+   The links here all point at routes wrapped in auth.master_required, which is
+   what actually keeps players out; the menu itself is only ever rendered on
+   master pages. See handouts/auth.py.
+
+   Include with the current page marked, e.g.:
+     {% with active = 'dashboard' %}{% include 'master/_menu.html' %}{% endwith %}
+#}
+
+<button type="button" class="btn menu-btn" id="menu-btn"
+        aria-controls="master-menu" aria-expanded="false">
+    &#9776; {{ 'Menu' | t }}
+</button>
+
+<div id="master-menu" class="drawer" hidden aria-hidden="true">
+    <div class="drawer__backdrop" data-menu-close></div>
+    <div class="drawer__panel" role="dialog" aria-modal="true"
+         aria-label="{{ "Master's menu" | t }}">
+        <div class="drawer__head">
+            <h2>{{ 'Menu' | t }}</h2>
+            <button type="button" class="lightbox__close" data-menu-close
+                    aria-label="{{ 'Close' | t }}">&times;</button>
+        </div>
+
+        <div class="drawer__section">
+            <h3>{{ 'Handouts' | t }}</h3>
+            <a class="drawer__link {% if active is defined and active == 'dashboard' %}drawer__link--active{% endif %}"
+               href="{{ url_for('master.dm_panel') }}">{{ "Master's Screen" | t }}</a>
+            <a class="drawer__link" href="{{ url_for('player.home') }}">{{ 'Player Hub' | t }}</a>
+        </div>
+
+        {# ---- App Guide (Help) ---- #}
+        <div class="drawer__section">
+            <h3>{{ 'Help' | t }}</h3>
+            <a class="drawer__link" href="{{ url_for('app_guide') }}">📖 {{ 'App Guide' | t }}</a>
+        </div>
+
+        {# ---- Moved off the dashboard: appearance + transfer + security ---- #}
+        <div class="drawer__section">
+            <h3>{{ 'Settings' | t }}</h3>
+            <a class="drawer__link {% if active is defined and active == 'appearance' %}drawer__link--active{% endif %}"
+               href="{{ url_for('master.appearance') }}">{{ 'Appearance' | t }}</a>
+            <a class="drawer__link {% if active is defined and active == 'transfer' %}drawer__link--active{% endif %}"
+               href="{{ url_for('master.transfer_page') }}">{{ 'Backup & Transfer' | t }}</a>
+            <a class="drawer__link {% if active is defined and active == 'security' %}drawer__link--active{% endif %}"
+               href="{{ url_for('master.security') }}">{{ 'Master Access' | t }}</a>
+        </div>
+
+        <div class="drawer__section">
+            <h3>{{ 'Interface language' | t }}</h3>
+            {% include '_lang_switch.html' %}
+        </div>
+
+        {# Locking is a state change, so it is a POST, not a link. Pointless
+           before a passphrase exists: there would be nothing to unlock with. #}
+        {% if not first_run %}
+        <div class="drawer__section">
+            <form method="post" action="{{ url_for('master.lock') }}">
+                <button type="submit" class="btn btn--ghost btn--block">{{ 'Lock master mode' | t }}</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Same open/close contract as the player's browse drawer. Kept inline and
+    // self-contained so the menu can be dropped into any master page with a
+    // single include and no extra wiring.
+    (function () {
+        var menu = document.getElementById('master-menu');
+        var btn = document.getElementById('menu-btn');
+        if (!menu || !btn) return;
+
+        function open() {
+            menu.hidden = false;
+            menu.setAttribute('aria-hidden', 'false');
+            btn.setAttribute('aria-expanded', 'true');
+            document.body.style.overflow = 'hidden';
+        }
+        function close() {
+            menu.hidden = true;
+            menu.setAttribute('aria-hidden', 'true');
+            btn.setAttribute('aria-expanded', 'false');
+            document.body.style.overflow = '';
+        }
+
+        btn.addEventListener('click', open);
+        menu.querySelectorAll('[data-menu-close]').forEach(function (el) {
+            el.addEventListener('click', close);
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && !menu.hidden) close();
+        });
+    })();
+</script>
