@@ -566,6 +566,29 @@ def map_discard():
     storage.save_db(db)
     return jsonify(state)
 
+
+@bp.route('/master/api/map/focus', methods=['POST'])
+@auth.master_required
+def map_focus():
+    """Broadcast the Master's current camera to every player screen.
+
+    The Master frames a spot on their own map (a centre point + a zoom level)
+    and fires this; players poll the shared state, see focus.seq change, and
+    animate their view to match. Deliberately NOT staged: a focus is a live
+    "everyone look here" directive, like a POP, not a draft edit that waits for
+    a confirm.
+
+    Body is JSON: {x, y, scale} where x/y are the focus point as percent of the
+    image and scale is the zoom. storage.set_map_focus clamps and bumps the seq;
+    a malformed body falls back to sane centre/zoom rather than raising.
+    """
+    db = storage.load_db()
+    payload = request.get_json(silent=True) or {}
+    focus = storage.set_map_focus(
+        db, payload.get('x'), payload.get('y'), payload.get('scale'))
+    storage.save_db(db)
+    return jsonify(focus)
+
 # --------------------------------------------------------------------------
 # Settings pages. These used to be panels crowding the dashboard; each is now
 # its own page reached from the menu, so the dashboard can be just the lists

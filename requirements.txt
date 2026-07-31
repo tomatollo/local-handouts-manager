@@ -7,3 +7,4 @@ Jinja2==3.1.6
 MarkupSafe==3.0.3
 Werkzeug==3.1.8
 PyMuPDF==1.28.0
+Pillow==11.0.0

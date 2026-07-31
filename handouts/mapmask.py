@@ -1,0 +1,226 @@
+"""Server-side fog-of-war compositing: the anti-spoiler core.
+
+The players' map must never contain a pixel the Master has not revealed. The
+old approach shipped the whole background image and hid the rest with an opaque
+overlay in the browser -- but the full image was still sent, so a player could
+read it straight off the network tab or the direct static URL.
+
+This module fixes that at the source. Given the CONFIRMED map state, it renders
+a single RGBA PNG the size of the map in which only the revealed hexes carry
+pixels; everything else is fully transparent. That composite is the only map
+imagery the player endpoint ever serves, so un-revealed terrain is not merely
+hidden client-side -- it never leaves the server.
+
+Areas OUTSIDE the hex grid's bounding rectangle (the image border the grid
+never reaches) are always shown: they are map margin, not hidden content, and
+fogging them just looked like a bug. Only the interior of the grid rectangle is
+governed hex-by-hex.
+
+Geometry here MUST match the flat-top layout drawn in the templates' buildGrid()
+(templates/master/map.html and templates/player/map.html): same hex_size,
+offset_x/offset_y as percent of the image, same odd-column vertical shift.
+If those change, change both.
+
+Rendering uses Pillow (hexagon alpha masks via ImageDraw.polygon) plus PyMuPDF
+(fitz) only to load the source PNG's pixels without a second image backend.
+Results are cached on disk and keyed by the map image name + confirm_seq, so a
+poll storm doesn't re-composite a thousand hexes every three seconds; a fresh
+confirm bumps confirm_seq and the next request rebuilds.
+"""
+
+import math
+import os
+
+import fitz  # PyMuPDF: only to read the source PNG into a buffer.
+from PIL import Image, ImageDraw
+
+from . import storage
+
+# Where composites are cached. Kept out of static/maps so the raw backgrounds
+# there are never mistaken for something safe to serve.
+CACHE_DIR = os.path.join(storage.BASE_DIR, 'data', 'map_cache')
+
+
+def _hex_geometry(state, W, H):
+    """Return (r, colStep, rowStep, startX, startY) in pixels for this map.
+
+    Mirrors buildGrid() exactly. r is the flat-top circumradius (half the
+    corner-to-corner width); columns interlock by 1.5*r horizontally and each
+    odd column is pushed down half a row.
+    """
+    hex_size = state.get('hex_size', 5.0)
+    off_x = state.get('offset_x', 0.0)
+    off_y = state.get('offset_y', 0.0)
+    r = (hex_size / 100.0 * W) / 2.0
+    col_step = r * 1.5
+    row_step = math.sqrt(3) * r
+    start_x = off_x / 100.0 * W
+    start_y = off_y / 100.0 * H
+    return r, col_step, row_step, start_x, start_y
+
+
+def _hex_center(col, row, r, col_step, row_step, start_x, start_y):
+    cx = start_x + col * col_step
+    cy = start_y + row * row_step + (row_step / 2.0 if col % 2 else 0.0)
+    return cx, cy
+
+
+def _hex_polygon(cx, cy, r):
+    """The six flat-top corners, matching the SVG polygon in buildGrid().
+
+    buildGrid starts at angle 0 (a point on the +x axis) and steps 60 degrees,
+    which yields a flat top/bottom because two of the six vertices sit level
+    with the centre on the far left and right. We reproduce those exact points
+    so the mask lines up pixel-for-pixel with what the Master calibrated.
+    """
+    pts = []
+    for i in range(6):
+        ang = math.radians(60 * i)
+        pts.append((cx + r * math.cos(ang), cy + r * math.sin(ang)))
+    return pts
+
+
+def _parse_hex_id(hex_id):
+    """'hex-<col>-<row>' -> (col, row) ints, or None if malformed.
+
+    Defensive: the revealed list is validated on write, but a hand-edited DB
+    could still carry junk, and one bad id must not abort the whole composite.
+    """
+    parts = hex_id.split('-')
+    if len(parts) != 3 or parts[0] != 'hex':
+        return None
+    try:
+        return int(parts[1]), int(parts[2])
+    except ValueError:
+        return None
+
+
+def _cache_path(map_image, confirm_seq):
+    """Disk path for the composite of this image at this confirm generation."""
+    safe = os.path.basename(map_image)  # never let a path escape the cache dir
+    return os.path.join(CACHE_DIR, f'{safe}.{confirm_seq}.png')
+
+
+def _prune_old(map_image, keep_path):
+    """Remove stale composites for this map image (older confirm_seq values).
+
+    Each confirm makes a new file; without this the cache would grow one PNG
+    per reveal forever. We only ever need the newest, so drop the rest.
+    """
+    safe = os.path.basename(map_image)
+    prefix = safe + '.'
+    try:
+        for name in os.listdir(CACHE_DIR):
+            if name.startswith(prefix) and name.endswith('.png'):
+                full = os.path.join(CACHE_DIR, name)
+                if full != keep_path:
+                    try:
+                        os.remove(full)
+                    except OSError:
+                        pass
+    except OSError:
+        pass
+
+
+def _load_source_rgb(map_image):
+    """Load static/maps/<map_image> into a Pillow RGB image via fitz.
+
+    fitz reads the PNG and hands us raw samples; we wrap them in a PIL image so
+    the hexagon masking below can use ImageDraw. Returns None if the file is
+    missing or unreadable, so callers can fall back to an empty composite.
+    """
+    src = os.path.join(storage.MAP_DIR, os.path.basename(map_image))
+    if not os.path.exists(src):
+        return None
+    try:
+        pix = fitz.Pixmap(src)
+        # Normalise to 3-channel RGB (drop any alpha/CMYK oddities).
+        if pix.n not in (3, 4) or pix.colorspace is None:
+            pix = fitz.Pixmap(fitz.csRGB, pix)
+        mode = 'RGBA' if pix.alpha else 'RGB'
+        img = Image.frombytes(mode, (pix.width, pix.height), pix.samples)
+        return img.convert('RGB')
+    except Exception:
+        return None
+
+
+def build_composite(db, force=False):
+    """Render (or fetch cached) the revealed-only RGBA composite.
+
+    Returns the cache file path, or None if there is no map image to composite.
+    The composite is the size of the source map; revealed hexes carry the map's
+    real pixels, and every other pixel is transparent. Cached by map image name
+    + confirm_seq; pass force=True to rebuild regardless (e.g. after changing
+    geometry without a confirm, during calibration previews -- not used by the
+    player path, which always reads confirmed state).
+    """
+    state = storage.get_map_state(db)
+    map_image = state.get('map_image')
+    if not map_image:
+        return None
+
+    confirm_seq = state.get('confirm_seq', 0)
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    out_path = _cache_path(map_image, confirm_seq)
+
+    if os.path.exists(out_path) and not force:
+        return out_path
+
+    source = _load_source_rgb(map_image)
+    if source is None:
+        return None
+    W, H = source.size
+
+    # Transparent canvas the size of the map. We paste the source through a
+    # per-hex mask so only revealed terrain ends up opaque.
+    composite = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+
+    # One shared mask image we redraw per hex would be slower to allocate each
+    # time; instead we accumulate all revealed hexes into a single mask, then
+    # paste once. The mask is 'L' (8-bit alpha): 255 where revealed.
+    mask = Image.new('L', (W, H), 0)
+    mdraw = ImageDraw.Draw(mask)
+
+    r, col_step, row_step, start_x, start_y = _hex_geometry(state, W, H)
+
+    revealed = state.get('revealed_hexes', [])
+    cols = state.get('grid_cols', 20)
+    rows = state.get('grid_rows', 15)
+
+    # Inverse mask approach. Instead of "reveal the revealed hexes and a border
+    # rectangle" -- which left the last row/column of revealed hexes meeting a
+    # straight rectangle edge and reading as sheared half-hexes -- we do the
+    # opposite: start with the WHOLE image revealed, then paint back to
+    # transparent ONLY the hexes that are not revealed. The result:
+    #   - every un-revealed hex is hidden as an exact hexagon (no straight cut);
+    #   - revealed hexes are whole (nothing is ever subtracted from them);
+    #   - map margin outside the grid stays visible (it was never hidden);
+    #   - the boundary between hidden and shown is always a hex edge, so there
+    #     is no rectangular frame and no half-hex artefact anywhere.
+    # Security: only the interiors of un-revealed hexes are removed. The thin
+    # seams between adjacent hidden hexes stay visible, but those seam pixels
+    # are shared hex borders, not the secret interior of any single hex, so this
+    # does not expose an un-revealed location.
+    mdraw.rectangle([0, 0, W, H], fill=255)
+
+    revealed_set = set(revealed)
+    if cols > 0 and rows > 0:
+        for col in range(cols):
+            for row in range(rows):
+                if f'hex-{col}-{row}' in revealed_set:
+                    continue  # revealed: leave it shown
+                cx, cy = _hex_center(col, row, r, col_step, row_step,
+                                     start_x, start_y)
+                poly = _hex_polygon(cx, cy, r)
+                mdraw.polygon(poly, fill=0)  # hide this hex exactly
+
+    # Paste the map's pixels wherever the mask says "revealed".
+    composite.paste(source, (0, 0), mask)
+
+    # Write atomically-ish: temp then replace, so a concurrent reader never
+    # sees a half-written PNG.
+    tmp = out_path + '.tmp'
+    composite.save(tmp, 'PNG', optimize=True)
+    os.replace(tmp, out_path)
+    _prune_old(map_image, out_path)
+    return out_path

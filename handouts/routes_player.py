@@ -1,10 +1,14 @@
 """Player-facing routes: the public hub of revealed handouts."""
 
-from flask import Blueprint, render_template, request, redirect, url_for, jsonify
+import os
+
+from flask import (Blueprint, render_template, request, redirect, url_for,
+                   jsonify, send_file, abort, Response)
 
 from . import storage
 from . import organize
 from . import pdfs
+from . import mapmask
 
 bp = Blueprint('player', __name__)
 
@@ -153,6 +157,47 @@ def map_state():
     """
     db = storage.load_db()
     return jsonify(storage.get_map_state(db))
+
+
+@bp.route('/api/map/reveal.png')
+def map_reveal():
+    """The revealed-only map composite: the anti-spoiler payload.
+
+    This is the ONLY map imagery a player ever receives. mapmask composites a
+    PNG the size of the map in which only CONFIRMED-revealed hexes carry the
+    real pixels and everything else is transparent, so un-revealed terrain is
+    never sent -- not hidden client-side, simply absent from the bytes. The raw
+    background in static/maps is never linked from the player page.
+
+    Served with a confirm_seq-based ETag and no-cache-revalidate so a browser
+    reuses the composite between polls but always re-fetches after the Master
+    reveals more (which bumps confirm_seq). A map with no image, or one whose
+    file is missing, yields 404 -- the template then shows its fog placeholder.
+    """
+    db = storage.load_db()
+    state = storage.get_map_state(db)
+    if not state.get('map_image'):
+        abort(404)
+
+    # ETag ties the cached image to the reveal generation. If the client's
+    # If-None-Match already matches, skip the (potentially large) transfer.
+    etag = f'reveal-{state.get("confirm_seq", 0)}'
+    if request.headers.get('If-None-Match') == etag:
+        resp = Response(status=304)
+        resp.headers['ETag'] = etag
+        resp.headers['Cache-Control'] = 'no-cache'
+        return resp
+
+    path = mapmask.build_composite(db)
+    if not path or not os.path.exists(path):
+        abort(404)
+
+    resp = send_file(path, mimetype='image/png', conditional=False)
+    resp.headers['ETag'] = etag
+    # no-cache (not no-store): the browser may keep it, but must revalidate,
+    # so a new reveal is picked up immediately via the ETag check above.
+    resp.headers['Cache-Control'] = 'no-cache'
+    return resp
 
 
 @bp.route('/folder/<folder_id>')

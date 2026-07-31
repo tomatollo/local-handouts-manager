@@ -83,35 +83,147 @@
             z-index: 5; pointer-events: none;
         }
 
+        /* ===== Two-column layout: map on the left, control panel right ==== */
+        .map-layout { display: flex; gap: 16px; align-items: flex-start; }
+        .map-main { flex: 1 1 auto; min-width: 0; }
+        .map-side {
+            flex: 0 0 320px; max-height: 82vh; overflow-y: auto;
+            display: flex; flex-direction: column; gap: 14px;
+            padding: 14px; background: rgba(0,0,0,0.22);
+            border: 2px solid var(--border);
+            box-shadow: var(--px) var(--px) 0 0 var(--shadow);
+        }
+        @media (max-width: 900px) {
+            .map-layout { flex-direction: column; }
+            .map-side { flex-basis: auto; width: 100%; max-height: none; }
+        }
+        /* A titled group of related controls in the side panel. */
+        .side-group { display: flex; flex-direction: column; gap: 8px; }
+        .side-group > h3 {
+            font-family: var(--font-display); font-size: 0.62rem;
+            letter-spacing: 0.04em; text-transform: uppercase;
+            color: var(--ink-dim); margin: 0; padding-bottom: 4px;
+            border-bottom: 1px solid var(--border);
+        }
+        .side-group + .side-group { margin-top: 2px; }
+        /* Buttons stack full-width in the panel so they're easy to hit. */
+        .side-group .btn { width: 100%; text-align: center; }
+        .btn-row { display: flex; gap: 8px; }
+        .btn-row .btn { flex: 1; }
+
         .map-toolbar, .map-controls {
             display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
             margin-bottom: 12px;
         }
         .map-controls {
-            gap: 16px; align-items: flex-end; padding: 12px;
-            background: rgba(0,0,0,0.2); border: 2px solid var(--border);
+            gap: 12px; align-items: flex-end; padding: 0;
+            background: none; border: none;
         }
-        .map-controls label {
+        .map-controls label,
+        .side-group label {
             display: block; font-family: var(--font-display);
             font-size: 0.55rem; color: var(--ink-dim); margin-bottom: 4px;
         }
         .map-controls input[type="number"] { width: 84px; }
         .map-field { display: flex; flex-direction: column; }
         /* slider + number pair */
-        .calib { display: flex; flex-direction: column; gap: 4px; min-width: 190px; }
+        .calib { display: flex; flex-direction: column; gap: 4px; }
         .calib-row { display: flex; align-items: center; gap: 8px; }
-        .calib-row input[type="range"] { flex: 1; }
-        .calib-row input[type="number"] { width: 78px; }
+        .calib-row input[type="range"] { flex: 1; min-width: 0; }
+        .calib-row input[type="number"] { width: 68px; }
         .map-hint { color: var(--ink-dim); font-style: italic; margin: 0 0 12px; }
-        .map-status { color: var(--ink-dim); font-size: 0.85rem; margin-left: auto; }
+        .map-hint--small { font-size: 0.78rem; margin: 0; }
+        .map-status {
+            color: var(--ink-dim); font-size: 0.82rem; min-height: 1.1em;
+            font-style: italic;
+        }
         .mode-toggle.is-hiding { background: var(--accent-2); color: var(--ink); }
+
+        /* Sync status: a clear banner at the top of the panel + the two
+           staging actions right beneath it, so "is my draft live?" and "send
+           it / throw it away" live together instead of lost in a button row. */
+        .sync-box {
+            display: flex; flex-direction: column; gap: 8px;
+            padding: 10px; border: 2px solid var(--border);
+            background: rgba(0,0,0,0.25);
+        }
         .pending-badge {
-            font-family: var(--font-display); font-size: 0.55rem;
-            padding: 4px 8px; border: 2px solid var(--border);
+            font-family: var(--font-display); font-size: 0.6rem;
+            text-align: center; padding: 6px 8px; border: 2px solid var(--border);
             background: var(--accent); color: var(--border);
         }
-        .pending-badge.is-clean { background: var(--good); }
+        .pending-badge.is-clean { background: var(--good); color: var(--ink); }
         .btn--confirm { background: var(--good); color: var(--ink); }
+        .btn--focus { background: var(--accent-2); color: var(--ink); }
+
+        /* --- Points of interest (POI) ---------------------------------- */
+        .btn--poi.is-active { background: var(--accent); color: var(--border); }
+        .poi-layer { position: absolute; inset: 0; z-index: 8; pointer-events: none; }
+        .poi {
+            position: absolute; transform: translate(-50%, -100%) scale(var(--poi-scale, 1));
+            transform-origin: bottom center;
+            pointer-events: all; cursor: grab; z-index: 8;
+            display: flex; flex-direction: column; align-items: center;
+            gap: 2px; user-select: none;
+        }
+        .poi:active { cursor: grabbing; }
+        .poi__pin {
+            width: 14px; height: 14px; border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            background: var(--accent); border: 2px solid var(--border);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.6);
+        }
+        .poi__pin--glyph {
+            width: auto; height: auto; min-width: 18px;
+            border-radius: 3px; transform: none;
+            background: var(--border); border: 2px solid var(--accent);
+            color: var(--accent); font-size: 0.9rem; line-height: 1;
+            padding: 1px 4px; display: flex; align-items: center; justify-content: center;
+        }
+        .poi__label {
+            font-family: var(--font-display); font-size: 0.6rem;
+            line-height: 1; white-space: nowrap;
+            padding: 2px 6px; background: var(--border); color: var(--paper, #f4ecd8);
+            border: 1px solid var(--accent); border-radius: 3px;
+            max-width: 160px; overflow: hidden; text-overflow: ellipsis;
+        }
+        .poi--conditional .poi__label { opacity: 0.6; border-style: dashed; }
+        .map-viewport.is-placing { cursor: crosshair; }
+        .map-viewport.is-placing .map-stage { cursor: crosshair; }
+
+        /* POI management list in the side panel. Each POI is an expandable
+           card: label + quick actions on top, detail controls (icon, colour,
+           scale, visibility) below. */
+        .poi-list { list-style: none; margin: 0; padding: 0;
+            display: flex; flex-direction: column; gap: 8px; }
+        .poi-card {
+            border: 1px solid var(--border); background: rgba(0,0,0,0.18);
+            padding: 8px; display: flex; flex-direction: column; gap: 8px;
+        }
+        .poi-card__head { display: flex; align-items: center; gap: 6px; }
+        .poi-card__head input[type="text"] { flex: 1; min-width: 0; }
+        .poi-card__swatch {
+            width: 22px; height: 22px; flex: 0 0 22px; border: 2px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; line-height: 1;
+        }
+        .poi-card__grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+        }
+        .poi-card__grid label { margin-bottom: 2px; }
+        .poi-card__grid input[type="text"],
+        .poi-card__grid input[type="color"] { width: 100%; }
+        .poi-card__scale { display: flex; align-items: center; gap: 6px; }
+        .poi-card__scale input[type="range"] { flex: 1; min-width: 0; }
+        .poi-card__scaleval { font-size: 0.72rem; color: var(--ink-dim); width: 34px; text-align: right; }
+        .poi-card__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .poi-card__vis { display: flex; align-items: center; gap: 4px;
+            font-size: 0.72rem; color: var(--ink-dim); }
+        .poi-empty { color: var(--ink-dim); font-style: italic; margin: 0; font-size: 0.8rem; }
+        /* Marker scale row */
+        .marker-scale { display: flex; align-items: center; gap: 8px; }
+        .marker-scale input[type="range"] { flex: 1; min-width: 0; }
+        .marker-scale .poi-card__scaleval { width: 34px; }
     </style>
 </head>
 <body>
@@ -125,86 +237,133 @@
         </div>
 
         <div class="panel">
-            {# ---- Map image upload / clear ---- #}
-            <form class="map-controls" method="post"
-                  action="{{ url_for('master.map_upload') }}" enctype="multipart/form-data">
-                <div class="map-field">
-                    <label for="map_image_file">{{ 'Map image' | t }}</label>
-                    <input type="file" id="map_image_file" name="map_image"
-                           accept="image/png,image/jpeg,image/gif,image/webp">
-                </div>
-                <button type="submit" class="btn">{{ 'Upload map' | t }}</button>
-                {% if map_state.map_image %}
-                <button type="submit" class="btn btn--ghost" name="clear" value="1"
-                        onclick="return confirm('{{ 'Remove the current map image?' | t }}')">
-                    {{ 'Remove map' | t }}
-                </button>
-                {% endif %}
-            </form>
-
-            {# ---- Grid size + fog colour ---- #}
-            <div class="map-controls">
-                <div class="map-field">
-                    <label for="grid_cols">{{ 'Columns' | t }}</label>
-                    <input type="number" id="grid_cols" min="1" max="400" value="{{ map_state.pending.grid_cols }}">
-                </div>
-                <div class="map-field">
-                    <label for="grid_rows">{{ 'Rows' | t }}</label>
-                    <input type="number" id="grid_rows" min="1" max="400" value="{{ map_state.pending.grid_rows }}">
-                </div>
-                <div class="map-field">
-                    <label for="fog_color">{{ 'Fog colour' | t }}</label>
-                    <input type="color" id="fog_color" value="{{ map_state.pending.fog_color }}">
-                </div>
-            </div>
-
-            {# ---- Calibration: slider + number for each ---- #}
-            <div class="map-controls">
-                <div class="calib">
-                    <label for="offset_x_num">{{ 'Offset X (%)' | t }}</label>
-                    <div class="calib-row">
-                        <input type="range" id="offset_x_range" min="-50" max="150" step="0.1" value="{{ map_state.pending.offset_x }}">
-                        <input type="number" id="offset_x_num" min="-50" max="150" step="0.1" value="{{ map_state.pending.offset_x }}">
+            <div class="map-layout">
+                {# ================= LEFT: the map + view controls ============= #}
+                <div class="map-main">
+                    <div class="map-toolbar">
+                        <button type="button" class="btn btn--ghost" id="map-zoom-in" aria-label="{{ 'Zoom in' | t }}">＋</button>
+                        <button type="button" class="btn btn--ghost" id="map-zoom-out" aria-label="{{ 'Zoom out' | t }}">－</button>
+                        <button type="button" class="btn btn--ghost" id="map-reset">{{ 'Reset view' | t }}</button>
+                        <button type="button" class="btn mode-toggle" id="hide-mode">{{ 'Reveal mode' | t }}</button>
+                        <button type="button" class="btn btn--focus" id="focus-btn" title="{{ 'Send your current view to the players' | t }}">🎯 {{ 'Focus players here' | t }}</button>
+                        <span class="map-status" id="map-status" aria-live="polite"></span>
                     </div>
-                </div>
-                <div class="calib">
-                    <label for="offset_y_num">{{ 'Offset Y (%)' | t }}</label>
-                    <div class="calib-row">
-                        <input type="range" id="offset_y_range" min="-50" max="150" step="0.1" value="{{ map_state.pending.offset_y }}">
-                        <input type="number" id="offset_y_num" min="-50" max="150" step="0.1" value="{{ map_state.pending.offset_y }}">
-                    </div>
-                </div>
-                <div class="calib">
-                    <label for="hex_size_num">{{ 'Hex size (% width)' | t }}</label>
-                    <div class="calib-row">
-                        <input type="range" id="hex_size_range" min="0.5" max="30" step="0.05" value="{{ map_state.pending.hex_size }}">
-                        <input type="number" id="hex_size_num" min="0.5" max="100" step="0.05" value="{{ map_state.pending.hex_size }}">
-                    </div>
-                </div>
-            </div>
 
-            {# ---- Live tools + confirm ---- #}
-            <div class="map-toolbar">
-                <button type="button" class="btn btn--ghost" id="map-zoom-in" aria-label="{{ 'Zoom in' | t }}">＋</button>
-                <button type="button" class="btn btn--ghost" id="map-zoom-out" aria-label="{{ 'Zoom out' | t }}">－</button>
-                <button type="button" class="btn btn--ghost" id="map-reset">{{ 'Reset view' | t }}</button>
-                <button type="button" class="btn mode-toggle" id="hide-mode">{{ 'Reveal mode' | t }}</button>
-                <button type="button" class="btn" id="marker-toggle">{{ 'Show marker' | t }}</button>
-                <span class="pending-badge is-clean" id="pending-badge">{{ 'In sync' | t }}</span>
-                <button type="button" class="btn btn--confirm" id="confirm-btn">✓ {{ 'Reveal to players' | t }}</button>
-                <button type="button" class="btn btn--ghost" id="discard-btn">✗ {{ 'Discard' | t }}</button>
-                <span class="map-status" id="map-status" aria-live="polite"></span>
-            </div>
-            <p class="map-hint">{{ 'Click hexes and move the marker freely — nothing reaches players until you press Reveal. Use the sliders to line the grid up with the printed hexes.' | t }}</p>
-
-            <div class="map-viewport" id="map-viewport">
-                <div class="map-stage" id="map-stage">
-                    <img id="map-image"
-                         src="{% if map_state.pending.map_image %}{{ url_for('static', filename='maps/' ~ map_state.pending.map_image) }}{% else %}https://placehold.co/1600x1200/2a2320/e8a83a/png?text=Upload+a+map{% endif %}"
-                         alt="{{ 'Campaign map' | t }}" draggable="false">
-                    <div class="marker-ghost" id="marker-ghost" hidden></div>
-                    <div class="marker" id="marker" hidden></div>
+                    <div class="map-viewport" id="map-viewport">
+                        <div class="map-stage" id="map-stage">
+                            <img id="map-image"
+                                 src="{% if map_state.pending.map_image %}{{ url_for('static', filename='maps/' ~ map_state.pending.map_image) }}{% else %}https://placehold.co/1600x1200/2a2320/e8a83a/png?text=Upload+a+map{% endif %}"
+                                 alt="{{ 'Campaign map' | t }}" draggable="false">
+                            <div class="marker-ghost" id="marker-ghost" hidden></div>
+                            <div class="marker" id="marker" hidden></div>
+                            <div class="poi-layer" id="poi-layer"></div>
+                        </div>
+                    </div>
+                    <p class="map-hint">{{ 'Click hexes to reveal or re-hide them; drag the marker freely. Nothing reaches players until you press Reveal to players.' | t }}</p>
                 </div>
+
+                {# ================= RIGHT: everything the Master controls ===== #}
+                <aside class="map-side">
+
+                    {# ---- Sync status + the two staging actions, up top ---- #}
+                    <div class="side-group">
+                        <div class="sync-box">
+                            <span class="pending-badge is-clean" id="pending-badge">{{ 'In sync' | t }}</span>
+                            <button type="button" class="btn btn--confirm" id="confirm-btn">✓ {{ 'Reveal to players' | t }}</button>
+                            <button type="button" class="btn btn--ghost" id="discard-btn">✗ {{ 'Discard draft' | t }}</button>
+                        </div>
+                    </div>
+
+                    {# ---- Party marker ---- #}
+                    <div class="side-group">
+                        <h3>{{ 'Party marker' | t }}</h3>
+                        <button type="button" class="btn" id="marker-toggle">{{ 'Show marker' | t }}</button>
+                        <div>
+                            <label for="marker_scale_range">{{ 'Marker size' | t }}</label>
+                            <div class="marker-scale">
+                                <input type="range" id="marker_scale_range" min="0.3" max="4" step="0.05" value="{{ map_state.pending.marker_scale }}">
+                                <span class="poi-card__scaleval" id="marker_scale_val">1.0×</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ---- Points of interest ---- #}
+                    <div class="side-group">
+                        <h3>{{ 'Points of interest' | t }}</h3>
+                        <button type="button" class="btn btn--poi" id="poi-mode">📍 {{ 'Add point of interest' | t }}</button>
+                        <p class="map-hint map-hint--small">{{ 'Click the map to drop a pin, then set its name, icon, colour and size below. Drag a pin to move it. All staged until you Reveal.' | t }}</p>
+                        <ul class="poi-list" id="poi-list"></ul>
+                        <p class="poi-empty" id="poi-empty">{{ 'No points of interest yet.' | t }}</p>
+                    </div>
+
+                    {# ---- Map image ---- #}
+                    <div class="side-group">
+                        <h3>{{ 'Map image' | t }}</h3>
+                        <form class="map-controls" method="post"
+                              action="{{ url_for('master.map_upload') }}" enctype="multipart/form-data">
+                            <div class="map-field" style="width:100%">
+                                <label for="map_image_file">{{ 'Upload a new image' | t }}</label>
+                                <input type="file" id="map_image_file" name="map_image"
+                                       accept="image/png,image/jpeg,image/gif,image/webp">
+                            </div>
+                            <div class="btn-row" style="width:100%">
+                                <button type="submit" class="btn">{{ 'Upload map' | t }}</button>
+                                {% if map_state.map_image %}
+                                <button type="submit" class="btn btn--ghost" name="clear" value="1"
+                                        onclick="return confirm('{{ 'Remove the current map image?' | t }}')">
+                                    {{ 'Remove' | t }}
+                                </button>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+
+                    {# ---- Grid + fog ---- #}
+                    <div class="side-group">
+                        <h3>{{ 'Grid & fog' | t }}</h3>
+                        <div class="map-controls">
+                            <div class="map-field">
+                                <label for="grid_cols">{{ 'Columns' | t }}</label>
+                                <input type="number" id="grid_cols" min="1" max="400" value="{{ map_state.pending.grid_cols }}">
+                            </div>
+                            <div class="map-field">
+                                <label for="grid_rows">{{ 'Rows' | t }}</label>
+                                <input type="number" id="grid_rows" min="1" max="400" value="{{ map_state.pending.grid_rows }}">
+                            </div>
+                            <div class="map-field">
+                                <label for="fog_color">{{ 'Fog colour' | t }}</label>
+                                <input type="color" id="fog_color" value="{{ map_state.pending.fog_color }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ---- Grid calibration ---- #}
+                    <div class="side-group">
+                        <h3>{{ 'Grid calibration' | t }}</h3>
+                        <div class="calib">
+                            <label for="offset_x_num">{{ 'Offset X (%)' | t }}</label>
+                            <div class="calib-row">
+                                <input type="range" id="offset_x_range" min="-50" max="150" step="0.1" value="{{ map_state.pending.offset_x }}">
+                                <input type="number" id="offset_x_num" min="-50" max="150" step="0.1" value="{{ map_state.pending.offset_x }}">
+                            </div>
+                        </div>
+                        <div class="calib">
+                            <label for="offset_y_num">{{ 'Offset Y (%)' | t }}</label>
+                            <div class="calib-row">
+                                <input type="range" id="offset_y_range" min="-50" max="150" step="0.1" value="{{ map_state.pending.offset_y }}">
+                                <input type="number" id="offset_y_num" min="-50" max="150" step="0.1" value="{{ map_state.pending.offset_y }}">
+                            </div>
+                        </div>
+                        <div class="calib">
+                            <label for="hex_size_num">{{ 'Hex size (% width)' | t }}</label>
+                            <div class="calib-row">
+                                <input type="range" id="hex_size_range" min="0.5" max="30" step="0.05" value="{{ map_state.pending.hex_size }}">
+                                <input type="number" id="hex_size_num" min="0.5" max="100" step="0.05" value="{{ map_state.pending.hex_size }}">
+                            </div>
+                        </div>
+                    </div>
+
+                </aside>
             </div>
         </div>
     </div>
@@ -217,6 +376,7 @@
         var WRITE_URL   = "{{ url_for('master.map_state_api') }}";
         var CONFIRM_URL = "{{ url_for('master.map_confirm') }}";
         var DISCARD_URL = "{{ url_for('master.map_discard') }}";
+        var FOCUS_URL   = "{{ url_for('master.map_focus') }}";
 
         var stage    = document.getElementById('map-stage');
         var viewport = document.getElementById('map-viewport');
@@ -227,6 +387,10 @@
         var toggleBtn= document.getElementById('marker-toggle');
         var hideBtn  = document.getElementById('hide-mode');
         var badge    = document.getElementById('pending-badge');
+        var poiLayer = document.getElementById('poi-layer');
+        var poiList  = document.getElementById('poi-list');
+        var poiEmpty = document.getElementById('poi-empty');
+        var poiBtn   = document.getElementById('poi-mode');
 
         var svgNS = 'http://www.w3.org/2000/svg';
         var grid = null, hexById = {};
@@ -235,10 +399,26 @@
         var full = {};
         try { full = JSON.parse(document.getElementById('map-initial').textContent) || {}; }
         catch (e) { full = {}; }
+        // A POI is a small mutable dict; clone so live and draft never alias.
+        function clonePoi(poi) {
+            return { id: String(poi.id || ''), label: String(poi.label || ''),
+                     x: +poi.x || 0, y: +poi.y || 0,
+                     always_visible: poi.always_visible !== false,
+                     icon: String(poi.icon || ''),
+                     color: String(poi.color || '#e8a83a'),
+                     scale: clampScale(poi.scale) };
+        }
+        function clampScale(v) {
+            v = parseFloat(v);
+            if (isNaN(v)) return 1;
+            return Math.max(0.3, Math.min(4, v));
+        }
         var live = {
             revealed: new Set((full.revealed_hexes || []).map(String)),
             markerX: full.marker_x || 0, markerY: full.marker_y || 0,
-            markerVisible: !!full.marker_visible
+            markerVisible: !!full.marker_visible,
+            markerScale: clampScale(full.marker_scale),
+            pois: (full.pois || []).map(clonePoi)
         };
         var p = full.pending || {};
         var draft = {
@@ -246,11 +426,13 @@
             markerX: (typeof p.marker_x === 'number') ? p.marker_x : 50,
             markerY: (typeof p.marker_y === 'number') ? p.marker_y : 50,
             markerVisible: !!p.marker_visible,
+            markerScale: clampScale(p.marker_scale),
             cols: p.grid_cols || 20, rows: p.grid_rows || 15,
             fog: p.fog_color || '#0d0b0a',
             offX: (typeof p.offset_x === 'number') ? p.offset_x : 0,
             offY: (typeof p.offset_y === 'number') ? p.offset_y : 0,
-            hexSize: (typeof p.hex_size === 'number') ? p.hex_size : 5
+            hexSize: (typeof p.hex_size === 'number') ? p.hex_size : 5,
+            pois: (p.pois || []).map(clonePoi)
         };
 
         var hideMode = false;
@@ -280,8 +462,26 @@
             if (draft.markerVisible !== live.markerVisible) return true;
             if (Math.abs(draft.markerX - live.markerX) > 0.01) return true;
             if (Math.abs(draft.markerY - live.markerY) > 0.01) return true;
+            if (Math.abs(draft.markerScale - live.markerScale) > 0.001) return true;
             if (draft.revealed.size !== live.revealed.size) return true;
             for (var id of draft.revealed) if (!live.revealed.has(id)) return true;
+            if (poisDiffer(draft.pois, live.pois)) return true;
+            return false;
+        }
+        // POIs differ if count, order, position, label, visibility, icon,
+        // colour or scale changed.
+        function poisDiffer(a, b) {
+            if (a.length !== b.length) return true;
+            for (var i = 0; i < a.length; i++) {
+                if (a[i].id !== b[i].id) return true;
+                if (a[i].label !== b[i].label) return true;
+                if (a[i].always_visible !== b[i].always_visible) return true;
+                if (a[i].icon !== b[i].icon) return true;
+                if (a[i].color !== b[i].color) return true;
+                if (Math.abs(a[i].scale - b[i].scale) > 0.001) return true;
+                if (Math.abs(a[i].x - b[i].x) > 0.01) return true;
+                if (Math.abs(a[i].y - b[i].y) > 0.01) return true;
+            }
             return false;
         }
         function refreshBadge() {
@@ -425,6 +625,7 @@
             marker.hidden = false;
             marker.style.left = draft.markerX + '%';
             marker.style.top  = draft.markerY + '%';
+            marker.style.setProperty('--marker-scale', draft.markerScale);
             marker.classList.toggle('marker--hidden-to-players', !draft.markerVisible);
             toggleBtn.textContent = draft.markerVisible ? "{{ 'Hide marker' | t }}" : "{{ 'Show marker' | t }}";
             // Ghost: show the live position only if the draft moved it or its
@@ -446,6 +647,22 @@
             draft.markerVisible = !draft.markerVisible;
             renderMarker(); refreshBadge();
             persist({ marker_visible: draft.markerVisible }, "{{ 'Saving…' | t }}");
+        });
+
+        // Marker size slider (staged like everything else).
+        var markerScaleRange = document.getElementById('marker_scale_range');
+        var markerScaleVal = document.getElementById('marker_scale_val');
+        function showMarkerScaleVal() {
+            markerScaleVal.textContent = draft.markerScale.toFixed(1) + '\u00d7';
+        }
+        showMarkerScaleVal();
+        markerScaleRange.addEventListener('input', function () {
+            draft.markerScale = clampScale(markerScaleRange.value);
+            marker.style.setProperty('--marker-scale', draft.markerScale);
+            showMarkerScaleVal(); refreshBadge();
+        });
+        markerScaleRange.addEventListener('change', function () {
+            persist({ marker_scale: draft.markerScale }, "{{ 'Saving\u2026' | t }}");
         });
 
         var dragging = false;
@@ -484,7 +701,9 @@
                     live.revealed = new Set((state.revealed_hexes || []).map(String));
                     live.markerX = state.marker_x; live.markerY = state.marker_y;
                     live.markerVisible = !!state.marker_visible;
-                    paintHexes(); renderMarker(); refreshBadge();
+                    live.markerScale = clampScale(state.marker_scale);
+                    live.pois = (state.pois || []).map(clonePoi);
+                    paintHexes(); renderMarker(); renderPois(); refreshBadge();
                     showStatus("{{ 'Revealed to players' | t }}", false);
                 }).catch(function (err) {
                     showStatus("{{ 'Reveal failed — try again' | t }}", true);
@@ -504,20 +723,388 @@
                 });
         });
 
+        // ---- Points of interest (draft-staged) -----------------------------
+        // A POI carries only a label; it never exposes map pixels, so an
+        // always_visible pin is safe over un-revealed terrain. Positions are
+        // percent of the stage, exactly like the marker, so they pan/zoom with
+        // the map and survive a resolution change.
+        var placingPoi = false;
+
+        // Which hex a percent point falls in — used ONLY to dim the master's
+        // preview of a conditional POI whose hex isn't revealed yet. Mirrors
+        // the flat-top geometry in buildGrid(). Returns a hex id or null.
+        function hexIdAt(xPct, yPct) {
+            var W = img.clientWidth || img.naturalWidth || 1600;
+            var H = img.clientHeight || img.naturalHeight || 1200;
+            var r = (draft.hexSize / 100 * W) / 2;
+            if (r <= 0) return null;
+            var colStep = r * 1.5, rowStep = Math.sqrt(3) * r;
+            var startX = draft.offX / 100 * W, startY = draft.offY / 100 * H;
+            var px = xPct / 100 * W, py = yPct / 100 * H;
+            var best = null, bestD = Infinity;
+            for (var col = 0; col < draft.cols; col++) {
+                var cx = startX + col * colStep;
+                for (var row = 0; row < draft.rows; row++) {
+                    var cy = startY + row * rowStep + (col % 2 ? rowStep / 2 : 0);
+                    var dx = px - cx, dy = py - cy, d = dx * dx + dy * dy;
+                    if (d < bestD) { bestD = d; best = 'hex-' + col + '-' + row; }
+                }
+            }
+            // Only count it as "in" a hex if within the hex's circumradius.
+            return (bestD <= r * r) ? best : null;
+        }
+
+        function persistPois(msg) {
+            persist({ pois: draft.pois.map(clonePoi) }, msg);
+        }
+
+        // Render the pins on the map layer.
+        function renderPois() {
+            poiLayer.innerHTML = '';
+            draft.pois.forEach(function (poi) {
+                var el = document.createElement('div');
+                el.className = 'poi';
+                el.style.left = poi.x + '%';
+                el.style.top = poi.y + '%';
+                el.style.setProperty('--poi-scale', clampScale(poi.scale));
+                el.setAttribute('data-poi', poi.id);
+                if (!poi.always_visible) {
+                    // Conditional: dim it if its hex isn't revealed for players.
+                    var hid = hexIdAt(poi.x, poi.y);
+                    if (!hid || !live.revealed.has(hid)) {
+                        el.classList.add('poi--conditional');
+                    }
+                }
+                var color = validColor(poi.color) ? poi.color : null;
+                var pin = document.createElement('div');
+                pin.className = 'poi__pin';
+                if (poi.icon) {
+                    pin.classList.add('poi__pin--glyph');
+                    pin.textContent = poi.icon;
+                    if (color) pin.style.color = color;
+                } else if (color) {
+                    pin.style.background = color;
+                }
+                el.appendChild(pin);
+                if (poi.label) {
+                    var lab = document.createElement('div');
+                    lab.className = 'poi__label';
+                    lab.textContent = poi.label;
+                    el.appendChild(lab);
+                }
+                bindPoiDrag(el, poi);
+                poiLayer.appendChild(el);
+            });
+            renderPoiList();
+        }
+        function validColor(c) {
+            return typeof c === 'string' && /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c);
+        }
+
+        // Drag a pin around the stage (percent-based, panzoom-scale aware).
+        function bindPoiDrag(el, poi) {
+            var dragging = false, movedFar = false, sx = 0, sy = 0;
+            el.addEventListener('pointerdown', function (e) {
+                e.preventDefault(); e.stopPropagation();
+                dragging = true; movedFar = false; sx = e.clientX; sy = e.clientY;
+                el.setPointerCapture(e.pointerId);
+            });
+            el.addEventListener('pointermove', function (e) {
+                if (!dragging) return;
+                if (Math.abs(e.clientX - sx) > 3 || Math.abs(e.clientY - sy) > 3) movedFar = true;
+                var rect = stage.getBoundingClientRect();
+                var scale = (window.MapPanzoom && window.MapPanzoom.getScale) ? window.MapPanzoom.getScale() : 1;
+                var px = (e.clientX - rect.left) / scale;
+                var py = (e.clientY - rect.top) / scale;
+                poi.x = Math.min(100, Math.max(0, px / stage.offsetWidth * 100));
+                poi.y = Math.min(100, Math.max(0, py / stage.offsetHeight * 100));
+                el.style.left = poi.x + '%';
+                el.style.top = poi.y + '%';
+            });
+            function end(e) {
+                if (!dragging) return;
+                dragging = false;
+                try { el.releasePointerCapture(e.pointerId); } catch (_) {}
+                if (movedFar) {
+                    poi.x = Number(poi.x.toFixed(2));
+                    poi.y = Number(poi.y.toFixed(2));
+                    renderPois(); refreshBadge();
+                    persistPois("{{ 'Saving…' | t }}");
+                }
+            }
+            el.addEventListener('pointerup', end);
+            el.addEventListener('pointercancel', end);
+        }
+
+        // The management list in the side panel: each POI is a card with its
+        // name, a swatch preview, and controls for icon, colour, scale and
+        // player-visibility, plus delete. Everything is staged.
+        function renderPoiList() {
+            poiList.innerHTML = '';
+            poiEmpty.hidden = draft.pois.length > 0;
+            draft.pois.forEach(function (poi) {
+                var li = document.createElement('li');
+                li.className = 'poi-card';
+
+                // --- head: swatch preview + name ---
+                var head = document.createElement('div');
+                head.className = 'poi-card__head';
+
+                var swatch = document.createElement('span');
+                swatch.className = 'poi-card__swatch';
+                function paintSwatch() {
+                    var col = validColor(poi.color) ? poi.color : 'var(--accent)';
+                    if (poi.icon) {
+                        swatch.textContent = poi.icon;
+                        swatch.style.background = 'var(--border)';
+                        swatch.style.color = col;
+                    } else {
+                        swatch.textContent = '';
+                        swatch.style.background = col;
+                        swatch.style.color = '';
+                    }
+                }
+                paintSwatch();
+
+                var name = document.createElement('input');
+                name.type = 'text';
+                name.value = poi.label;
+                name.placeholder = "{{ 'Unnamed' | t }}";
+                name.addEventListener('input', function () {
+                    poi.label = name.value.slice(0, 80);
+                    renderPoiLabelsOnly();
+                    refreshBadge();
+                });
+                name.addEventListener('change', function () { persistPois(); });
+
+                head.appendChild(swatch);
+                head.appendChild(name);
+
+                // --- grid: icon + colour ---
+                var grid = document.createElement('div');
+                grid.className = 'poi-card__grid';
+
+                var iconWrap = document.createElement('div');
+                var iconLabel = document.createElement('label');
+                iconLabel.textContent = "{{ 'Icon (a letter or emoji)' | t }}";
+                var icon = document.createElement('input');
+                icon.type = 'text';
+                icon.value = poi.icon;
+                icon.maxLength = 8;
+                icon.placeholder = "{{ 'default pin' | t }}";
+                icon.addEventListener('input', function () {
+                    poi.icon = icon.value.slice(0, 8);
+                    paintSwatch(); renderPois(); refreshBadge();
+                });
+                icon.addEventListener('change', function () { persistPois(); });
+                iconWrap.appendChild(iconLabel);
+                iconWrap.appendChild(icon);
+
+                var colorWrap = document.createElement('div');
+                var colorLabel = document.createElement('label');
+                colorLabel.textContent = "{{ 'Colour' | t }}";
+                var color = document.createElement('input');
+                color.type = 'color';
+                color.value = validColor(poi.color) ? poi.color : '#e8a83a';
+                color.addEventListener('input', function () {
+                    poi.color = color.value;
+                    paintSwatch(); renderPois(); refreshBadge();
+                });
+                color.addEventListener('change', function () { persistPois(); });
+                colorWrap.appendChild(colorLabel);
+                colorWrap.appendChild(color);
+
+                grid.appendChild(iconWrap);
+                grid.appendChild(colorWrap);
+
+                // --- scale slider ---
+                var scaleWrap = document.createElement('div');
+                var scaleLabel = document.createElement('label');
+                scaleLabel.textContent = "{{ 'Size' | t }}";
+                var scaleRow = document.createElement('div');
+                scaleRow.className = 'poi-card__scale';
+                var scale = document.createElement('input');
+                scale.type = 'range';
+                scale.min = '0.3'; scale.max = '4'; scale.step = '0.05';
+                scale.value = clampScale(poi.scale);
+                var scaleVal = document.createElement('span');
+                scaleVal.className = 'poi-card__scaleval';
+                scaleVal.textContent = clampScale(poi.scale).toFixed(1) + '\u00d7';
+                scale.addEventListener('input', function () {
+                    poi.scale = clampScale(scale.value);
+                    scaleVal.textContent = poi.scale.toFixed(1) + '\u00d7';
+                    // live-update just this pin's scale without a full rebuild
+                    var el = poiLayer.querySelector('.poi[data-poi="' + cssEsc(poi.id) + '"]');
+                    if (el) el.style.setProperty('--poi-scale', poi.scale);
+                    refreshBadge();
+                });
+                scale.addEventListener('change', function () { persistPois(); });
+                scaleRow.appendChild(scale);
+                scaleRow.appendChild(scaleVal);
+                scaleWrap.appendChild(scaleLabel);
+                scaleWrap.appendChild(scaleRow);
+
+                // --- foot: visibility + delete ---
+                var foot = document.createElement('div');
+                foot.className = 'poi-card__foot';
+
+                var visWrap = document.createElement('label');
+                visWrap.className = 'poi-card__vis';
+                var vis = document.createElement('input');
+                vis.type = 'checkbox';
+                vis.checked = poi.always_visible;
+                vis.addEventListener('change', function () {
+                    poi.always_visible = vis.checked;
+                    renderPois(); refreshBadge();
+                    persistPois();
+                });
+                visWrap.appendChild(vis);
+                visWrap.appendChild(document.createTextNode(" {{ 'Always visible to players' | t }}"));
+
+                var del = document.createElement('button');
+                del.type = 'button';
+                del.className = 'btn btn--ghost';
+                del.textContent = '\uD83D\uDDD1';
+                del.setAttribute('aria-label', "{{ 'Delete' | t }}");
+                del.addEventListener('click', function () {
+                    draft.pois = draft.pois.filter(function (q) { return q.id !== poi.id; });
+                    renderPois(); refreshBadge();
+                    persistPois("{{ 'Saving\u2026' | t }}");
+                });
+
+                foot.appendChild(visWrap);
+                foot.appendChild(del);
+
+                li.appendChild(head);
+                li.appendChild(grid);
+                li.appendChild(scaleWrap);
+                li.appendChild(foot);
+                poiList.appendChild(li);
+            });
+        }
+        // Escape an id for use in a CSS attribute selector (ids are UUIDs or
+        // 'poi-<ts>-<rand>', but be safe if crypto.randomUUID isn't present).
+        function cssEsc(s) {
+            if (window.CSS && CSS.escape) return CSS.escape(s);
+            return String(s).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
+        }
+
+        // Cheap label-only refresh while typing (avoids rebuilding drag state).
+        function renderPoiLabelsOnly() {
+            var els = poiLayer.querySelectorAll('.poi');
+            els.forEach(function (el) {
+                var id = el.getAttribute('data-poi');
+                var poi = draft.pois.find(function (q) { return q.id === id; });
+                if (!poi) return;
+                var lab = el.querySelector('.poi__label');
+                if (poi.label) {
+                    if (!lab) {
+                        lab = document.createElement('div');
+                        lab.className = 'poi__label';
+                        el.appendChild(lab);
+                    }
+                    lab.textContent = poi.label;
+                } else if (lab) {
+                    lab.remove();
+                }
+            });
+        }
+
+        // Placement mode: arm, then the next stage click drops a pin there.
+        poiBtn.addEventListener('click', function () {
+            placingPoi = !placingPoi;
+            poiBtn.classList.toggle('is-active', placingPoi);
+            viewport.classList.toggle('is-placing', placingPoi);
+            showStatus(placingPoi ? "{{ 'Click the map to place a point of interest' | t }}" : '', false);
+        });
+
+        // Capture-phase so we intercept before the hex reveal handler, and only
+        // when arming placement — normal hex clicks are untouched otherwise.
+        stage.addEventListener('click', function (e) {
+            if (!placingPoi) return;
+            e.preventDefault(); e.stopPropagation();
+            var rect = stage.getBoundingClientRect();
+            var scale = (window.MapPanzoom && window.MapPanzoom.getScale) ? window.MapPanzoom.getScale() : 1;
+            var px = (e.clientX - rect.left) / scale;
+            var py = (e.clientY - rect.top) / scale;
+            var x = Math.min(100, Math.max(0, px / stage.offsetWidth * 100));
+            var y = Math.min(100, Math.max(0, py / stage.offsetHeight * 100));
+            var id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+                     : 'poi-' + Date.now() + '-' + Math.floor(Math.random() * 1e6);
+            draft.pois.push({ id: id, label: '', x: Number(x.toFixed(2)), y: Number(y.toFixed(2)),
+                              always_visible: true, icon: '', color: '#e8a83a', scale: 1 });
+            placingPoi = false;
+            poiBtn.classList.remove('is-active');
+            viewport.classList.remove('is-placing');
+            renderPois(); refreshBadge();
+            persistPois("{{ 'Saving…' | t }}");
+            // Focus the new card's name field for immediate typing.
+            var rows = poiList.querySelectorAll('.poi-card__head input[type="text"]');
+            if (rows.length) rows[rows.length - 1].focus();
+        }, true);
+
+        renderPois();
+
         // ---- Pan / zoom (hexes no longer excluded; marker still is) --------
         function initPanzoom() {
             if (typeof Panzoom === 'undefined' || !viewport) return;
             var panzoom = Panzoom(stage, {
                 maxScale: 8, minScale: 0.1, step: 0.2,
-                exclude: [marker], cursor: 'grab'
+                exclude: [marker], excludeClass: 'poi', cursor: 'grab'
             });
             viewport.addEventListener('wheel', function (e) {
                 e.preventDefault(); panzoom.zoomWithWheel(e);
             }, { passive: false });
             document.getElementById('map-zoom-in').addEventListener('click', function () { panzoom.zoomIn(); });
             document.getElementById('map-zoom-out').addEventListener('click', function () { panzoom.zoomOut(); });
-            document.getElementById('map-reset').addEventListener('click', function () { panzoom.reset(); });
+            // Reset centres the image in the viewport (computed from the
+            // current image size) at scale 1, rather than Panzoom's raw
+            // reset which lands the top-left corner at the origin.
+            document.getElementById('map-reset').addEventListener('click', function () { centerImage(panzoom); });
+            document.getElementById('focus-btn').addEventListener('click', function () { sendFocus(panzoom); });
             window.MapPanzoom = panzoom;
+            // Start centred on the image like the players do.
+            centerImage(panzoom);
+        }
+
+        // Centre the image within the viewport at scale 1. stage.offsetWidth
+        // /Height are the image's rendered size; we translate so the image
+        // centre sits at the viewport centre.
+        function centerImage(panzoom) {
+            if (!panzoom) return;
+            panzoom.zoom(1, { animate: false });
+            var vw = viewport.clientWidth, vh = viewport.clientHeight;
+            var iw = stage.offsetWidth, ih = stage.offsetHeight;
+            // At scale 1, pan is in image pixels: centre = (viewport - image)/2.
+            panzoom.pan((vw - iw) / 2, (vh - ih) / 2, { animate: true });
+        }
+
+        // Read what the Master is currently framing and broadcast it. The
+        // focus point is the image-space point at the viewport centre,
+        // expressed as percent of the image so it survives a resolution
+        // change; scale is the current zoom. Players animate to match.
+        function sendFocus(panzoom) {
+            if (!panzoom) return;
+            var scale = panzoom.getScale ? panzoom.getScale() : 1;
+            var pan = panzoom.getPan ? panzoom.getPan() : { x: 0, y: 0 };
+            var vw = viewport.clientWidth, vh = viewport.clientHeight;
+            var iw = stage.offsetWidth || 1, ih = stage.offsetHeight || 1;
+            // Viewport centre in image pixels, then as percent of the image.
+            var cxImg = (vw / 2 - pan.x) / scale;
+            var cyImg = (vh / 2 - pan.y) / scale;
+            var xPct = Math.min(100, Math.max(0, cxImg / iw * 100));
+            var yPct = Math.min(100, Math.max(0, cyImg / ih * 100));
+            showStatus("{{ 'Sending view to players\u2026' | t }}", false);
+            fetch(FOCUS_URL, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ x: Number(xPct.toFixed(2)), y: Number(yPct.toFixed(2)), scale: Number(scale.toFixed(3)) })
+            }).then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                showStatus("{{ 'Players moved to your view' | t }}", false);
+            }).catch(function (err) {
+                showStatus("{{ 'Focus failed \u2014 try again' | t }}", true);
+                console.error(err);
+            });
         }
         initPanzoom();
         refreshBadge();

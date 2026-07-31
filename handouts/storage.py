@@ -6,6 +6,7 @@ so the route modules stay thin and free of persistence details.
 
 import json
 import os
+import re
 import uuid
 from datetime import datetime, timezone
 
@@ -124,6 +125,8 @@ def _normalize(data):
     map_state.setdefault('marker_x', 0)
     map_state.setdefault('marker_y', 0)
     map_state.setdefault('marker_visible', False)
+    # How big the party marker is drawn, as a multiplier on its base size.
+    map_state.setdefault('marker_scale', 1.0)
     # Grid the Master can size to match a printed map (e.g. Chult is 23x24).
     map_state.setdefault('grid_cols', 20)
     map_state.setdefault('grid_rows', 15)
@@ -140,6 +143,30 @@ def _normalize(data):
     map_state.setdefault('offset_x', 0.0)
     map_state.setdefault('offset_y', 0.0)
     map_state.setdefault('hex_size', 5.0)
+    # Points of interest: labels the Master pins to the map (city names, etc.).
+    # Each is {id, label, x, y, always_visible} with x/y as PERCENT of the
+    # image so they survive a resolution change, exactly like the calibration
+    # fields. They live ON TOP of everything (fog, grid, marker) and carry only
+    # text -- never map pixels -- so an always_visible POI is safe to show even
+    # over an un-revealed hex. always_visible False means the POI only appears
+    # once the hex it sits in has been revealed (resolved client-side).
+    map_state.setdefault('pois', [])
+    # Older POIs (saved before icon/colour/scale existed) are re-run through the
+    # cleaner so every stored pin carries the full field set with sane defaults,
+    # rather than leaking null icon/colour/scale to the player JSON.
+    map_state['pois'] = _clean_pois(map_state['pois'], map_state['pois'])
+    # Camera focus broadcast: "everyone look here, now". Like the POP, this is
+    # NOT staged -- it is a live directive, not a draft edit. {seq, x, y, scale}
+    # where x/y are the focus point as PERCENT of the image and scale is the
+    # zoom level the Master was using. Players compare seq to tell a fresh
+    # focus from an unchanged poll and animate their view to match. seq 0 means
+    # "never focused"; players ignore it.
+    map_state.setdefault('focus', {})
+    focus = map_state['focus']
+    focus.setdefault('seq', 0)
+    focus.setdefault('x', 50.0)
+    focus.setdefault('y', 50.0)
+    focus.setdefault('scale', 1.0)
 
     # --- Staging (draft) layer ---------------------------------------------
     # Everything above is the CONFIRMED state -- the only thing players read.
@@ -152,6 +179,7 @@ def _normalize(data):
     pending.setdefault('marker_x', map_state['marker_x'])
     pending.setdefault('marker_y', map_state['marker_y'])
     pending.setdefault('marker_visible', map_state['marker_visible'])
+    pending.setdefault('marker_scale', map_state['marker_scale'])
     pending.setdefault('grid_cols', map_state['grid_cols'])
     pending.setdefault('grid_rows', map_state['grid_rows'])
     pending.setdefault('fog_color', map_state['fog_color'])
@@ -159,6 +187,11 @@ def _normalize(data):
     pending.setdefault('offset_x', map_state['offset_x'])
     pending.setdefault('offset_y', map_state['offset_y'])
     pending.setdefault('hex_size', map_state['hex_size'])
+    # POIs are staged like everything else: the draft carries its own list and
+    # a confirm promotes it. Deep-copied from the confirmed list so the two
+    # layers never alias (each POI is its own dict).
+    pending.setdefault('pois', [dict(poi) for poi in map_state['pois']])
+    pending['pois'] = _clean_pois(pending['pois'], pending['pois'])
     # Bumped on every confirm; players compare it to tell a fresh confirmation
     # from an unchanged poll (and so the marker only animates on real changes).
     map_state.setdefault('confirm_seq', 0)
@@ -347,6 +380,7 @@ def get_map_state(db):
         'marker_x': 0,
         'marker_y': 0,
         'marker_visible': False,
+        'marker_scale': 1.0,
         'grid_cols': 20,
         'grid_rows': 15,
         'fog_color': '#0d0b0a',
@@ -354,6 +388,8 @@ def get_map_state(db):
         'offset_x': 0.0,
         'offset_y': 0.0,
         'hex_size': 5.0,
+        'pois': [],
+        'focus': {'seq': 0, 'x': 50.0, 'y': 50.0, 'scale': 1.0},
     })
 
 
@@ -375,6 +411,84 @@ def _clean_hex_color(raw, fallback):
             all(c in '0123456789abcdefABCDEF' for c in raw[1:]):
         return raw
     return fallback
+
+# Caps for POIs. A generous ceiling on count stops a runaway client from
+# stuffing the draft, and a label cap keeps one pin from carrying an essay
+# (the label is rendered as plain text, so length is the only concern).
+POI_MAX = 200
+POI_LABEL_MAX = 80
+# The icon is a single glyph the Master picks (a letter, an emoji, a symbol).
+# We cap it short so it stays a marker, not a text field. Emoji can be multiple
+# code points (e.g. flags, ZWJ sequences), so the cap is generous but bounded.
+POI_ICON_MAX = 8
+# POI/marker scale multipliers, clamped so a bad value can't make a pin fill
+# the screen or vanish.
+SCALE_MIN = 0.3
+SCALE_MAX = 4.0
+# A hex colour like #rrggbb or #rgb; anything else falls back to the default.
+_HEX_COLOR_RE = re.compile(r'^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$')
+POI_DEFAULT_COLOR = '#e8a83a'
+
+
+def _clean_scale(value, default=1.0):
+    """Clamp a scale multiplier to SCALE_MIN..SCALE_MAX, or return default."""
+    try:
+        return max(SCALE_MIN, min(SCALE_MAX, float(value)))
+    except (TypeError, ValueError):
+        return default
+
+
+def _clean_color(value, default=POI_DEFAULT_COLOR):
+    """Return value if it is a #rgb/#rrggbb hex colour, else the default."""
+    if isinstance(value, str) and _HEX_COLOR_RE.match(value.strip()):
+        return value.strip().lower()
+    return default
+
+
+def _clean_pois(raw, previous):
+    """Return a validated list of POI dicts, or `previous` if `raw` is junk.
+
+    Each POI is normalised to
+    {id, label, x, y, always_visible, icon, color, scale}. x/y are clamped to
+    0..100 (percent of the image). A POI with no usable id gets a fresh one; a
+    blank label is allowed (the Master may pin first, name later). Anything that
+    isn't a list leaves the previous value untouched, so a partial patch that
+    omits `pois` never wipes them.
+    """
+    if not isinstance(raw, (list, tuple)):
+        return previous
+    cleaned = []
+    seen_ids = set()
+    for item in raw[:POI_MAX]:
+        if not isinstance(item, dict):
+            continue
+        pid = str(item.get('id') or '').strip()
+        if not pid or pid in seen_ids:
+            pid = uuid.uuid4().hex
+        seen_ids.add(pid)
+        label = str(item.get('label') or '').strip()[:POI_LABEL_MAX]
+        try:
+            x = max(0.0, min(100.0, float(item.get('x', 0))))
+        except (TypeError, ValueError):
+            x = 0.0
+        try:
+            y = max(0.0, min(100.0, float(item.get('y', 0))))
+        except (TypeError, ValueError):
+            y = 0.0
+        # icon: a short custom glyph. Empty string means "use the default pin".
+        icon = str(item.get('icon') or '').strip()[:POI_ICON_MAX]
+        cleaned.append({
+            'id': pid,
+            'label': label,
+            'x': x,
+            'y': y,
+            'always_visible': bool(item.get('always_visible', True)),
+            'icon': icon,
+            'color': _clean_color(item.get('color')),
+            'scale': _clean_scale(item.get('scale')),
+        })
+    return cleaned
+
 
 def _coerce_map_fields(target, data):
     """Write the known map fields from `data` into `target` dict, in place.
@@ -404,6 +518,9 @@ def _coerce_map_fields(target, data):
 
     if 'marker_visible' in data:
         target['marker_visible'] = bool(data['marker_visible'])
+
+    if 'marker_scale' in data:
+        target['marker_scale'] = _clean_scale(data['marker_scale'])
 
     for key in ('grid_cols', 'grid_rows'):
         if key in data:
@@ -438,6 +555,9 @@ def _coerce_map_fields(target, data):
             target['map_image'] = None
         elif isinstance(val, str) and '/' not in val and '\\' not in val:
             target['map_image'] = val
+
+    if 'pois' in data:
+        target['pois'] = _clean_pois(data['pois'], target.get('pois', []))
 
 
 def update_map_state(db, data):
@@ -481,12 +601,18 @@ def confirm_map_state(db):
     state = get_map_state(db)
     pending = state.get('pending', {})
     for key in ('revealed_hexes', 'marker_x', 'marker_y', 'marker_visible',
-                'grid_cols', 'grid_rows', 'fog_color', 'map_image',
-                'offset_x', 'offset_y', 'hex_size'):
+                'marker_scale', 'grid_cols', 'grid_rows', 'fog_color',
+                'map_image', 'offset_x', 'offset_y', 'hex_size', 'pois'):
         if key in pending:
-            # Copy by value for the list so the two layers don't alias.
-            state[key] = list(pending[key]) if key == 'revealed_hexes' \
-                else pending[key]
+            # Copy lists by value so the two layers don't alias. POIs need a
+            # deep copy: each is a dict, and a shallow list() would still let
+            # a later draft edit mutate the confirmed pin in place.
+            if key == 'revealed_hexes':
+                state[key] = list(pending[key])
+            elif key == 'pois':
+                state[key] = [dict(poi) for poi in pending[key]]
+            else:
+                state[key] = pending[key]
     state['confirm_seq'] = state.get('confirm_seq', 0) + 1
     return state
 
@@ -503,6 +629,7 @@ def discard_map_state(db):
         'marker_x': state['marker_x'],
         'marker_y': state['marker_y'],
         'marker_visible': state['marker_visible'],
+        'marker_scale': state['marker_scale'],
         'grid_cols': state['grid_cols'],
         'grid_rows': state['grid_rows'],
         'fog_color': state['fog_color'],
@@ -510,8 +637,43 @@ def discard_map_state(db):
         'offset_x': state['offset_x'],
         'offset_y': state['offset_y'],
         'hex_size': state['hex_size'],
+        'pois': [dict(poi) for poi in state['pois']],
     }
     return state
+
+
+def set_map_focus(db, x, y, scale):
+    """Record a camera-focus broadcast and return the new focus dict.
+
+    Not staged: a focus is a live "look here, now" directive, so it takes
+    effect immediately rather than waiting for a confirm -- the same design as
+    a POP. Bumping seq is what notifies players: they poll for it and animate
+    to the new centre/zoom on any value above the last one they acted on, so a
+    Master re-focusing the same spot still nudges a table that drifted away.
+
+    x/y are the focus point as PERCENT of the image (clamped 0..100); scale is
+    the zoom level, clamped to a sane range so a bad client value can't ask the
+    player view for an absurd magnification.
+    """
+    state = get_map_state(db)
+    focus = state.setdefault('focus', {'seq': 0})
+    try:
+        fx = max(0.0, min(100.0, float(x)))
+    except (TypeError, ValueError):
+        fx = 50.0
+    try:
+        fy = max(0.0, min(100.0, float(y)))
+    except (TypeError, ValueError):
+        fy = 50.0
+    try:
+        fs = max(0.1, min(8.0, float(scale)))
+    except (TypeError, ValueError):
+        fs = 1.0
+    state['focus'] = {
+        'seq': focus.get('seq', 0) + 1,
+        'x': fx, 'y': fy, 'scale': fs,
+    }
+    return state['focus']
 
 
 def all_categories(db):

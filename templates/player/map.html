@@ -20,23 +20,62 @@
             display: block; image-rendering: pixelated; max-width: none;
             user-select: none; -webkit-user-drag: none;
         }
-        .map-grid { position: absolute; top: 0; left: 0; pointer-events: none; }
-        .hex {
-            fill: var(--fog, #000000); fill-opacity: 1;
-            stroke: none; vector-effect: non-scaling-stroke;
-            transition: fill-opacity 0.6s ease;
+        /* Fog fills the whole map area; the revealed composite sits on
+           top of it, so wherever the composite is transparent (un-
+           revealed) the fog shows through. The server has already
+           removed un-revealed pixels from the composite, so this is
+           purely cosmetic backing, not the thing doing the hiding. */
+        .map-fog-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--fog, #0d0b0a); pointer-events: none; z-index: 0;
         }
-        .hex--revealed { fill-opacity: 0; }
+        .map-reveal {
+            position: relative; z-index: 1;
+            transition: opacity 0.6s ease;
+        }
         .marker {
             position: absolute; left: 50%; top: 50%;
             width: 28px; height: 28px;
-            transform: translate(-50%, -50%) rotate(45deg);
+            transform: translate(-50%, -50%) scale(var(--marker-scale, 1)) rotate(45deg);
+            transform-origin: center;
             background: var(--accent-2); border: 3px solid var(--ink);
             box-shadow: 0 0 0 2px var(--border), 0 0 12px rgba(192,83,43,0.8);
             z-index: 5; transition: left 0.8s ease, top 0.8s ease;
         }
         .map-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
         .map-hint { color: var(--ink-dim); font-style: italic; margin: 0 0 12px; }
+        /* Points of interest: text-only labels the Master pinned. Above fog,
+           grid and marker so they read clearly; anchored to the stage so they
+           pan and zoom with the map. They never carry map pixels. */
+        .poi-layer { position: absolute; inset: 0; z-index: 8; pointer-events: none; }
+        .poi {
+            position: absolute; transform: translate(-50%, -100%) scale(var(--poi-scale, 1));
+            transform-origin: bottom center;
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+            pointer-events: none;
+        }
+        .poi__pin {
+            width: 14px; height: 14px; border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            background: var(--accent); border: 2px solid var(--border);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.6);
+        }
+        /* Glyph pin: the Master's custom character instead of the teardrop. */
+        .poi__pin--glyph {
+            width: auto; height: auto; min-width: 18px;
+            border-radius: 3px; transform: none;
+            background: var(--border); border: 2px solid var(--accent);
+            color: var(--accent); font-size: 0.9rem; line-height: 1;
+            padding: 1px 4px; text-align: center;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .poi__label {
+            font-family: var(--font-display); font-size: 0.62rem; line-height: 1;
+            white-space: nowrap; padding: 2px 6px;
+            background: var(--border); color: var(--paper, #f4ecd8);
+            border: 1px solid var(--accent); border-radius: 3px;
+            max-width: 160px; overflow: hidden; text-overflow: ellipsis;
+        }
     </style>
 </head>
 <body>
@@ -59,10 +98,16 @@
 
             <div class="map-viewport" id="map-viewport">
                 <div class="map-stage" id="map-stage">
-                    <img id="map-image"
-                         src="{% if map_state.map_image %}{{ url_for('static', filename='maps/' ~ map_state.map_image) }}{% else %}https://placehold.co/1600x1200/2a2320/e8a83a/png?text=Map{% endif %}"
+                    {# The image is the REVEALED-ONLY composite from the server,
+                       never the raw map. Un-revealed pixels are absent from it,
+                       so there is nothing to leak via the network tab. The fog
+                       div behind it colours the gaps. #}
+                    <div class="map-fog-bg" id="map-fog-bg"></div>
+                    <img id="map-image" class="map-reveal"
+                         src="{% if map_state.map_image %}{{ url_for('player.map_reveal') }}?v={{ map_state.confirm_seq }}{% else %}https://placehold.co/1600x1200/2a2320/e8a83a/png?text=Map{% endif %}"
                          alt="{{ 'Campaign map' | t }}" draggable="false">
                     <div class="marker" id="marker" hidden></div>
+                    <div class="poi-layer" id="poi-layer"></div>
                 </div>
             </div>
         </div>
@@ -82,91 +127,180 @@
         var viewport = document.getElementById('map-viewport');
         var img = document.getElementById('map-image');
         var marker = document.getElementById('marker');
+        var poiLayer = document.getElementById('poi-layer');
 
-        var svgNS = 'http://www.w3.org/2000/svg';
-        var grid = null, hexById = {};
-        var built = { cols: -1, rows: -1, fog: '', offX: null, offY: null, hexSize: null, img: undefined };
+        var fogBg = document.getElementById('map-fog-bg');
+        var REVEAL_URL = "{{ url_for('player.map_reveal') }}";
+        var PLACEHOLDER = 'https://placehold.co/1600x1200/2a2320/e8a83a/png?text=Map';
 
-        function buildGrid(s) {
-            if (grid) grid.remove();
-            hexById = {};
+        // Grid geometry, kept only so conditional POIs can tell which hex they
+        // sit in. There is no SVG fog overlay any more: the server ships a
+        // composite that already contains ONLY revealed pixels, so hiding is
+        // done before the bytes ever reach us. This mirrors buildGrid()'s
+        // flat-top maths purely for hexIdAt().
+        var built = { cols: 0, rows: 0, offX: 0, offY: 0, hexSize: 5, W: 0, H: 0 };
+        function updateGeometry(s) {
             var W = img.clientWidth || img.naturalWidth || 1600;
             var H = img.clientHeight || img.naturalHeight || 1200;
-            grid = document.createElementNS(svgNS, 'svg');
-            grid.setAttribute('class', 'map-grid');
-            grid.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-            grid.style.width = '100%'; grid.style.height = '100%';
-            grid.style.setProperty('--fog', s.fog_color || '#000000');
-
-            var cols = s.grid_cols || 20, rows = s.grid_rows || 15;
-            var hexSize = (typeof s.hex_size === 'number') ? s.hex_size : 5;
-            var offX = (typeof s.offset_x === 'number') ? s.offset_x : 0;
-            var offY = (typeof s.offset_y === 'number') ? s.offset_y : 0;
-
-            var hexW = hexSize / 100 * W;
-            var r = hexW / 2;
-            var colStep = r * 1.5;
-            var rowStep = Math.sqrt(3) * r;
-            var startX = offX / 100 * W;
-            var startY = offY / 100 * H;
-
-            for (var row = 0; row < rows; row++) {
-                for (var col = 0; col < cols; col++) {
-                    var cx = startX + col * colStep;
-                    var cy = startY + row * rowStep + (col % 2 ? rowStep / 2 : 0);
-                    var pts = [];
-                    for (var i = 0; i < 6; i++) {
-                        var ang = Math.PI / 180 * (60 * i);
-                        pts.push((cx + r * Math.cos(ang)).toFixed(2) + ',' +
-                                 (cy + r * Math.sin(ang)).toFixed(2));
-                    }
-                    var poly = document.createElementNS(svgNS, 'polygon');
-                    var id = 'hex-' + col + '-' + row;
-                    poly.setAttribute('points', pts.join(' '));
-                    poly.setAttribute('class', 'hex');
-                    poly.setAttribute('data-hex', id);
-                    grid.appendChild(poly);
-                    hexById[id] = poly;
-                }
-            }
-            stage.insertBefore(grid, marker);
-            built = { cols: cols, rows: rows, fog: s.fog_color, offX: offX, offY: offY, hexSize: hexSize, img: img.src };
+            built = {
+                cols: s.grid_cols || 20, rows: s.grid_rows || 15,
+                offX: (typeof s.offset_x === 'number') ? s.offset_x : 0,
+                offY: (typeof s.offset_y === 'number') ? s.offset_y : 0,
+                hexSize: (typeof s.hex_size === 'number') ? s.hex_size : 5,
+                W: W, H: H
+            };
         }
 
+        // The reveal generation currently shown. When the Master confirms new
+        // reveals, confirm_seq changes and we re-fetch the composite (the ?v=
+        // busts any browser cache; the server also revalidates via ETag).
+        var shownSeq = null;
+        var lastFocusSeq = null;   // last focus.seq we animated to
         var currentImage;
         function applyState(s) {
             if (!s) return;
+            fogBg.style.background = s.fog_color || '#0d0b0a';
+
             var wantImage = s.map_image || null;
-            if (wantImage !== currentImage) {
+            var seq = s.confirm_seq || 0;
+            // Re-point the composite when either the map changed or a new
+            // reveal was confirmed. Nothing else can change the pixels.
+            if (wantImage !== currentImage || seq !== shownSeq) {
                 currentImage = wantImage;
-                img.src = wantImage ? (MAPS_BASE + wantImage)
-                                    : 'https://placehold.co/1600x1200/2a2320/e8a83a/png?text=Map';
+                shownSeq = seq;
+                img.src = wantImage ? (REVEAL_URL + '?v=' + seq) : PLACEHOLDER;
             }
+
+            updateGeometry(s);
             var revealedSet = new Set((s.revealed_hexes || []).map(String));
-
-            var geomChanged = (s.grid_cols !== built.cols) || (s.grid_rows !== built.rows) ||
-                (s.fog_color !== built.fog) || (s.offset_x !== built.offX) ||
-                (s.offset_y !== built.offY) || (s.hex_size !== built.hexSize) ||
-                (img.src !== built.img);
-            if (geomChanged) buildGrid(s);
-
-            for (var id in hexById) {
-                var want = revealedSet.has(id);
-                var have = hexById[id].classList.contains('hex--revealed');
-                if (want && !have) hexById[id].classList.add('hex--revealed');
-                else if (!want && have) hexById[id].classList.remove('hex--revealed');
-            }
 
             if (s.marker_visible) {
                 marker.hidden = false; marker.style.display = '';
                 if (typeof s.marker_x === 'number') marker.style.left = s.marker_x + '%';
                 if (typeof s.marker_y === 'number') marker.style.top  = s.marker_y + '%';
+                var msc = Math.max(0.3, Math.min(4, +s.marker_scale || 1));
+                marker.style.setProperty('--marker-scale', msc);
             } else {
                 marker.style.display = 'none';
             }
+
+            renderPois(s.pois, revealedSet);
+            applyFocus(s.focus);
         }
 
-        img.addEventListener('load', function () { built.img = undefined; poll(); });
+        // ---- Camera focus: follow the Master's 'look here' broadcast -----
+        // When focus.seq advances, animate this view so the broadcast point
+        // sits at the viewport centre at the Master's zoom. Guarded so the
+        // very first paint (before Panzoom exists) doesn't throw; the next
+        // poll re-applies once panzoom is ready. seq 0 = never focused.
+        function applyFocus(focus) {
+            if (!focus || !focus.seq) return;
+            var pz = window.MapPanzoom;
+            if (!pz) return;                 // not ready yet; next poll retries
+            if (lastFocusSeq === null) { lastFocusSeq = focus.seq; return; } // don't jump on first load
+            if (focus.seq === lastFocusSeq) return;
+            lastFocusSeq = focus.seq;
+            focusTo(pz, focus.x, focus.y, focus.scale);
+        }
+
+        // Move/zoom the view so (xPct,yPct) of the image is centred at the
+        // given scale. Inverse of the master's sendFocus() maths.
+        function focusTo(pz, xPct, yPct, scale) {
+            var sc = Math.min(8, Math.max(0.1, +scale || 1));
+            pz.zoom(sc, { animate: true });
+            // After zoom settles, pan so the focus point is centred.
+            var vw = viewport.clientWidth, vh = viewport.clientHeight;
+            var iw = stage.offsetWidth || 1, ih = stage.offsetHeight || 1;
+            var cxImg = (+xPct || 50) / 100 * iw;
+            var cyImg = (+yPct || 50) / 100 * ih;
+            // pan is in image pixels: we want vwCenter = pan + cxImg*scale.
+            var panX = vw / 2 - cxImg * sc;
+            var panY = vh / 2 - cyImg * sc;
+            pz.pan(panX, panY, { animate: true });
+        }
+
+        // Centre the image in the viewport at scale 1. `animate` off for the
+        // initial placement (so the player doesn't see it slide in from the
+        // corner) and on for the Reset button. Falls back to the image's
+        // natural size if the element hasn't been laid out yet.
+        function centerImage(pz, animate) {
+            if (!pz) return;
+            pz.zoom(1, { animate: false });
+            var vw = viewport.clientWidth, vh = viewport.clientHeight;
+            var iw = stage.offsetWidth || img.naturalWidth || 0;
+            var ih = stage.offsetHeight || img.naturalHeight || 0;
+            if (!iw || !ih) return false;   // not ready; caller may retry
+            pz.pan((vw - iw) / 2, (vh - ih) / 2, { animate: animate !== false });
+            return true;
+        }
+
+        // ---- Points of interest (read-only) --------------------------------
+        // A POI shows if it is always_visible, OR if the hex it sits in has
+        // been revealed. Either way only its TEXT is ever sent — the server
+        // never ships un-revealed map pixels — so an always_visible label
+        // over dark terrain is safe. Positions are percent of the stage.
+        function hexIdAt(xPct, yPct) {
+            var W = built.W || img.clientWidth || 1600;
+            var H = built.H || img.clientHeight || 1200;
+            var hexSize = (built.hexSize != null) ? built.hexSize : 5;
+            var r = (hexSize / 100 * W) / 2;
+            if (r <= 0) return null;
+            var colStep = r * 1.5, rowStep = Math.sqrt(3) * r;
+            var startX = (built.offX || 0) / 100 * W, startY = (built.offY || 0) / 100 * H;
+            var px = xPct / 100 * W, py = yPct / 100 * H;
+            var best = null, bestD = Infinity;
+            var cols = built.cols, rows = built.rows;
+            for (var col = 0; col < cols; col++) {
+                var cx = startX + col * colStep;
+                for (var row = 0; row < rows; row++) {
+                    var cy = startY + row * rowStep + (col % 2 ? rowStep / 2 : 0);
+                    var dx = px - cx, dy = py - cy, d = dx * dx + dy * dy;
+                    if (d < bestD) { bestD = d; best = 'hex-' + col + '-' + row; }
+                }
+            }
+            return (bestD <= r * r) ? best : null;
+        }
+
+        function renderPois(pois, revealedSet) {
+            poiLayer.innerHTML = '';
+            (pois || []).forEach(function (poi) {
+                var show = poi.always_visible;
+                if (!show) {
+                    var hid = hexIdAt(+poi.x || 0, +poi.y || 0);
+                    show = !!(hid && revealedSet.has(hid));
+                }
+                if (!show) return;
+                var el = document.createElement('div');
+                el.className = 'poi';
+                el.style.left = (+poi.x || 0) + '%';
+                el.style.top = (+poi.y || 0) + '%';
+                var sc = Math.max(0.3, Math.min(4, +poi.scale || 1));
+                el.style.setProperty('--poi-scale', sc);
+                var color = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(poi.color || '') ? poi.color : null;
+                var pin = document.createElement('div');
+                pin.className = 'poi__pin';
+                if (poi.icon) {
+                    // Custom glyph pin: show the character instead of the teardrop.
+                    pin.classList.add('poi__pin--glyph');
+                    pin.textContent = poi.icon;
+                    if (color) pin.style.color = color;
+                } else if (color) {
+                    pin.style.background = color;
+                }
+                el.appendChild(pin);
+                if (poi.label) {
+                    var lab = document.createElement('div');
+                    lab.className = 'poi__label';
+                    lab.textContent = poi.label;
+                    el.appendChild(lab);
+                }
+                poiLayer.appendChild(el);
+            });
+        }
+
+        // When the composite finishes loading, its clientWidth/Height are
+        // final, so re-poll to recompute geometry and place POIs correctly.
+        img.addEventListener('load', function () { poll(); });
 
         try { applyState(JSON.parse(document.getElementById('map-initial').textContent)); }
         catch (e) {}
@@ -186,8 +320,22 @@
             viewport.addEventListener('wheel', function (e) { e.preventDefault(); panzoom.zoomWithWheel(e); }, { passive: false });
             document.getElementById('map-zoom-in').addEventListener('click', function () { panzoom.zoomIn(); });
             document.getElementById('map-zoom-out').addEventListener('click', function () { panzoom.zoomOut(); });
-            document.getElementById('map-reset').addEventListener('click', function () { panzoom.reset(); });
+            document.getElementById('map-reset').addEventListener('click', function () { centerImage(panzoom, true); });
             window.MapPanzoom = panzoom;
+            // Centre on the image at startup. Timing is fiddly: the composite
+            // may still be loading (no size yet) OR already cached (its 'load'
+            // event will never fire). So we try now, on the image's load, and
+            // again on the next animation frame, stopping once one succeeds.
+            var centered = false;
+            function tryCenter() {
+                if (centered) return;
+                if (centerImage(panzoom, false)) centered = true;
+            }
+            tryCenter();
+            if (img.complete) requestAnimationFrame(tryCenter);
+            img.addEventListener('load', tryCenter);
+            // Final safety net after layout settles.
+            setTimeout(tryCenter, 300);
         }
         initPanzoom();
     })();

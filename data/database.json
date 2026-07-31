@@ -1414,7 +1414,6 @@
       "hex-6-2",
       "hex-9-1",
       "hex-8-2",
-      "hex-11-2",
       "hex-10-2",
       "hex-10-3",
       "hex-20-0",
@@ -2673,15 +2672,19 @@
       "hex-32-20",
       "hex-30-22",
       "hex-31-21",
-      "hex-31-20"
+      "hex-31-20",
+      "hex-24-6",
+      "hex-11-2",
+      "hex-13-13",
+      "hex-25-16"
     ],
-    "marker_x": 22.66,
-    "marker_y": 12.34,
-    "marker_visible": false,
+    "marker_x": 47.96,
+    "marker_y": 47.13,
+    "marker_visible": true,
     "grid_cols": 51,
     "grid_rows": 42,
-    "fog_color": "#fbf6de",
-    "map_image": "map_1785432327.png",
+    "fog_color": "#dbd7c2",
+    "map_image": "map_1785507379.png",
     "pending": {
       "revealed_hexes": [
         "hex-22-45",
@@ -2708,7 +2711,6 @@
         "hex-6-2",
         "hex-9-1",
         "hex-8-2",
-        "hex-11-2",
         "hex-10-2",
         "hex-10-3",
         "hex-20-0",
@@ -2875,7 +2877,6 @@
         "hex-27-5",
         "hex-28-6",
         "hex-27-6",
-        "hex-27-7",
         "hex-28-7",
         "hex-28-8",
         "hex-27-8",
@@ -3967,22 +3968,278 @@
         "hex-32-20",
         "hex-30-22",
         "hex-31-21",
-        "hex-31-20"
+        "hex-31-20",
+        "hex-24-6",
+        "hex-11-2",
+        "hex-13-13",
+        "hex-25-16"
       ],
-      "marker_x": 22.66,
-      "marker_y": 12.34,
-      "marker_visible": false,
+      "marker_x": 47.96,
+      "marker_y": 47.13,
+      "marker_visible": true,
       "grid_cols": 51,
       "grid_rows": 42,
-      "fog_color": "#fbf6de",
-      "map_image": "map_1785432327.png",
+      "fog_color": "#dbd7c2",
+      "map_image": "map_1785507379.png",
       "offset_x": 25.1,
       "offset_y": 29.36,
-      "hex_size": 1.793
+      "hex_size": 1.793,
+      "pois": [
+        {
+          "id": "poi-1785489103922-506153",
+          "label": "",
+          "x": 47.93,
+          "y": 31.37,
+          "always_visible": true,
+          "icon": "Ⓥ",
+          "color": "#ec0914",
+          "scale": 0.75
+        },
+        {
+          "id": "poi-1785507214992-977599",
+          "label": "",
+          "x": 31.78,
+          "y": 38.15,
+          "always_visible": true,
+          "icon": "Ⓥ",
+          "color": "#ec0914",
+          "scale": 0.75
+        },
+        {
+          "id": "poi-1785507275110-691559",
+          "label": "",
+          "x": 49.3,
+          "y": 43.46,
+          "always_visible": true,
+          "icon": "Ⓥ",
+          "color": "#ec0914",
+          "scale": 1.0
+        },
+        {
+          "id": "poi-1785507349399-298569",
+          "label": "",
+          "x": 65.41,
+          "y": 41.09,
+          "always_visible": true,
+          "icon": "Ⓥ",
+          "color": "#ec0914",
+          "scale": 0.8
+        },
+        {
+          "id": "poi-1785507428720-193697",
+          "label": "Cratere",
+          "x": 41.26,
+          "y": 32.0,
+          "always_visible": true,
+          "icon": "",
+          "color": "#3bd4e8",
+          "scale": 0.8
+        },
+        {
+          "id": "poi-1785507534030-70201",
+          "label": "Cratere",
+          "x": 34.52,
+          "y": 34.86,
+          "always_visible": true,
+          "icon": "",
+          "color": "#3bd4e8",
+          "scale": 0.8
+        },
+        {
+          "id": "poi-1785507567518-896270",
+          "label": "Torre Druidica",
+          "x": 39.9,
+          "y": 32.56,
+          "always_visible": true,
+          "icon": "",
+          "color": "#3be86f",
+          "scale": 0.7
+        },
+        {
+          "id": "poi-1785507654950-636720",
+          "label": "Nangalore",
+          "x": 58.28,
+          "y": 49.08,
+          "always_visible": true,
+          "icon": "",
+          "color": "#e8a83a",
+          "scale": 0.8
+        },
+        {
+          "id": "poi-1785507693958-740885",
+          "label": "Mbala",
+          "x": 37.67,
+          "y": 39.79,
+          "always_visible": true,
+          "icon": "",
+          "color": "#e8a83a",
+          "scale": 0.8
+        },
+        {
+          "id": "poi-1785507730446-948371",
+          "label": "Kir Sabal",
+          "x": 63.12,
+          "y": 45.17,
+          "always_visible": true,
+          "icon": "",
+          "color": "#e8a83a",
+          "scale": 0.75
+        },
+        {
+          "id": "poi-1785507756848-331222",
+          "label": "",
+          "x": 65.4,
+          "y": 21.61,
+          "always_visible": true,
+          "icon": "Ⓥ",
+          "color": "#ec0902",
+          "scale": 1.0
+        },
+        {
+          "id": "poi-1785507804286-99973",
+          "label": "Driadi",
+          "x": 57.36,
+          "y": 37.82,
+          "always_visible": true,
+          "icon": "✿",
+          "color": "#fd81f9",
+          "scale": 0.7
+        }
+      ],
+      "marker_scale": 0.6
     },
-    "confirm_seq": 25,
+    "confirm_seq": 45,
     "offset_x": 25.1,
     "offset_y": 29.36,
-    "hex_size": 1.793
+    "hex_size": 1.793,
+    "pois": [
+      {
+        "id": "poi-1785489103922-506153",
+        "label": "",
+        "x": 47.93,
+        "y": 31.37,
+        "always_visible": true,
+        "icon": "Ⓥ",
+        "color": "#ec0914",
+        "scale": 0.75
+      },
+      {
+        "id": "poi-1785507214992-977599",
+        "label": "",
+        "x": 31.78,
+        "y": 38.15,
+        "always_visible": true,
+        "icon": "Ⓥ",
+        "color": "#ec0914",
+        "scale": 0.75
+      },
+      {
+        "id": "poi-1785507275110-691559",
+        "label": "",
+        "x": 49.3,
+        "y": 43.46,
+        "always_visible": true,
+        "icon": "Ⓥ",
+        "color": "#ec0914",
+        "scale": 1.0
+      },
+      {
+        "id": "poi-1785507349399-298569",
+        "label": "",
+        "x": 65.41,
+        "y": 41.09,
+        "always_visible": true,
+        "icon": "Ⓥ",
+        "color": "#ec0914",
+        "scale": 0.8
+      },
+      {
+        "id": "poi-1785507428720-193697",
+        "label": "Cratere",
+        "x": 41.26,
+        "y": 32.0,
+        "always_visible": true,
+        "icon": "",
+        "color": "#3bd4e8",
+        "scale": 0.8
+      },
+      {
+        "id": "poi-1785507534030-70201",
+        "label": "Cratere",
+        "x": 34.52,
+        "y": 34.86,
+        "always_visible": true,
+        "icon": "",
+        "color": "#3bd4e8",
+        "scale": 0.8
+      },
+      {
+        "id": "poi-1785507567518-896270",
+        "label": "Torre Druidica",
+        "x": 39.9,
+        "y": 32.56,
+        "always_visible": true,
+        "icon": "",
+        "color": "#3be86f",
+        "scale": 0.7
+      },
+      {
+        "id": "poi-1785507654950-636720",
+        "label": "Nangalore",
+        "x": 58.28,
+        "y": 49.08,
+        "always_visible": true,
+        "icon": "",
+        "color": "#e8a83a",
+        "scale": 0.8
+      },
+      {
+        "id": "poi-1785507693958-740885",
+        "label": "Mbala",
+        "x": 37.67,
+        "y": 39.79,
+        "always_visible": true,
+        "icon": "",
+        "color": "#e8a83a",
+        "scale": 0.8
+      },
+      {
+        "id": "poi-1785507730446-948371",
+        "label": "Kir Sabal",
+        "x": 63.12,
+        "y": 45.17,
+        "always_visible": true,
+        "icon": "",
+        "color": "#e8a83a",
+        "scale": 0.75
+      },
+      {
+        "id": "poi-1785507756848-331222",
+        "label": "",
+        "x": 65.4,
+        "y": 21.61,
+        "always_visible": true,
+        "icon": "Ⓥ",
+        "color": "#ec0902",
+        "scale": 1.0
+      },
+      {
+        "id": "poi-1785507804286-99973",
+        "label": "Driadi",
+        "x": 57.36,
+        "y": 37.82,
+        "always_visible": true,
+        "icon": "✿",
+        "color": "#fd81f9",
+        "scale": 0.7
+      }
+    ],
+    "focus": {
+      "seq": 7,
+      "x": 80.78,
+      "y": 88.98,
+      "scale": 0.717
+    },
+    "marker_scale": 0.6
   }
 }
