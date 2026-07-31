@@ -1,0 +1,196 @@
+{# Players' interactive map: read-only. #}
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'Map' | t }}</title>
+    {% include '_head.html' %}
+    <style>
+        .map-viewport {
+            position: relative; width: 100%; height: 70vh; min-height: 360px;
+            overflow: hidden; background: var(--bg);
+            border: var(--px) solid var(--border);
+            box-shadow: var(--px) var(--px) 0 0 var(--shadow);
+            cursor: grab; touch-action: none;
+        }
+        .map-viewport:active { cursor: grabbing; }
+        .map-stage { display: inline-block; transform-origin: 0 0; position: relative; }
+        .map-stage img {
+            display: block; image-rendering: pixelated; max-width: none;
+            user-select: none; -webkit-user-drag: none;
+        }
+        .map-grid { position: absolute; top: 0; left: 0; pointer-events: none; }
+        .hex {
+            fill: var(--fog, #000000); fill-opacity: 1;
+            stroke: none; vector-effect: non-scaling-stroke;
+            transition: fill-opacity 0.6s ease;
+        }
+        .hex--revealed { fill-opacity: 0; }
+        .marker {
+            position: absolute; left: 50%; top: 50%;
+            width: 28px; height: 28px;
+            transform: translate(-50%, -50%) rotate(45deg);
+            background: var(--accent-2); border: 3px solid var(--ink);
+            box-shadow: 0 0 0 2px var(--border), 0 0 12px rgba(192,83,43,0.8);
+            z-index: 5; transition: left 0.8s ease, top 0.8s ease;
+        }
+        .map-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+        .map-hint { color: var(--ink-dim); font-style: italic; margin: 0 0 12px; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="hub-top">
+            <div>
+                <p class="subtitle"><a href="{{ url_for('player.home') }}">&lsaquo; {{ 'Back to Hub' | t }}</a></p>
+                <h1>{{ 'Map' | t }}</h1>
+            </div>
+            <button type="button" class="btn" onclick="location.href='{{ url_for('player.home') }}'">&#9776; {{ 'Hub' | t }}</button>
+        </div>
+
+        <div class="panel">
+            <div class="map-toolbar">
+                <button type="button" class="btn btn--ghost" id="map-zoom-in" aria-label="{{ 'Zoom in' | t }}">＋</button>
+                <button type="button" class="btn btn--ghost" id="map-zoom-out" aria-label="{{ 'Zoom out' | t }}">－</button>
+                <button type="button" class="btn btn--ghost" id="map-reset">{{ 'Reset view' | t }}</button>
+            </div>
+            <p class="map-hint">{{ 'Scroll to zoom, drag to move around the map.' | t }}</p>
+
+            <div class="map-viewport" id="map-viewport">
+                <div class="map-stage" id="map-stage">
+                    <img id="map-image"
+                         src="{% if map_state.map_image %}{{ url_for('static', filename='maps/' ~ map_state.map_image) }}{% else %}https://placehold.co/1600x1200/2a2320/e8a83a/png?text=Map{% endif %}"
+                         alt="{{ 'Campaign map' | t }}" draggable="false">
+                    <div class="marker" id="marker" hidden></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script id="map-initial" type="application/json">{{ map_state | tojson }}</script>
+    <script id="map-base" type="application/json">"{{ url_for('static', filename='maps/') }}"</script>
+    <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
+    <script>
+    (function () {
+        'use strict';
+        var READ_URL = "{{ url_for('player.map_state') }}";
+        var POLL_MS = 3000;
+        var MAPS_BASE = JSON.parse(document.getElementById('map-base').textContent);
+
+        var stage = document.getElementById('map-stage');
+        var viewport = document.getElementById('map-viewport');
+        var img = document.getElementById('map-image');
+        var marker = document.getElementById('marker');
+
+        var svgNS = 'http://www.w3.org/2000/svg';
+        var grid = null, hexById = {};
+        var built = { cols: -1, rows: -1, fog: '', offX: null, offY: null, hexSize: null, img: undefined };
+
+        function buildGrid(s) {
+            if (grid) grid.remove();
+            hexById = {};
+            var W = img.clientWidth || img.naturalWidth || 1600;
+            var H = img.clientHeight || img.naturalHeight || 1200;
+            grid = document.createElementNS(svgNS, 'svg');
+            grid.setAttribute('class', 'map-grid');
+            grid.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+            grid.style.width = '100%'; grid.style.height = '100%';
+            grid.style.setProperty('--fog', s.fog_color || '#000000');
+
+            var cols = s.grid_cols || 20, rows = s.grid_rows || 15;
+            var hexSize = (typeof s.hex_size === 'number') ? s.hex_size : 5;
+            var offX = (typeof s.offset_x === 'number') ? s.offset_x : 0;
+            var offY = (typeof s.offset_y === 'number') ? s.offset_y : 0;
+
+            var hexW = hexSize / 100 * W;
+            var r = hexW / 2;
+            var colStep = r * 1.5;
+            var rowStep = Math.sqrt(3) * r;
+            var startX = offX / 100 * W;
+            var startY = offY / 100 * H;
+
+            for (var row = 0; row < rows; row++) {
+                for (var col = 0; col < cols; col++) {
+                    var cx = startX + col * colStep;
+                    var cy = startY + row * rowStep + (col % 2 ? rowStep / 2 : 0);
+                    var pts = [];
+                    for (var i = 0; i < 6; i++) {
+                        var ang = Math.PI / 180 * (60 * i);
+                        pts.push((cx + r * Math.cos(ang)).toFixed(2) + ',' +
+                                 (cy + r * Math.sin(ang)).toFixed(2));
+                    }
+                    var poly = document.createElementNS(svgNS, 'polygon');
+                    var id = 'hex-' + col + '-' + row;
+                    poly.setAttribute('points', pts.join(' '));
+                    poly.setAttribute('class', 'hex');
+                    poly.setAttribute('data-hex', id);
+                    grid.appendChild(poly);
+                    hexById[id] = poly;
+                }
+            }
+            stage.insertBefore(grid, marker);
+            built = { cols: cols, rows: rows, fog: s.fog_color, offX: offX, offY: offY, hexSize: hexSize, img: img.src };
+        }
+
+        var currentImage;
+        function applyState(s) {
+            if (!s) return;
+            var wantImage = s.map_image || null;
+            if (wantImage !== currentImage) {
+                currentImage = wantImage;
+                img.src = wantImage ? (MAPS_BASE + wantImage)
+                                    : 'https://placehold.co/1600x1200/2a2320/e8a83a/png?text=Map';
+            }
+            var revealedSet = new Set((s.revealed_hexes || []).map(String));
+
+            var geomChanged = (s.grid_cols !== built.cols) || (s.grid_rows !== built.rows) ||
+                (s.fog_color !== built.fog) || (s.offset_x !== built.offX) ||
+                (s.offset_y !== built.offY) || (s.hex_size !== built.hexSize) ||
+                (img.src !== built.img);
+            if (geomChanged) buildGrid(s);
+
+            for (var id in hexById) {
+                var want = revealedSet.has(id);
+                var have = hexById[id].classList.contains('hex--revealed');
+                if (want && !have) hexById[id].classList.add('hex--revealed');
+                else if (!want && have) hexById[id].classList.remove('hex--revealed');
+            }
+
+            if (s.marker_visible) {
+                marker.hidden = false; marker.style.display = '';
+                if (typeof s.marker_x === 'number') marker.style.left = s.marker_x + '%';
+                if (typeof s.marker_y === 'number') marker.style.top  = s.marker_y + '%';
+            } else {
+                marker.style.display = 'none';
+            }
+        }
+
+        img.addEventListener('load', function () { built.img = undefined; poll(); });
+
+        try { applyState(JSON.parse(document.getElementById('map-initial').textContent)); }
+        catch (e) {}
+
+        function poll() {
+            fetch(READ_URL, { headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(applyState)
+                .catch(function () {});
+        }
+        setInterval(poll, POLL_MS);
+        poll();
+
+        function initPanzoom() {
+            if (typeof Panzoom === 'undefined' || !viewport) return;
+            var panzoom = Panzoom(stage, { maxScale: 8, minScale: 0.1, step: 0.2, cursor: 'grab' });
+            viewport.addEventListener('wheel', function (e) { e.preventDefault(); panzoom.zoomWithWheel(e); }, { passive: false });
+            document.getElementById('map-zoom-in').addEventListener('click', function () { panzoom.zoomIn(); });
+            document.getElementById('map-zoom-out').addEventListener('click', function () { panzoom.zoomOut(); });
+            document.getElementById('map-reset').addEventListener('click', function () { panzoom.reset(); });
+            window.MapPanzoom = panzoom;
+        }
+        initPanzoom();
+    })();
+    </script>
+</body>
+</html>

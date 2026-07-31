@@ -1,0 +1,527 @@
+{# Master's interactive map: upload + calibratable hex grid (offset + hex size)
+   + fog-of-war (reveal/re-hide) + draggable marker, all STAGED behind an
+   explicit "Reveal to players" confirm.
+
+   Two layers of truth (see storage.py):
+     * confirmed  -> what players see. Shown here as fully-transparent hexes.
+     * pending    -> the Master's draft. Edits land here; players never see it
+                     until Confirm. Draft-only reveals are drawn semi-clear with
+                     a dashed gold edge; a draft-hidden hex that is still live
+                     for players is drawn with a dashed red edge.
+
+   Grid placement is by CALIBRATION, not by stretching to the image edges:
+     * hex_size = one hex's width as PERCENT of the image width;
+     * offset_x/offset_y = where the first hex's centre sits, PERCENT of image.
+   This lets the overlay be nudged onto a map that already has hexes printed on
+   it. Everything is percent-based so it survives a resolution change.
+
+   The pan/zoom fix vs the earlier version: hexes no longer block Panzoom.
+   Instead a click is distinguished from a drag by how far the pointer moved,
+   so you can both click single hexes and drag the whole map. #}
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'Interactive Map' | t }}</title>
+    {% include '_head.html' %}
+    <style>
+        .map-viewport {
+            position: relative; width: 100%; height: 70vh; min-height: 360px;
+            overflow: hidden; background: var(--bg);
+            border: var(--px) solid var(--border);
+            box-shadow: var(--px) var(--px) 0 0 var(--shadow);
+            cursor: grab; touch-action: none;
+        }
+        .map-viewport:active { cursor: grabbing; }
+        .map-stage { display: inline-block; transform-origin: 0 0; position: relative; }
+        .map-stage img {
+            display: block; image-rendering: pixelated; max-width: none;
+            user-select: none; -webkit-user-drag: none;
+        }
+        .map-grid { position: absolute; top: 0; left: 0; pointer-events: none; }
+
+        .hex {
+            fill: var(--fog, #0d0b0a);
+            fill-opacity: 0.92;
+            stroke: rgba(232,168,58,0.30);
+            stroke-width: 1.2; vector-effect: non-scaling-stroke;
+            pointer-events: all; cursor: pointer;
+            transition: fill-opacity 0.35s ease;
+        }
+        .hex:hover { fill: var(--accent-2); fill-opacity: 0.45; }
+        /* Confirmed-revealed: fully clear (what players see). */
+        .hex--live { fill-opacity: 0; }
+        /* Draft-only revealed (not yet sent): semi-clear + dashed gold edge. */
+        .hex--draft-reveal {
+            fill-opacity: 0.28;
+            stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3;
+        }
+        /* Draft-hidden but still live to players: dashed red warning edge. */
+        .hex--draft-hide {
+            fill-opacity: 0.55;
+            stroke: var(--accent-2); stroke-width: 2; stroke-dasharray: 4 3;
+        }
+
+        .marker {
+            position: absolute; left: 50%; top: 50%;
+            width: 28px; height: 28px;
+            transform: translate(-50%, -50%) rotate(45deg);
+            background: var(--accent-2); border: 3px solid var(--ink);
+            box-shadow: 0 0 0 2px var(--border), 0 0 12px rgba(192,83,43,0.8);
+            cursor: grab; z-index: 6; touch-action: none;
+        }
+        .marker:active { cursor: grabbing; }
+        .marker--hidden-to-players { opacity: 0.5; filter: grayscale(0.5); }
+        /* Ghost showing where the marker CURRENTLY is for players, when the
+           draft has moved it elsewhere. */
+        .marker-ghost {
+            position: absolute; left: 50%; top: 50%;
+            width: 24px; height: 24px;
+            transform: translate(-50%, -50%) rotate(45deg);
+            background: transparent; border: 2px dashed var(--ink-dim);
+            z-index: 5; pointer-events: none;
+        }
+
+        .map-toolbar, .map-controls {
+            display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+            margin-bottom: 12px;
+        }
+        .map-controls {
+            gap: 16px; align-items: flex-end; padding: 12px;
+            background: rgba(0,0,0,0.2); border: 2px solid var(--border);
+        }
+        .map-controls label {
+            display: block; font-family: var(--font-display);
+            font-size: 0.55rem; color: var(--ink-dim); margin-bottom: 4px;
+        }
+        .map-controls input[type="number"] { width: 84px; }
+        .map-field { display: flex; flex-direction: column; }
+        /* slider + number pair */
+        .calib { display: flex; flex-direction: column; gap: 4px; min-width: 190px; }
+        .calib-row { display: flex; align-items: center; gap: 8px; }
+        .calib-row input[type="range"] { flex: 1; }
+        .calib-row input[type="number"] { width: 78px; }
+        .map-hint { color: var(--ink-dim); font-style: italic; margin: 0 0 12px; }
+        .map-status { color: var(--ink-dim); font-size: 0.85rem; margin-left: auto; }
+        .mode-toggle.is-hiding { background: var(--accent-2); color: var(--ink); }
+        .pending-badge {
+            font-family: var(--font-display); font-size: 0.55rem;
+            padding: 4px 8px; border: 2px solid var(--border);
+            background: var(--accent); color: var(--border);
+        }
+        .pending-badge.is-clean { background: var(--good); }
+        .btn--confirm { background: var(--good); color: var(--ink); }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="hub-top">
+            <div>
+                <p class="subtitle"><a href="{{ url_for('master.dm_panel') }}">&lsaquo; {{ "Back to Master's Screen" | t }}</a></p>
+                <h1>{{ 'Interactive Map' | t }}</h1>
+            </div>
+            {% with active = 'map' %}{% include 'master/_menu.html' %}{% endwith %}
+        </div>
+
+        <div class="panel">
+            {# ---- Map image upload / clear ---- #}
+            <form class="map-controls" method="post"
+                  action="{{ url_for('master.map_upload') }}" enctype="multipart/form-data">
+                <div class="map-field">
+                    <label for="map_image_file">{{ 'Map image' | t }}</label>
+                    <input type="file" id="map_image_file" name="map_image"
+                           accept="image/png,image/jpeg,image/gif,image/webp">
+                </div>
+                <button type="submit" class="btn">{{ 'Upload map' | t }}</button>
+                {% if map_state.map_image %}
+                <button type="submit" class="btn btn--ghost" name="clear" value="1"
+                        onclick="return confirm('{{ 'Remove the current map image?' | t }}')">
+                    {{ 'Remove map' | t }}
+                </button>
+                {% endif %}
+            </form>
+
+            {# ---- Grid size + fog colour ---- #}
+            <div class="map-controls">
+                <div class="map-field">
+                    <label for="grid_cols">{{ 'Columns' | t }}</label>
+                    <input type="number" id="grid_cols" min="1" max="400" value="{{ map_state.pending.grid_cols }}">
+                </div>
+                <div class="map-field">
+                    <label for="grid_rows">{{ 'Rows' | t }}</label>
+                    <input type="number" id="grid_rows" min="1" max="400" value="{{ map_state.pending.grid_rows }}">
+                </div>
+                <div class="map-field">
+                    <label for="fog_color">{{ 'Fog colour' | t }}</label>
+                    <input type="color" id="fog_color" value="{{ map_state.pending.fog_color }}">
+                </div>
+            </div>
+
+            {# ---- Calibration: slider + number for each ---- #}
+            <div class="map-controls">
+                <div class="calib">
+                    <label for="offset_x_num">{{ 'Offset X (%)' | t }}</label>
+                    <div class="calib-row">
+                        <input type="range" id="offset_x_range" min="-50" max="150" step="0.1" value="{{ map_state.pending.offset_x }}">
+                        <input type="number" id="offset_x_num" min="-50" max="150" step="0.1" value="{{ map_state.pending.offset_x }}">
+                    </div>
+                </div>
+                <div class="calib">
+                    <label for="offset_y_num">{{ 'Offset Y (%)' | t }}</label>
+                    <div class="calib-row">
+                        <input type="range" id="offset_y_range" min="-50" max="150" step="0.1" value="{{ map_state.pending.offset_y }}">
+                        <input type="number" id="offset_y_num" min="-50" max="150" step="0.1" value="{{ map_state.pending.offset_y }}">
+                    </div>
+                </div>
+                <div class="calib">
+                    <label for="hex_size_num">{{ 'Hex size (% width)' | t }}</label>
+                    <div class="calib-row">
+                        <input type="range" id="hex_size_range" min="0.5" max="30" step="0.05" value="{{ map_state.pending.hex_size }}">
+                        <input type="number" id="hex_size_num" min="0.5" max="100" step="0.05" value="{{ map_state.pending.hex_size }}">
+                    </div>
+                </div>
+            </div>
+
+            {# ---- Live tools + confirm ---- #}
+            <div class="map-toolbar">
+                <button type="button" class="btn btn--ghost" id="map-zoom-in" aria-label="{{ 'Zoom in' | t }}">＋</button>
+                <button type="button" class="btn btn--ghost" id="map-zoom-out" aria-label="{{ 'Zoom out' | t }}">－</button>
+                <button type="button" class="btn btn--ghost" id="map-reset">{{ 'Reset view' | t }}</button>
+                <button type="button" class="btn mode-toggle" id="hide-mode">{{ 'Reveal mode' | t }}</button>
+                <button type="button" class="btn" id="marker-toggle">{{ 'Show marker' | t }}</button>
+                <span class="pending-badge is-clean" id="pending-badge">{{ 'In sync' | t }}</span>
+                <button type="button" class="btn btn--confirm" id="confirm-btn">✓ {{ 'Reveal to players' | t }}</button>
+                <button type="button" class="btn btn--ghost" id="discard-btn">✗ {{ 'Discard' | t }}</button>
+                <span class="map-status" id="map-status" aria-live="polite"></span>
+            </div>
+            <p class="map-hint">{{ 'Click hexes and move the marker freely — nothing reaches players until you press Reveal. Use the sliders to line the grid up with the printed hexes.' | t }}</p>
+
+            <div class="map-viewport" id="map-viewport">
+                <div class="map-stage" id="map-stage">
+                    <img id="map-image"
+                         src="{% if map_state.pending.map_image %}{{ url_for('static', filename='maps/' ~ map_state.pending.map_image) }}{% else %}https://placehold.co/1600x1200/2a2320/e8a83a/png?text=Upload+a+map{% endif %}"
+                         alt="{{ 'Campaign map' | t }}" draggable="false">
+                    <div class="marker-ghost" id="marker-ghost" hidden></div>
+                    <div class="marker" id="marker" hidden></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script id="map-initial" type="application/json">{{ map_state | tojson }}</script>
+    <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
+    <script>
+    (function () {
+        'use strict';
+        var WRITE_URL   = "{{ url_for('master.map_state_api') }}";
+        var CONFIRM_URL = "{{ url_for('master.map_confirm') }}";
+        var DISCARD_URL = "{{ url_for('master.map_discard') }}";
+
+        var stage    = document.getElementById('map-stage');
+        var viewport = document.getElementById('map-viewport');
+        var img      = document.getElementById('map-image');
+        var marker   = document.getElementById('marker');
+        var ghost    = document.getElementById('marker-ghost');
+        var statusEl = document.getElementById('map-status');
+        var toggleBtn= document.getElementById('marker-toggle');
+        var hideBtn  = document.getElementById('hide-mode');
+        var badge    = document.getElementById('pending-badge');
+
+        var svgNS = 'http://www.w3.org/2000/svg';
+        var grid = null, hexById = {};
+
+        // ---- State: confirmed (live) + draft (what we edit) ----------------
+        var full = {};
+        try { full = JSON.parse(document.getElementById('map-initial').textContent) || {}; }
+        catch (e) { full = {}; }
+        var live = {
+            revealed: new Set((full.revealed_hexes || []).map(String)),
+            markerX: full.marker_x || 0, markerY: full.marker_y || 0,
+            markerVisible: !!full.marker_visible
+        };
+        var p = full.pending || {};
+        var draft = {
+            revealed: new Set((p.revealed_hexes || []).map(String)),
+            markerX: (typeof p.marker_x === 'number') ? p.marker_x : 50,
+            markerY: (typeof p.marker_y === 'number') ? p.marker_y : 50,
+            markerVisible: !!p.marker_visible,
+            cols: p.grid_cols || 20, rows: p.grid_rows || 15,
+            fog: p.fog_color || '#0d0b0a',
+            offX: (typeof p.offset_x === 'number') ? p.offset_x : 0,
+            offY: (typeof p.offset_y === 'number') ? p.offset_y : 0,
+            hexSize: (typeof p.hex_size === 'number') ? p.hex_size : 5
+        };
+
+        var hideMode = false;
+
+        function showStatus(msg, isError) {
+            if (!statusEl) return;
+            statusEl.textContent = msg;
+            statusEl.style.color = isError ? 'var(--accent-2)' : 'var(--ink-dim)';
+        }
+        function persist(patch, msg) {
+            if (msg) showStatus(msg, false);
+            return fetch(WRITE_URL, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patch)
+            }).then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                showStatus("{{ 'Draft saved' | t }}", false);
+                refreshBadge();
+            }).catch(function (err) {
+                showStatus("{{ 'Save failed — try again' | t }}", true);
+                console.error(err);
+            });
+        }
+
+        // "Dirty" = the draft differs from live in any staged field.
+        function isDirty() {
+            if (draft.markerVisible !== live.markerVisible) return true;
+            if (Math.abs(draft.markerX - live.markerX) > 0.01) return true;
+            if (Math.abs(draft.markerY - live.markerY) > 0.01) return true;
+            if (draft.revealed.size !== live.revealed.size) return true;
+            for (var id of draft.revealed) if (!live.revealed.has(id)) return true;
+            return false;
+        }
+        function refreshBadge() {
+            var dirty = isDirty();
+            badge.textContent = dirty ? "{{ 'Unconfirmed changes' | t }}" : "{{ 'In sync' | t }}";
+            badge.classList.toggle('is-clean', !dirty);
+        }
+
+        // ---- Hex geometry driven by calibration ----------------------------
+        function buildGrid() {
+            if (grid) grid.remove();
+            hexById = {};
+            var W = img.clientWidth || img.naturalWidth || 1600;
+            var H = img.clientHeight || img.naturalHeight || 1200;
+            grid = document.createElementNS(svgNS, 'svg');
+            grid.setAttribute('class', 'map-grid');
+            grid.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+            grid.setAttribute('width', W);
+            grid.setAttribute('height', H);
+            grid.style.width = '100%'; grid.style.height = '100%';
+            grid.style.setProperty('--fog', draft.fog);
+
+            // Flat-top hexes: a flat side on top, points on left/right.
+            var hexW = draft.hexSize / 100 * W;          // corner-to-corner width
+            var r = hexW / 2;                            // circumradius (flat-top)
+            var colStep = r * 1.5;                       // columns interlock horizontally
+            var rowStep = Math.sqrt(3) * r;              // full hex height
+            var startX = draft.offX / 100 * W;
+            var startY = draft.offY / 100 * H;
+
+            for (var row = 0; row < draft.rows; row++) {
+                for (var col = 0; col < draft.cols; col++) {
+                    // Odd COLUMNS shift half a hex down (flat-top offset layout).
+                    var cx = startX + col * colStep;
+                    var cy = startY + row * rowStep + (col % 2 ? rowStep / 2 : 0);
+                    var pts = [];
+                    for (var i = 0; i < 6; i++) {
+                        var ang = Math.PI / 180 * (60 * i);   // 0° start = flat top
+                        pts.push((cx + r * Math.cos(ang)).toFixed(2) + ',' +
+                                 (cy + r * Math.sin(ang)).toFixed(2));
+                    }
+                    var poly = document.createElementNS(svgNS, 'polygon');
+                    var id = 'hex-' + col + '-' + row;
+                    poly.setAttribute('points', pts.join(' '));
+                    poly.setAttribute('data-hex', id);
+                    grid.appendChild(poly);
+                    hexById[id] = poly;
+                }
+            }
+            stage.insertBefore(grid, ghost);
+            paintHexes();
+        }
+
+        // Colour every hex by comparing draft vs live.
+        function paintHexes() {
+            for (var id in hexById) {
+                var el = hexById[id];
+                var d = draft.revealed.has(id), l = live.revealed.has(id);
+                el.setAttribute('class', 'hex');
+                if (d && l) el.classList.add('hex--live');          // confirmed reveal
+                else if (d && !l) el.classList.add('hex--draft-reveal'); // pending reveal
+                else if (!d && l) el.classList.add('hex--draft-hide');   // pending hide
+                // !d && !l -> plain fog, no extra class
+            }
+        }
+
+        if (img.complete) buildGrid();
+        else img.addEventListener('load', buildGrid);
+
+        // ---- Click to reveal / hide (draft only) ---------------------------
+        // Distinguish click from drag by movement, so Panzoom can still pan.
+        var downX = 0, downY = 0, downOnHex = null, moved = false;
+        stage.addEventListener('pointerdown', function (e) {
+            var hex = e.target.closest('.hex');
+            downOnHex = hex; moved = false;
+            downX = e.clientX; downY = e.clientY;
+        });
+        stage.addEventListener('pointermove', function (e) {
+            if (!downOnHex) return;
+            if (Math.abs(e.clientX - downX) > 5 || Math.abs(e.clientY - downY) > 5) moved = true;
+        });
+        stage.addEventListener('pointerup', function (e) {
+            var hex = e.target.closest('.hex');
+            if (downOnHex && hex === downOnHex && !moved) {
+                var id = hex.getAttribute('data-hex');
+                if (hideMode) {
+                    if (draft.revealed.has(id)) draft.revealed.delete(id);
+                } else {
+                    draft.revealed.add(id);
+                }
+                paintHexes();
+                persist({ revealed_hexes: Array.from(draft.revealed) }, "{{ 'Saving…' | t }}");
+            }
+            downOnHex = null; moved = false;
+        });
+
+        hideBtn.addEventListener('click', function () {
+            hideMode = !hideMode;
+            hideBtn.textContent = hideMode ? "{{ 'Hide mode' | t }}" : "{{ 'Reveal mode' | t }}";
+            hideBtn.classList.toggle('is-hiding', hideMode);
+        });
+
+        // ---- Calibration + grid controls (live rebuild, debounced save) ----
+        function bindPair(rangeId, numId, apply) {
+            var range = document.getElementById(rangeId);
+            var num = document.getElementById(numId);
+            function sync(val, from) {
+                if (from !== 'range') range.value = val;
+                if (from !== 'num') num.value = val;
+                apply(parseFloat(val));
+            }
+            range.addEventListener('input', function () { sync(range.value, 'range'); });
+            num.addEventListener('input', function () { sync(num.value, 'num'); });
+        }
+        var saveTimer = null;
+        function scheduleGridSave() {
+            buildGrid();
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(function () {
+                persist({
+                    grid_cols: draft.cols, grid_rows: draft.rows, fog_color: draft.fog,
+                    offset_x: draft.offX, offset_y: draft.offY, hex_size: draft.hexSize
+                }, "{{ 'Saving…' | t }}");
+            }, 400);
+        }
+        bindPair('offset_x_range', 'offset_x_num', function (v) { draft.offX = v; scheduleGridSave(); });
+        bindPair('offset_y_range', 'offset_y_num', function (v) { draft.offY = v; scheduleGridSave(); });
+        bindPair('hex_size_range', 'hex_size_num', function (v) { draft.hexSize = v; scheduleGridSave(); });
+        document.getElementById('grid_cols').addEventListener('input', function (e) {
+            var n = parseInt(e.target.value, 10); if (!isNaN(n)) { draft.cols = Math.max(1, Math.min(400, n)); scheduleGridSave(); }
+        });
+        document.getElementById('grid_rows').addEventListener('input', function (e) {
+            var n = parseInt(e.target.value, 10); if (!isNaN(n)) { draft.rows = Math.max(1, Math.min(400, n)); scheduleGridSave(); }
+        });
+        document.getElementById('fog_color').addEventListener('input', function (e) {
+            draft.fog = e.target.value; scheduleGridSave();
+        });
+
+        // ---- Marker (draft) + ghost of live position -----------------------
+        function renderMarker() {
+            marker.hidden = false;
+            marker.style.left = draft.markerX + '%';
+            marker.style.top  = draft.markerY + '%';
+            marker.classList.toggle('marker--hidden-to-players', !draft.markerVisible);
+            toggleBtn.textContent = draft.markerVisible ? "{{ 'Hide marker' | t }}" : "{{ 'Show marker' | t }}";
+            // Ghost: show the live position only if the draft moved it or its
+            // visibility differs, so the Master sees where players' marker is.
+            var differs = Math.abs(draft.markerX - live.markerX) > 0.01 ||
+                          Math.abs(draft.markerY - live.markerY) > 0.01 ||
+                          draft.markerVisible !== live.markerVisible;
+            if (differs && live.markerVisible) {
+                ghost.hidden = false;
+                ghost.style.left = live.markerX + '%';
+                ghost.style.top  = live.markerY + '%';
+            } else {
+                ghost.hidden = true;
+            }
+        }
+        renderMarker();
+
+        toggleBtn.addEventListener('click', function () {
+            draft.markerVisible = !draft.markerVisible;
+            renderMarker(); refreshBadge();
+            persist({ marker_visible: draft.markerVisible }, "{{ 'Saving…' | t }}");
+        });
+
+        var dragging = false;
+        marker.addEventListener('pointerdown', function (e) {
+            e.preventDefault(); e.stopPropagation();
+            dragging = true; marker.setPointerCapture(e.pointerId);
+        });
+        marker.addEventListener('pointermove', function (e) {
+            if (!dragging) return;
+            var rect = stage.getBoundingClientRect();
+            var scale = (window.MapPanzoom && window.MapPanzoom.getScale) ? window.MapPanzoom.getScale() : 1;
+            var px = (e.clientX - rect.left) / scale;
+            var py = (e.clientY - rect.top)  / scale;
+            draft.markerX = Math.min(100, Math.max(0, px / stage.offsetWidth  * 100));
+            draft.markerY = Math.min(100, Math.max(0, py / stage.offsetHeight * 100));
+            marker.style.left = draft.markerX + '%';
+            marker.style.top  = draft.markerY + '%';
+        });
+        function endDrag(e) {
+            if (!dragging) return;
+            dragging = false;
+            try { marker.releasePointerCapture(e.pointerId); } catch (_) {}
+            renderMarker(); refreshBadge();
+            persist({ marker_x: Number(draft.markerX.toFixed(2)),
+                      marker_y: Number(draft.markerY.toFixed(2)) }, "{{ 'Saving…' | t }}");
+        }
+        marker.addEventListener('pointerup', endDrag);
+        marker.addEventListener('pointercancel', endDrag);
+
+        // ---- Confirm / discard ---------------------------------------------
+        document.getElementById('confirm-btn').addEventListener('click', function () {
+            fetch(CONFIRM_URL, { method: 'POST' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (state) {
+                    if (!state) throw new Error('confirm failed');
+                    live.revealed = new Set((state.revealed_hexes || []).map(String));
+                    live.markerX = state.marker_x; live.markerY = state.marker_y;
+                    live.markerVisible = !!state.marker_visible;
+                    paintHexes(); renderMarker(); refreshBadge();
+                    showStatus("{{ 'Revealed to players' | t }}", false);
+                }).catch(function (err) {
+                    showStatus("{{ 'Reveal failed — try again' | t }}", true);
+                    console.error(err);
+                });
+        });
+        document.getElementById('discard-btn').addEventListener('click', function () {
+            if (!confirm("{{ 'Discard all unconfirmed changes?' | t }}")) return;
+            fetch(DISCARD_URL, { method: 'POST' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (state) {
+                    if (!state) throw new Error('discard failed');
+                    location.reload();   // simplest correct reset of all controls
+                }).catch(function (err) {
+                    showStatus("{{ 'Discard failed' | t }}", true);
+                    console.error(err);
+                });
+        });
+
+        // ---- Pan / zoom (hexes no longer excluded; marker still is) --------
+        function initPanzoom() {
+            if (typeof Panzoom === 'undefined' || !viewport) return;
+            var panzoom = Panzoom(stage, {
+                maxScale: 8, minScale: 0.1, step: 0.2,
+                exclude: [marker], cursor: 'grab'
+            });
+            viewport.addEventListener('wheel', function (e) {
+                e.preventDefault(); panzoom.zoomWithWheel(e);
+            }, { passive: false });
+            document.getElementById('map-zoom-in').addEventListener('click', function () { panzoom.zoomIn(); });
+            document.getElementById('map-zoom-out').addEventListener('click', function () { panzoom.zoomOut(); });
+            document.getElementById('map-reset').addEventListener('click', function () { panzoom.reset(); });
+            window.MapPanzoom = panzoom;
+        }
+        initPanzoom();
+        refreshBadge();
+    })();
+    </script>
+</body>
+</html>

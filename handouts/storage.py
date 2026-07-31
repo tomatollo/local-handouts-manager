@@ -16,9 +16,16 @@ from . import theming
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, 'data', 'database.json')
 UPLOAD_DIR = os.path.join(BASE_DIR, 'static', 'uploads')
+# The interactive map's background image lives in its own folder, kept apart
+# from the handout library so a large campaign map never mixes in with the
+# handouts and can be managed (and cleared) independently.
+MAP_DIR = os.path.join(BASE_DIR, 'static', 'maps')
 
 # Extension whitelist (images + PDF). Kept lowercase, no leading dot.
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf'}
+
+# Map backgrounds are images only -- no PDF (the map viewer draws an <img>).
+MAP_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 # How a handout's files are presented to players. This is a handout-level
 # property (distinct from each file's `reader`, which is image/pdf).
@@ -27,6 +34,12 @@ DEFAULT_VIEW_TYPE = 'carousel'
 
 # Key under `settings` holding the current POP broadcast (see pop_state).
 POP_KEY = 'pop'
+
+# Top-level DB key holding the interactive map's shared state (see
+# get_map_state / update_map_state). Kept at the root, alongside `handouts`
+# and `folders`, because the map is table-wide state rather than a per-handout
+# or display setting.
+MAP_KEY = 'map_state'
 
 # How long a POP stays live, in seconds.
 #
@@ -100,6 +113,55 @@ def _normalize(data):
     pop.setdefault('seq', 0)
     pop.setdefault('handout_id', None)
     pop.setdefault('at', None)
+
+    # DB-level: interactive map state, shared by the Master (who reveals hexes
+    # and moves the marker) and every player screen (which polls it). Created
+    # on the fly with per-key setdefault so a DB written before this feature
+    # existed gains it without touching the rest of the record, and so a
+    # partially hand-edited node keeps whatever keys it already has.
+    map_state = data.setdefault(MAP_KEY, {})
+    map_state.setdefault('revealed_hexes', [])
+    map_state.setdefault('marker_x', 0)
+    map_state.setdefault('marker_y', 0)
+    map_state.setdefault('marker_visible', False)
+    # Grid the Master can size to match a printed map (e.g. Chult is 23x24).
+    map_state.setdefault('grid_cols', 20)
+    map_state.setdefault('grid_rows', 15)
+    # Colour of un-revealed (fogged) hexes, as a CSS hex string.
+    map_state.setdefault('fog_color', '#0d0b0a')
+    # Uploaded map image filename (in static/maps), or None for placeholder.
+    map_state.setdefault('map_image', None)
+    # Grid calibration, all as PERCENT of the map image so they survive a
+    # resolution change. offset_x/offset_y move the whole grid so its first hex
+    # lands on the map's first printed hex; hex_size is one hex's width as a
+    # percent of the image width (height follows from hex geometry). These let
+    # the Master align the overlay to a map that already has hexes drawn on it,
+    # instead of stretching the grid to the image edges.
+    map_state.setdefault('offset_x', 0.0)
+    map_state.setdefault('offset_y', 0.0)
+    map_state.setdefault('hex_size', 5.0)
+
+    # --- Staging (draft) layer ---------------------------------------------
+    # Everything above is the CONFIRMED state -- the only thing players read.
+    # The Master edits a draft first and explicitly confirms it, so a mistaken
+    # click never flashes onto the table. `pending` mirrors the same keys; a
+    # confirm copies pending -> confirmed, a discard copies confirmed -> pending.
+    # Seeded from confirmed values so a fresh DB starts with draft == live.
+    pending = map_state.setdefault('pending', {})
+    pending.setdefault('revealed_hexes', list(map_state['revealed_hexes']))
+    pending.setdefault('marker_x', map_state['marker_x'])
+    pending.setdefault('marker_y', map_state['marker_y'])
+    pending.setdefault('marker_visible', map_state['marker_visible'])
+    pending.setdefault('grid_cols', map_state['grid_cols'])
+    pending.setdefault('grid_rows', map_state['grid_rows'])
+    pending.setdefault('fog_color', map_state['fog_color'])
+    pending.setdefault('map_image', map_state['map_image'])
+    pending.setdefault('offset_x', map_state['offset_x'])
+    pending.setdefault('offset_y', map_state['offset_y'])
+    pending.setdefault('hex_size', map_state['hex_size'])
+    # Bumped on every confirm; players compare it to tell a fresh confirmation
+    # from an unchanged poll (and so the marker only animates on real changes).
+    map_state.setdefault('confirm_seq', 0)
 
     for h in data.get('handouts', []):
         # Legacy single-file -> files: [...]
@@ -264,6 +326,194 @@ def clear_pop(db):
     return settings[POP_KEY]
 
 
+# --------------------------------------------------------------------------
+# Interactive map (global, master-controlled)
+#
+# One shared map per table: the Master reveals hexes and moves a marker, and
+# every player screen polls this state. Stored at the DB root (see MAP_KEY),
+# not under `settings`, because it is live scene state rather than a display
+# preference.
+# --------------------------------------------------------------------------
+
+def get_map_state(db):
+    """Return the current map state dict.
+
+    Never None: _normalize() guarantees the node and its keys exist, but we
+    still fall back defensively so a caller that hand-built a db without
+    normalizing gets a sane shape rather than a KeyError.
+    """
+    return db.setdefault(MAP_KEY, {
+        'revealed_hexes': [],
+        'marker_x': 0,
+        'marker_y': 0,
+        'marker_visible': False,
+        'grid_cols': 20,
+        'grid_rows': 15,
+        'fog_color': '#0d0b0a',
+        'map_image': None,
+        'offset_x': 0.0,
+        'offset_y': 0.0,
+        'hex_size': 5.0,
+    })
+
+
+# Bounds for the grid dimensions the Master can set. A hard ceiling stops a
+# typo (2300 instead of 23) from asking the browser to draw millions of hexes.
+GRID_MIN = 1
+GRID_MAX = 400
+
+
+def _clean_hex_color(raw, fallback):
+    """Return a #rrggbb / #rgb string, or `fallback` for anything else.
+
+    Guards the fog colour: it is written straight into CSS on both the master
+    and player pages, so only a real hex colour is allowed through -- never an
+    arbitrary string that could carry other CSS.
+    """
+    raw = (raw or '').strip()
+    if len(raw) in (4, 7) and raw[0] == '#' and \
+            all(c in '0123456789abcdefABCDEF' for c in raw[1:]):
+        return raw
+    return fallback
+
+def _coerce_map_fields(target, data):
+    """Write the known map fields from `data` into `target` dict, in place.
+
+    Shared by the draft writer and the map-upload route so validation lives in
+    one spot. Unknown keys are ignored; bad types leave the previous value.
+    `target` is either the confirmed state or its `pending` sub-dict.
+    """
+    if 'revealed_hexes' in data:
+        hexes = data['revealed_hexes']
+        if isinstance(hexes, (list, tuple)):
+            seen = set()
+            cleaned = []
+            for hx in hexes:
+                key = str(hx)
+                if key not in seen:
+                    seen.add(key)
+                    cleaned.append(key)
+            target['revealed_hexes'] = cleaned
+
+    for axis in ('marker_x', 'marker_y'):
+        if axis in data:
+            try:
+                target[axis] = float(data[axis])
+            except (TypeError, ValueError):
+                pass
+
+    if 'marker_visible' in data:
+        target['marker_visible'] = bool(data['marker_visible'])
+
+    for key in ('grid_cols', 'grid_rows'):
+        if key in data:
+            try:
+                n = int(data[key])
+                target[key] = max(GRID_MIN, min(GRID_MAX, n))
+            except (TypeError, ValueError):
+                pass
+
+    # Calibration floats (percent). offset can be slightly negative so the grid
+    # can start just off the top-left corner; hex_size has a sane floor so a
+    # zero never collapses every hex to a point.
+    for key in ('offset_x', 'offset_y'):
+        if key in data:
+            try:
+                target[key] = max(-50.0, min(150.0, float(data[key])))
+            except (TypeError, ValueError):
+                pass
+    if 'hex_size' in data:
+        try:
+            target['hex_size'] = max(0.5, min(100.0, float(data['hex_size'])))
+        except (TypeError, ValueError):
+            pass
+
+    if 'fog_color' in data:
+        target['fog_color'] = _clean_hex_color(
+            data['fog_color'], target.get('fog_color', '#0d0b0a'))
+
+    if 'map_image' in data:
+        val = data['map_image']
+        if val is None:
+            target['map_image'] = None
+        elif isinstance(val, str) and '/' not in val and '\\' not in val:
+            target['map_image'] = val
+
+
+def update_map_state(db, data):
+    """Write `data` into the DRAFT (pending) layer and return the full state.
+
+    This is what the Master's live edits hit: revealing a hex, dragging the
+    marker, changing the grid or fog colour all land in `pending` and are NOT
+    visible to players until confirm_map_state() promotes them. `data` may
+    carry any subset of the known keys.
+
+    NB: the map-upload route writes map_image straight to BOTH layers via
+    set_map_image() -- see there for why an uploaded image is not staged.
+    """
+    state = get_map_state(db)
+    pending = state.setdefault('pending', {})
+    _coerce_map_fields(pending, data or {})
+    return state
+
+
+def set_map_image(db, filename):
+    """Set (or clear) the map background on BOTH the confirmed and draft layers.
+
+    The background image is deliberately NOT staged: an uploaded map is a setup
+    action, not a reveal, and a half-set-up map where the Master sees the new
+    image but players still see the old one (until a confirm) would be more
+    confusing than useful. Upload = immediately live for everyone.
+    """
+    state = get_map_state(db)
+    _coerce_map_fields(state, {'map_image': filename})
+    _coerce_map_fields(state.setdefault('pending', {}), {'map_image': filename})
+    return state
+
+
+def confirm_map_state(db):
+    """Promote the draft to confirmed: players now see what the Master staged.
+
+    Copies every pending field onto the confirmed state and bumps confirm_seq
+    so player pages can tell this is a fresh confirmation. This is the ONLY
+    function that changes what players read (aside from set_map_image).
+    """
+    state = get_map_state(db)
+    pending = state.get('pending', {})
+    for key in ('revealed_hexes', 'marker_x', 'marker_y', 'marker_visible',
+                'grid_cols', 'grid_rows', 'fog_color', 'map_image',
+                'offset_x', 'offset_y', 'hex_size'):
+        if key in pending:
+            # Copy by value for the list so the two layers don't alias.
+            state[key] = list(pending[key]) if key == 'revealed_hexes' \
+                else pending[key]
+    state['confirm_seq'] = state.get('confirm_seq', 0) + 1
+    return state
+
+
+def discard_map_state(db):
+    """Throw the draft away: reset pending back to the confirmed state.
+
+    Used by the Master's 'Discard changes' button so a session of experimental
+    reveals can be abandoned wholesale without touching what players see.
+    """
+    state = get_map_state(db)
+    state['pending'] = {
+        'revealed_hexes': list(state['revealed_hexes']),
+        'marker_x': state['marker_x'],
+        'marker_y': state['marker_y'],
+        'marker_visible': state['marker_visible'],
+        'grid_cols': state['grid_cols'],
+        'grid_rows': state['grid_rows'],
+        'fog_color': state['fog_color'],
+        'map_image': state['map_image'],
+        'offset_x': state['offset_x'],
+        'offset_y': state['offset_y'],
+        'hex_size': state['hex_size'],
+    }
+    return state
+
+
 def all_categories(db):
     return sorted({h.get('category', '').strip()
                    for h in db['handouts'] if h.get('category', '').strip()})
@@ -416,6 +666,45 @@ def save_back_cover(file_storage, handout_id):
         return None
     stored = save_files([file_storage], handout_id, prefix='back_')
     return stored[0] if stored else None
+
+
+def allowed_map_file(filename):
+    return '.' in filename and \
+        filename.rsplit('.', 1)[1].lower() in MAP_EXTENSIONS
+
+
+def save_map_image(file_storage):
+    """Save an uploaded map background into MAP_DIR and return its filename.
+
+    Returns None if no usable file was given. The name is timestamped so a new
+    upload never collides with (or silently overwrites) a cached older one on
+    the players' browsers. Only the bare filename is returned; the caller
+    stores it in map_state['map_image'] and the templates build the URL.
+    """
+    if not file_storage or not file_storage.filename:
+        return None
+    safe = secure_filename(file_storage.filename)
+    if '.' not in safe:
+        return None
+    ext = safe.rsplit('.', 1)[1].lower()
+    os.makedirs(MAP_DIR, exist_ok=True)
+    name = f'map_{now_stamp()}.{ext}'
+    file_storage.save(os.path.join(MAP_DIR, name))
+    return name
+
+
+def remove_map_image(filename):
+    """Delete a saved map background, best-effort. Silent if already gone."""
+    if not filename:
+        return
+    # Defend against a stored value that somehow carries a path: only ever
+    # touch a bare name inside MAP_DIR.
+    if '/' in filename or '\\' in filename:
+        return
+    try:
+        os.remove(os.path.join(MAP_DIR, filename))
+    except OSError:
+        pass
 
 
 def new_handout_id():

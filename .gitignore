@@ -16,3 +16,5 @@ env/
 .vscode/
 .DS_Store
 Thumbs.db
+/static/maps
+data/database.json

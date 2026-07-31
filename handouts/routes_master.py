@@ -8,7 +8,7 @@ import os
 import uuid
 
 from flask import (Blueprint, render_template, request, redirect,
-                   url_for, abort, Response)
+                   url_for, abort, Response, jsonify)
 
 from . import auth
 from . import storage
@@ -442,6 +442,129 @@ def delete_folder(folder_id):
     storage.save_db(db)
     return redirect(url_for('master.dm_panel'))
 
+
+# --------------------------------------------------------------------------
+# Interactive map (master side).
+#
+# The Master's page is the control surface: it reveals hexes and drags the
+# marker. The write endpoint that backs it is the ONLY way map state changes,
+# and it is guarded by master_required exactly like every other mutation here.
+# Players get a read-only view + a read-only polling endpoint, both defined in
+# routes_player.py; they can never POST here.
+# --------------------------------------------------------------------------
+
+@bp.route('/dm-panel/map')
+@auth.master_required
+def map_control():
+    """The Master's interactive-map control page.
+
+    Kept under /dm-panel/ so it sits with the other master pages and inherits
+    the same guard. The current state is handed to the template for the first
+    paint so the page isn't blank until the first poll returns.
+    """
+    db = storage.load_db()
+    return render_template('master/map.html',
+                           map_state=storage.get_map_state(db))
+
+
+@bp.route('/master/api/map/state', methods=['GET', 'POST'])
+@auth.master_required
+def map_state_api():
+    """Read or write the shared map state (Master only).
+
+    GET returns the current state; POST merges a partial JSON body and saves.
+    Both live behind master_required because this is the write path -- the
+    marker moves and hexes are revealed from here. Players read the same state
+    through the public, GET-only mirror in routes_player.py, which never
+    accepts a write.
+
+    Note the URL: /master/api/map/state, NOT /api/map/state. The player
+    blueprint owns the bare /api/map/state for its read-only poll, and both
+    blueprints are mounted at the root, so a shared path would collide at
+    registration. The /master/ prefix keeps the two rules distinct and makes
+    the write path self-documenting.
+
+    POST accepts any subset of the state's keys (a marker nudge need not resend
+    the revealed hexes); storage.update_map_state does the type-coercion and
+    key-whitelisting, so a malformed or padded body can't corrupt the DB.
+    """
+    db = storage.load_db()
+
+    if request.method == 'GET':
+        return jsonify(storage.get_map_state(db))
+
+    # POST. silent=True so a missing/!json body yields None (-> {}), which
+    # update_map_state treats as "change nothing" rather than raising.
+    payload = request.get_json(silent=True)
+    state = storage.update_map_state(db, payload)
+    storage.save_db(db)
+    return jsonify(state)
+
+@bp.route('/dm-panel/map/upload', methods=['POST'])
+@auth.master_required
+def map_upload():
+    """Upload (or clear) the map background image.
+
+    Kept as its own form-POST route rather than folded into the JSON write
+    endpoint because it carries a file, not JSON. On success it saves the image
+    to static/maps, points map_state at it, deletes the previous map so old
+    backgrounds don't pile up, and returns to the map page.
+
+    A submit with no file but the `clear` flag set removes the current map and
+    falls back to the placeholder.
+    """
+    db = storage.load_db()
+    state = storage.get_map_state(db)
+    old = state.get('map_image')
+
+    if request.form.get('clear'):
+        storage.remove_map_image(old)
+        storage.set_map_image(db, None)
+        storage.save_db(db)
+        return redirect(url_for('master.map_control'))
+
+    upload = request.files.get('map_image')
+    if not upload or not upload.filename:
+        abort(400, 'No file selected.')
+    if not storage.allowed_map_file(upload.filename):
+        abort(400, f'File type not allowed: {upload.filename}')
+
+    name = storage.save_map_image(upload)
+    if not name:
+        abort(400, 'Could not save the map image.')
+
+    storage.set_map_image(db, name)
+    storage.save_db(db)
+    # Remove the previous background only after the new one is safely stored.
+    if old and old != name:
+        storage.remove_map_image(old)
+    return redirect(url_for('master.map_control'))
+
+@bp.route('/master/api/map/confirm', methods=['POST'])
+@auth.master_required
+def map_confirm():
+    """Promote the Master's draft to the live state players read.
+
+    The map page POSTs its latest draft to /master/api/map/state (which lands
+    in `pending`), then calls this to publish it. Splitting write-draft from
+    confirm is the whole point: nothing reaches the table until the Master says
+    so. Returns the full state so the page can refresh its 'pending vs live'
+    indicator from the server's own view.
+    """
+    db = storage.load_db()
+    state = storage.confirm_map_state(db)
+    storage.save_db(db)
+    return jsonify(state)
+
+
+@bp.route('/master/api/map/discard', methods=['POST'])
+@auth.master_required
+def map_discard():
+    """Throw the Master's draft away, resetting it to the live state."""
+    db = storage.load_db()
+    state = storage.discard_map_state(db)
+    storage.save_db(db)
+    return jsonify(state)
 
 # --------------------------------------------------------------------------
 # Settings pages. These used to be panels crowding the dashboard; each is now

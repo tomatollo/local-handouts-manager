@@ -128,6 +128,33 @@ def pop_status():
     return jsonify(payload)
 
 
+@bp.route('/map')
+def map_view():
+    """The players' read-only interactive map.
+
+    The page paints the current state once server-side, then polls
+    /api/map/state (below) to stay in sync as the Master reveals hexes and
+    moves the marker. There is no write path here: players observe, they do
+    not edit.
+    """
+    db = storage.load_db()
+    return render_template('player/map.html',
+                           map_state=storage.get_map_state(db))
+
+
+@bp.route('/api/map/state')
+def map_state():
+    """Public, read-only mirror of the shared map state.
+
+    GET only -- players poll this to follow the Master. The matching write
+    endpoint lives in routes_master.py behind master_required; keeping the two
+    in separate blueprints is what makes "players can read but never write"
+    true by construction rather than by an if-branch that could be forgotten.
+    """
+    db = storage.load_db()
+    return jsonify(storage.get_map_state(db))
+
+
 @bp.route('/folder/<folder_id>')
 def folder(folder_id):
     """A single folder's page: the handouts it contains, as a grid."""

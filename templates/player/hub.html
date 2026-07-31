@@ -14,7 +14,10 @@
                 <h1>{{ 'Welcome, Adventurers!' | t }}</h1>
                 <p class="subtitle">{{ 'Handouts revealed by your Game Master appear below.' | t }}</p>
             </div>
-            <button type="button" class="btn" id="browse-btn" aria-controls="drawer" aria-expanded="false">&#9776; {{ 'Browse' | t }}</button>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <a class="btn btn--ghost" href="{{ url_for('player.map_view') }}">🗺️ {{ 'Map' | t }}</a>
+                <button type="button" class="btn" id="browse-btn" aria-controls="drawer" aria-expanded="false">&#9776; {{ 'Browse' | t }}</button>
+            </div>
         </div>
 
         {# Toolbar: how the current view is organized + the rows/cards switch. #}
@@ -150,6 +153,7 @@
             {# App Guide for players #}
             <div class="drawer__section">
                 <h3>{{ 'Help' | t }}</h3>
+                <a class="drawer__link" href="{{ url_for('player.map_view') }}">🗺️ {{ 'Interactive Map' | t }}</a>
                 <a class="drawer__link" href="{{ url_for('app_guide') }}">📖 {{ 'App Guide' | t }}</a>
             </div>
 
@@ -233,6 +237,55 @@
                     if (e.key === 'Escape' && !drawer.hidden) closeDrawer();
                 });
             }
+
+            // ---- NUOVO: Inverti Ordine al click sul tab già attivo ----
+            var activeModeBtns = document.querySelectorAll('.hub-mode__btn--active, .drawer__link--active');
+            var isAscending = true;
+
+            activeModeBtns.forEach(function(btn) {
+                // Aggiunge la freccia iniziale per indicare l'ordine crescente
+                btn.innerHTML += ' ↑';
+
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault(); // Evita di ricaricare la pagina dal server
+                    isAscending = !isAscending;
+
+                    // 1. Inverti i raggruppamenti (es. Sessione 1, Sessione 2 diventa 2, 1)
+                    var wrap = document.querySelector('.wrap');
+                    var blocks = Array.from(wrap.querySelectorAll('.session-block'));
+                    
+                    if (blocks.length > 0) {
+                        blocks.reverse().forEach(function(block) {
+                            wrap.appendChild(block); // Sposta il blocco riordinandolo
+                            
+                            // Inverti anche le singole card dentro ogni blocco
+                            var list = block.querySelector('.hub-list');
+                            if (list) {
+                                var cards = Array.from(list.querySelectorAll('.handout-card'));
+                                cards.reverse().forEach(function(card) {
+                                    list.appendChild(card);
+                                });
+                            }
+                        });
+                    }
+
+                    // 2. Inverti le cartelle (se siamo nella vista "Folders")
+                    var folderGrid = document.querySelector('.folder-grid');
+                    if (folderGrid) {
+                        var folderCards = Array.from(folderGrid.querySelectorAll('.folder-card'));
+                        folderCards.reverse().forEach(function(card) {
+                            folderGrid.appendChild(card);
+                        });
+                    }
+
+                    // 3. Aggiorna l'icona della freccia su tutti i bottoni attivi
+                    activeModeBtns.forEach(function(b) {
+                        b.innerHTML = b.innerHTML.replace(/ ↑| ↓/g, ''); // Rimuove la freccia vecchia
+                        b.innerHTML += isAscending ? ' ↑' : ' ↓'; // Mette quella nuova
+                    });
+                });
+            });
+
         })();
     </script>
 </body>

@@ -10,33 +10,82 @@
     <div class="wrap" style="max-width: 800px; margin: 0 auto; padding: 2rem;">
         <div class="hub-top">
             <div>
-                <h1>📖 {{ 'App Guide' | t }}</h1>
+                <h1>📖 {{ 'La Guida Completa' | t }}</h1>
+                <p class="subtitle">{{ 'Tutto quello che devi sapere su Local Handouts Manager' | t }}</p>
             </div>
-            {# Pulsante dinamico: riporta il Master alla dashboard, i giocatori all'hub #}
             {% if is_master %}
-            <a href="{{ url_for('player.home') }}" class="btn">{{ "Back to the Player Hub" | t }}</a>
+            <a href="{{ url_for('master.dm_panel') }}" class="btn">{{ 'Torna alla Dashboard' | t }}</a>
             {% else %}
-            <a href="{{ url_for('master.dm_panel') }}" class="btn">{{ 'Back to Dashboard' | t }}</a>
+            <a href="{{ url_for('player.home') }}" class="btn">{{ "Torna all'Hub Giocatori" | t }}</a>
             {% endif %}
         </div>
 
+        {% if is_master %}
+        <!-- ========================================== -->
+        <!-- SEZIONE MASTER (Visibile SOLO al Game Master) -->
+        <!-- ========================================== -->
         <div class="panel" style="margin-top: 2rem;">
-            <h2>{{ 'For the Players' | t }} 🎲</h2>
+            <h2>👑 {{ 'Per il Master: Gestione e Organizzazione' | t }}</h2>
+            
+            <h3 style="margin-top: 1.5rem;">{{ '1. Creazione e Pubblicazione degli Handout' | t }}</h3>
             <ul style="line-height: 1.6; padding-left: 1.5rem;">
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'The Hub:' | t }}</strong> {{ 'The main page displays all the handouts the Master has revealed to you.' | t }}</li>
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Navigation:' | t }}</strong> {{ 'You can browse by Folder, by Session, or search by tags and keywords.' | t }}</li>
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Real-time Reveals:' | t }}</strong> {{ 'Keep your tab open! If the Master triggers a POP broadcast, the handout will appear automatically.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Aggiungere un allegato:' | t }}</strong> {{ 'Carica le tue immagini, mappe o documenti PDF tramite l\'interfaccia Master.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Pubblicazione:' | t }}</strong> {{ 'Di default, i nuovi handout sono "Nascosti". Impostali su "Pubblicato" solo nel momento esatto in cui i personaggi li scoprono in gioco, per evitare spoiler.' | t }}</li>
+            </ul>
+
+            <h3 style="margin-top: 1.5rem;">{{ '2. Organizzazione: Cartelle e Sessioni' | t }}</h3>
+            <ul style="line-height: 1.6; padding-left: 1.5rem;">
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Cartelle (Categorie):' | t }}</strong> {{ 'Raggruppa gli allegati per tipologia logica (es. "Mappe", "Lettere", "PNG", "Oggetti Magici").' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Sessioni (Timeline):' | t }}</strong> {{ 'Tagga gli handout in base alla sessione in cui sono stati trovati. Questo aiuta i giocatori a ricostruire la linea temporale degli eventi.' | t }}</li>
+            </ul>
+
+            <h3 style="margin-top: 1.5rem;">{{ '3. I Tipi di Visualizzazione' | t }}</h3>
+            <ul style="line-height: 1.6; padding-left: 1.5rem;">
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Griglia (Cards):' | t }}</strong> {{ 'Ideale per il colpo d\'occhio visivo (mappe, ritratti).' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Lista (Rows):' | t }}</strong> {{ 'Perfetta per i documenti testuali o quando i nomi dei file sono lunghi e descrittivi.' | t }}</li>
+            </ul>
+
+            <h3 style="margin-top: 1.5rem;">{{ '4. La Funzione "POP" (Invia a schermo)' | t }}</h3>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'La funzione "POP" è il tuo asso nella manica. Quando i giocatori trovano un indizio, clicca su "POP": il file si aprirà in primo piano sugli schermi di tutti i player connessi, garantendo un effetto "Wow!" e assicurandoti che tutti stiano guardando la stessa cosa nello stesso momento.' | t }}</p>
+
+            <h3 style="margin-top: 1.5rem;">{{ '5. Gestione del Tema' | t }}</h3>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'Dal pannello Master puoi cambiare il tema dell\'interfaccia (es. Fantasy, Sci-Fi, Dark). Cambiando il tema, l\'interfaccia si aggiornerà automaticamente in tempo reale anche sui dispositivi dei tuoi giocatori.' | t }}</p>
+
+            <hr style="margin: 2rem 0; border: 0; border-top: 1px dashed var(--btn-border, #ccc);">
+
+            <h3 style="margin-top: 1.5rem;">💡 {{ 'Consigli Pratici per il Master' | t }}</h3>
+            <ul style="line-height: 1.6; padding-left: 1.5rem;">
+                <li style="margin-bottom: 0.5rem;">{{ 'Preparazione pre-sessione: Carica tutti gli handout prima di giocare e lasciali nascosti. Durante la partita, dovrai solo cliccare su "Pubblica".' | t }}</li>
+                <li style="margin-bottom: 0.5rem;">{{ 'Nomi chiari (ma non troppo): Nomina i file in modo che i player possano riconoscerli in futuro, ma evita spoiler nel titolo.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;">{{ 'Pulisci la vista: Se una campagna è molto lunga, usa l\'archiviazione o riorganizza le vecchie cartelle per non intasare l\'interfaccia dei player.' | t }}</li>
             </ul>
         </div>
+        {% endif %}
 
-        
+        <!-- ========================================== -->
+        <!-- SEZIONE PLAYER (Visibile a Master e Giocatori) -->
+        <!-- ========================================== -->
         <div class="panel" style="margin-top: 2rem;">
-            <h2>{{ 'For the Master' | t }} 🐉</h2>
+            <h2>🛡️ 
+                {% if is_master %}
+                    {{ 'La Guida dei tuoi Giocatori' | t }}
+                {% else %}
+                    {{ 'La Guida per i Giocatori' | t }}
+                {% endif %}
+            </h2>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'Questa sezione spiega come sfruttare al massimo la tua interfaccia giocatore per trovare subito quello che cerchi.' | t }}</p>
+            
+            <h3 style="margin-top: 1.5rem;">{{ 'Navigare l\'Interfaccia e Ricerca' | t }}</h3>
             <ul style="line-height: 1.6; padding-left: 1.5rem;">
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Uploading Handouts:' | t }}</strong> {{ 'Use the Dashboard to upload images or PDFs. You can assign them to folders, tag them, and write descriptions.' | t }}</li>
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Publishing vs Hidden:' | t }}</strong> {{ 'Newly uploaded handouts are hidden by default. Click the Publish button to reveal them.' | t }}</li>
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'The POP Feature (Broadcast):' | t }}</strong> {{ 'Click the POP button next to a handout. It will instantly pop up in full-screen on every player screen (expires in 2 minutes).' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'I Selettori:' | t }}</strong> {{ 'Usa i pulsanti in alto per cambiare il modo in cui vedi i documenti. Puoi raggrupparli per "Cartelle" o per "Sessioni".' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Barra di Ricerca:' | t }}</strong> {{ 'Non ricordi in che sessione hai trovato quel medaglione? Usa la barra di ricerca nel menù di navigazione digitando parole chiave.' | t }}</li>
             </ul>
+
+            <h3 style="margin-top: 1.5rem;">{{ 'Ordinamento Dinamico (Crescente/Decrescente)' | t }}</h3>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'Cliccando di nuovo su un selettore già attivo (ad esempio "Sessioni"), l\'ordine degli elementi si invertirà. Clicca una volta per vedere dalla Sessione 1 in poi, clicca di nuovo per vedere prima le sessioni più recenti! Una freccia (↑ o ↓) ti indicherà sempre il verso di lettura.' | t }}</p>
+
+            <h3 style="margin-top: 1.5rem;">{{ 'Immagini in primo piano (La funzione POP)' | t }}</h3>
+            <p style="line-height: 1.6;">{{ 'Se il Master ti invia un\'immagine con la funzione POP, questa apparirà da sola a tutto schermo. Per chiuderla, ti basterà cliccare sulla "X" in alto o cliccare fuori dall\'immagine.' | t }}</p>
         </div>
     </div>
 </body>
