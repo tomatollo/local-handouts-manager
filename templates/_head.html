@@ -12,3 +12,56 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 <link rel="stylesheet" href="{{ theme_fonts_url | safe }}">
 <style>{{ theme_css | safe }}</style>
+<style>
+    /* ---- Shared site footer (see templates/_footer.html) ---- */
+    .site-footer {
+        margin-top: 32px; padding: 14px 16px;
+        border-top: 1px solid var(--border, #6b4f34);
+        color: var(--ink-dim, #b8a888); font-size: 0.8rem;
+        display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px;
+    }
+    .site-footer__nav { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+    .site-footer__nav a {
+        color: var(--ink-dim, #b8a888); text-decoration: none;
+        border-bottom: 1px dotted transparent;
+    }
+    .site-footer__nav a:hover { color: var(--accent, #e8a83a); border-bottom-color: currentColor; }
+    .site-footer__status { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+    .site-footer__server { display: inline-flex; align-items: center; gap: 6px; }
+    .server-dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--ink-dim, #b8a888); box-shadow: 0 0 4px currentColor;
+    }
+    .site-footer.is-online .server-dot { background: var(--good, #3ba55d); color: var(--good, #3ba55d); }
+    .site-footer.is-offline .server-dot { background: var(--danger, #a33); color: var(--danger, #a33); }
+    /* Full footer (home + dashboard): credits block spans the row. */
+    .site-footer--full { flex-direction: column; align-items: stretch; }
+    .site-footer--full .site-footer__status { margin-left: 0; }
+    .site-footer__credits { line-height: 1.5; }
+    .site-footer__credits p { margin: 0 0 6px; }
+    .site-footer__thanks { color: var(--ink-dim, #b8a888); }
+    .site-footer__gh a {
+        color: var(--accent, #e8a83a); text-decoration: none;
+        border-bottom: 1px dotted currentColor;
+    }
+    .site-footer__gh a:hover { filter: brightness(1.15); }
+    .site-footer--full .site-footer__nav,
+    .site-footer--full .site-footer__status { padding-top: 6px; }
+
+    /* ---- Passphrase warning: a discreet-but-persistent pebble ---- */
+    .passphrase-nag {
+        position: fixed; right: 12px; bottom: 12px; z-index: 900;
+        max-width: 260px; padding: 8px 30px 8px 10px;
+        background: var(--danger, #a33); color: #fff;
+        border: 2px solid #000; box-shadow: 3px 3px 0 0 rgba(0,0,0,0.4);
+        font-size: 0.76rem; line-height: 1.35;
+        opacity: 0.9;
+    }
+    .passphrase-nag a { color: #fff; font-weight: bold; text-decoration: underline; }
+    .passphrase-nag__x {
+        position: absolute; top: 2px; right: 6px;
+        background: none; border: none; color: #fff; cursor: pointer;
+        font-size: 1rem; line-height: 1; padding: 2px;
+    }
+    .passphrase-nag[hidden] { display: none; }
+</style>

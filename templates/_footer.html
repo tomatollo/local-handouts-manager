@@ -1,0 +1,143 @@
+{# Shared site footer.
+
+   Two levels of detail, chosen by the caller:
+     {% include '_footer.html' %}                      -> minimal (links only)
+     {% set footer_full = true %}{% include '_footer.html' %}  -> with credits
+
+   The full version (home + dashboard only) carries the credits, GitHub link
+   and the server/last-modified line. The minimal version is just the wayfinding
+   links and is safe to drop on every page. Which navigation links appear is
+   driven by `is_master` (a UI hint; the routes enforce access themselves), so
+   master pages link master destinations and player pages link player ones.
+
+   `footer_page` lets a page name its own template so the "updated" date reflects
+   that file, e.g. {% set footer_page = 'master/dashboard.html' %}. #}
+
+<style>
+    /* 1. Contenitore principale: assicura che nav e status siano ai lati opposti */
+    .site-footer__top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        padding: 10px 0;
+    }
+
+    /* 2. Navigazione a sinistra */
+    .site-footer__nav {
+        display: flex;
+        align-items: center;
+        gap: 15px; /* Spazio tra i link */
+        flex-wrap: wrap;
+    }
+
+    /* 3. Stato a destra (mantiene data e server vicini e allineati) */
+    .site-footer__status {
+        display: flex;
+        align-items: center;
+        gap: 15px; /* Spazio tra la scritta Updated e il server */
+    }
+
+    /* 4. Pallino di stato base */
+    .server-dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 5px;
+        background-color: #888;
+        transition: background-color 0.3s ease;
+    }
+
+    /* 5. Colori di stato forzati (!important previene che il tuo tema li sovrascriva) */
+    #server-status.is-online .server-dot {
+        background-color: #28a745 !important; 
+        box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
+    }
+
+    #server-status.is-offline .server-dot {
+        background-color: #dc3545 !important; 
+    }
+</style>
+
+<footer class="site-footer{% if footer_full %} site-footer--full{% endif %}">
+
+    <div class="site-footer__top">
+        
+        {# Which links appear is decided by the PAGE via footer_scope #}
+        {% set _scope = footer_scope | default('player') %}
+        <nav class="site-footer__nav" aria-label="{{ 'Footer' | t }}">
+            {% if _scope == 'master' %}
+            <a href="{{ url_for('master.dm_panel') }}">{{ "Master's Screen" | t }}</a>
+            <a href="{{ url_for('master.create_page') }}">{{ 'Create' | t }}</a>
+            <a href="{{ url_for('master.map_control') }}">{{ 'Interactive Map' | t }}</a>
+            <a href="{{ url_for('qr_page') }}">{{ 'Join by QR' | t }}</a>
+            <a href="{{ url_for('master.appearance') }}">{{ 'Appearance' | t }}</a>
+            <a href="{{ url_for('master.security') }}">{{ 'Master Access' | t }}</a>
+            {% else %}
+            <a href="{{ url_for('player.home') }}">{{ 'Home' | t }}</a>
+            <a href="{{ url_for('player.map_view') }}">{{ 'Interactive Map' | t }}</a>
+            <a href="{{ url_for('qr_page') }}">{{ 'Join by QR' | t }}</a>
+            <a href="{{ url_for('app_guide') }}">{{ 'App Guide' | t }}</a>
+            {% endif %}
+        </nav>
+
+        <div class="site-footer__status">
+            {% set _mod = page_modified(footer_page) if footer_page is defined else None %}
+            {% if _mod %}<span class="site-footer__updated">{{ 'Updated' | t }}: {{ _mod }}</span>{% endif %}
+            <span class="site-footer__server" id="server-status" data-ping="{{ url_for('ping') }}">
+                <span class="server-dot" aria-hidden="true"></span><span class="server-label">{{ '…' }}</span>
+            </span>
+        </div>
+
+    </div>
+
+    {% if footer_full %}
+    <div class="site-footer__credits">
+        <p>
+            {{ 'Built for the table: for the maps unrolled, the secrets kept, and the handouts slid across to the right player at the right moment.' | t }}
+        </p>
+        <p class="site-footer__thanks">
+            {{ 'Thanks to my players for every session, and to every Game Master keeping worlds alive.' | t }}
+        </p>
+        <p class="site-footer__gh">
+            <a href="https://github.com/tomatollo" target="_blank" rel="noopener noreferrer">🐙 github.com/tomatollo</a>
+        </p>
+    </div>
+    {% endif %}
+    
+</footer>
+
+<script>
+    // Server status pill: ping periodically, flip Online/Offline. 
+    (function () {
+        var el = document.getElementById('server-status');
+        if (!el) return;
+        
+        var dot = el.querySelector('.server-dot');
+        var label = el.querySelector('.server-label');
+        var url = el.getAttribute('data-ping');
+        var T = { online: {{ 'Online' | t | tojson }}, offline: {{ 'Offline' | t | tojson }} };
+        
+        function check() {
+            fetch(url, { method: 'GET', cache: 'no-store' })
+                .then(function (r) { setState(r.ok); })
+                .catch(function () { setState(false); });
+        }
+        
+        function setState(up) {
+            // Modificato per essere più compatibile in caso di vecchi browser
+            if (up) {
+                el.classList.add('is-online');
+                el.classList.remove('is-offline');
+            } else {
+                el.classList.add('is-offline');
+                el.classList.remove('is-online');
+            }
+            label.textContent = up ? T.online : T.offline;
+        }
+        
+        check();
+        setInterval(check, 20000);
+    })();
+</script>

@@ -37,9 +37,13 @@
             <h3>{{ 'Handouts' | t }}</h3>
             <a class="drawer__link {% if active is defined and active == 'dashboard' %}drawer__link--active{% endif %}"
                href="{{ url_for('master.dm_panel') }}">{{ "Master's Screen" | t }}</a>
+            <a class="drawer__link {% if active is defined and active == 'create' %}drawer__link--active{% endif %}"
+               href="{{ url_for('master.create_page') }}">&#10133; {{ 'Create a Handout' | t }}</a>
             <a class="drawer__link {% if active is defined and active == 'map' %}drawer__link--active{% endif %}"
                href="{{ url_for('master.map_control') }}">🗺️ {{ 'Interactive Map' | t }}</a>
             <a class="drawer__link" href="{{ url_for('player.home') }}">{{ 'Player Hub' | t }}</a>
+            <a class="drawer__link {% if active is defined and active == 'qr' %}drawer__link--active{% endif %}"
+               href="{{ url_for('qr_page') }}">&#128241; {{ 'Join by QR' | t }}</a>
         </div>
 
         {# ---- App Guide (Help) ---- #}
@@ -107,3 +111,33 @@
         });
     })();
 </script>
+
+{# The passphrase reminder rides along with the menu, so every master page that
+   includes the menu gets the nag automatically -- no per-page wiring. It only
+   renders when first_run (no passphrase) is true. Inlined here (rather than a
+   separate include) so there is no extra template file to install. #}
+{% if first_run %}
+<div class="passphrase-nag" id="passphrase-nag" role="status">
+    <button type="button" class="passphrase-nag__x" id="passphrase-nag-x"
+            aria-label="{{ 'Close' | t }}" title="{{ 'Dismiss for now' | t }}">&times;</button>
+    &#9888; {{ 'No passphrase set - the Master side is open to anyone on this network.' | t }}
+    <a href="{{ url_for('master.security') }}">{{ 'Set one' | t }}</a>
+</div>
+<script>
+    (function () {
+        var nag = document.getElementById('passphrase-nag');
+        var x = document.getElementById('passphrase-nag-x');
+        if (!nag || !x) return;
+        // Deliberately persistent: closing it only hides it for a couple of
+        // minutes, then it slides back. It should nag until a passphrase
+        // actually exists, not be silenceable for good. No storage, so a reload
+        // brings it straight back too.
+        var timer = null;
+        x.addEventListener('click', function () {
+            nag.hidden = true;
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(function () { nag.hidden = false; }, 120000);
+        });
+    })();
+</script>
+{% endif %}

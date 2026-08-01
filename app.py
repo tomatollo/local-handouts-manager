@@ -58,6 +58,23 @@ def create_app():
 
     app.add_template_filter(translate_filter, 't')
 
+    # Last-modified date of a template file, formatted for the footer. Templates
+    # call {{ page_modified('master/dashboard.html') }} to show when that page's
+    # file was last edited/maintained. Reads the mtime lazily and tolerates a
+    # missing file (returns None) so a footer include never breaks a page.
+    import os
+    from datetime import datetime, timezone
+
+    def _page_modified(template_name, fmt='%Y-%m-%d'):
+        try:
+            path = os.path.join(app.root_path, app.template_folder, template_name)
+            ts = os.path.getmtime(path)
+            return datetime.fromtimestamp(ts, timezone.utc).strftime(fmt)
+        except OSError:
+            return None
+
+    app.jinja_env.globals['page_modified'] = _page_modified
+
     @app.context_processor
     def _ui_context():
         # The theme is global (master-chosen), so it's read from the DB rather
@@ -85,6 +102,21 @@ def create_app():
     @app.route('/guide')
     def app_guide():
         return render_template('guide.html')
+
+    @app.route('/qr')
+    def qr_page():
+        # A page that shows a QR code pointing at the player home, so people at
+        # the table can join by scanning instead of typing an IP. The URL is
+        # built client-side from window.location, so it carries whatever LAN
+        # address the Master opened this page with (not localhost). Reachable
+        # from both sides; it only ever reveals the already-public player URL.
+        return render_template('qr.html')
+
+    # Tiny liveness endpoint the footer polls to show Online/Offline. Returns
+    # 204 No Content: cheapest possible "yes, the server is up" answer.
+    @app.route('/ping')
+    def ping():
+        return ('', 204)
 
     from flask import render_template
 
@@ -152,5 +184,3 @@ app = create_app()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)
-
-

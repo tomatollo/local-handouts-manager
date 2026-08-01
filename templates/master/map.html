@@ -66,10 +66,20 @@
         .marker {
             position: absolute; left: 50%; top: 50%;
             width: 28px; height: 28px;
-            transform: translate(-50%, -50%) rotate(45deg);
-            background: var(--accent-2); border: 3px solid var(--ink);
+            transform: translate(-50%, -50%) scale(var(--marker-scale, 1)) rotate(45deg);
+            transform-origin: center;
+            background: var(--marker-color, var(--accent-2)); border: 3px solid var(--ink);
             box-shadow: 0 0 0 2px var(--border), 0 0 12px rgba(192,83,43,0.8);
             cursor: grab; z-index: 6; touch-action: none;
+        }
+        /* Glyph marker: the Master's custom character, upright (not rotated). */
+        .marker--glyph {
+            transform: translate(-50%, -50%) scale(var(--marker-scale, 1));
+            background: transparent; border: none; box-shadow: none;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; line-height: 1;
+            color: var(--marker-color, var(--accent-2));
+            text-shadow: 0 0 3px #000, 0 0 3px #000;
         }
         .marker:active { cursor: grabbing; }
         .marker--hidden-to-players { opacity: 0.5; filter: grayscale(0.5); }
@@ -180,6 +190,12 @@
             color: var(--accent); font-size: 0.9rem; line-height: 1;
             padding: 1px 4px; display: flex; align-items: center; justify-content: center;
         }
+        /* Glyph with no plate: bare character, just a legibility shadow. */
+        .poi__pin--nobg {
+            background: transparent !important; border: none !important;
+            padding: 0; box-shadow: none;
+            text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 2px #000;
+        }
         .poi__label {
             font-family: var(--font-display); font-size: 0.6rem;
             line-height: 1; white-space: nowrap;
@@ -201,6 +217,20 @@
             padding: 8px; display: flex; flex-direction: column; gap: 8px;
         }
         .poi-card__head { display: flex; align-items: center; gap: 6px; }
+        .poi-card__handle {
+            cursor: grab; color: var(--ink-dim); font-size: 0.9rem;
+            padding: 0 2px; user-select: none; flex: 0 0 auto;
+        }
+        .poi-card__handle:active { cursor: grabbing; }
+        .poi-card--dragging { opacity: 0.5; }
+        .poi-card--over { border-top: 3px solid var(--accent); }
+        /* Category heading between groups of cards. */
+        .poi-group-head {
+            font-family: var(--font-display); font-size: 0.62rem;
+            letter-spacing: 0.03em; text-transform: uppercase;
+            color: var(--accent); margin: 6px 0 2px; padding: 2px 0;
+            border-bottom: 1px dashed var(--border);
+        }
         .poi-card__head input[type="text"] { flex: 1; min-width: 0; }
         .poi-card__swatch {
             width: 22px; height: 22px; flex: 0 0 22px; border: 2px solid var(--border);
@@ -278,6 +308,16 @@
                     <div class="side-group">
                         <h3>{{ 'Party marker' | t }}</h3>
                         <button type="button" class="btn" id="marker-toggle">{{ 'Show marker' | t }}</button>
+                        <div class="poi-card__grid">
+                            <div>
+                                <label for="marker_icon">{{ 'Icon (a letter or emoji)' | t }}</label>
+                                <input type="text" id="marker_icon" maxlength="8" placeholder="{{ 'default marker' | t }}" value="{{ map_state.pending.marker_icon }}">
+                            </div>
+                            <div>
+                                <label for="marker_color">{{ 'Colour' | t }}</label>
+                                <input type="color" id="marker_color" value="{{ map_state.pending.marker_color }}">
+                            </div>
+                        </div>
                         <div>
                             <label for="marker_scale_range">{{ 'Marker size' | t }}</label>
                             <div class="marker-scale">
@@ -293,6 +333,7 @@
                         <button type="button" class="btn btn--poi" id="poi-mode">📍 {{ 'Add point of interest' | t }}</button>
                         <p class="map-hint map-hint--small">{{ 'Click the map to drop a pin, then set its name, icon, colour and size below. Drag a pin to move it. All staged until you Reveal.' | t }}</p>
                         <ul class="poi-list" id="poi-list"></ul>
+                        <datalist id="poi-category-list"></datalist>
                         <p class="poi-empty" id="poi-empty">{{ 'No points of interest yet.' | t }}</p>
                     </div>
 
@@ -366,7 +407,12 @@
                 </aside>
             </div>
         </div>
+
+        {% set footer_scope = 'master' %}
+        {% set footer_page = 'master/map.html' %}
+        {% include '_footer.html' %}
     </div>
+
 
     <script id="map-initial" type="application/json">{{ map_state | tojson }}</script>
     <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
@@ -406,7 +452,10 @@
                      always_visible: poi.always_visible !== false,
                      icon: String(poi.icon || ''),
                      color: String(poi.color || '#e8a83a'),
-                     scale: clampScale(poi.scale) };
+                     scale: clampScale(poi.scale),
+                     category: String(poi.category || ''),
+                     icon_bg: poi.icon_bg === true,
+                     icon_bg_color: String(poi.icon_bg_color || '#241d18') };
         }
         function clampScale(v) {
             v = parseFloat(v);
@@ -418,6 +467,8 @@
             markerX: full.marker_x || 0, markerY: full.marker_y || 0,
             markerVisible: !!full.marker_visible,
             markerScale: clampScale(full.marker_scale),
+            markerIcon: String(full.marker_icon || ''),
+            markerColor: String(full.marker_color || '#c0533b'),
             pois: (full.pois || []).map(clonePoi)
         };
         var p = full.pending || {};
@@ -427,6 +478,8 @@
             markerY: (typeof p.marker_y === 'number') ? p.marker_y : 50,
             markerVisible: !!p.marker_visible,
             markerScale: clampScale(p.marker_scale),
+            markerIcon: String(p.marker_icon || ''),
+            markerColor: String(p.marker_color || '#c0533b'),
             cols: p.grid_cols || 20, rows: p.grid_rows || 15,
             fog: p.fog_color || '#0d0b0a',
             offX: (typeof p.offset_x === 'number') ? p.offset_x : 0,
@@ -463,6 +516,8 @@
             if (Math.abs(draft.markerX - live.markerX) > 0.01) return true;
             if (Math.abs(draft.markerY - live.markerY) > 0.01) return true;
             if (Math.abs(draft.markerScale - live.markerScale) > 0.001) return true;
+            if (draft.markerIcon !== live.markerIcon) return true;
+            if (draft.markerColor !== live.markerColor) return true;
             if (draft.revealed.size !== live.revealed.size) return true;
             for (var id of draft.revealed) if (!live.revealed.has(id)) return true;
             if (poisDiffer(draft.pois, live.pois)) return true;
@@ -477,6 +532,9 @@
                 if (a[i].label !== b[i].label) return true;
                 if (a[i].always_visible !== b[i].always_visible) return true;
                 if (a[i].icon !== b[i].icon) return true;
+                if (a[i].category !== b[i].category) return true;
+                if (a[i].icon_bg !== b[i].icon_bg) return true;
+                if (a[i].icon_bg_color !== b[i].icon_bg_color) return true;
                 if (a[i].color !== b[i].color) return true;
                 if (Math.abs(a[i].scale - b[i].scale) > 0.001) return true;
                 if (Math.abs(a[i].x - b[i].x) > 0.01) return true;
@@ -626,6 +684,16 @@
             marker.style.left = draft.markerX + '%';
             marker.style.top  = draft.markerY + '%';
             marker.style.setProperty('--marker-scale', draft.markerScale);
+            marker.style.setProperty('--marker-color',
+                validColor(draft.markerColor) ? draft.markerColor : '#c0533b');
+            // Glyph vs diamond: a custom icon shows the character upright.
+            if (draft.markerIcon) {
+                marker.classList.add('marker--glyph');
+                marker.textContent = draft.markerIcon;
+            } else {
+                marker.classList.remove('marker--glyph');
+                marker.textContent = '';
+            }
             marker.classList.toggle('marker--hidden-to-players', !draft.markerVisible);
             toggleBtn.textContent = draft.markerVisible ? "{{ 'Hide marker' | t }}" : "{{ 'Show marker' | t }}";
             // Ghost: show the live position only if the draft moved it or its
@@ -665,6 +733,24 @@
             persist({ marker_scale: draft.markerScale }, "{{ 'Saving\u2026' | t }}");
         });
 
+        // Marker icon + colour (staged).
+        var markerIconInput = document.getElementById('marker_icon');
+        var markerColorInput = document.getElementById('marker_color');
+        markerIconInput.addEventListener('input', function () {
+            draft.markerIcon = markerIconInput.value.slice(0, 8);
+            renderMarker(); refreshBadge();
+        });
+        markerIconInput.addEventListener('change', function () {
+            persist({ marker_icon: draft.markerIcon }, "{{ 'Saving\u2026' | t }}");
+        });
+        markerColorInput.addEventListener('input', function () {
+            draft.markerColor = markerColorInput.value;
+            renderMarker(); refreshBadge();
+        });
+        markerColorInput.addEventListener('change', function () {
+            persist({ marker_color: draft.markerColor }, "{{ 'Saving\u2026' | t }}");
+        });
+
         var dragging = false;
         marker.addEventListener('pointerdown', function (e) {
             e.preventDefault(); e.stopPropagation();
@@ -702,6 +788,8 @@
                     live.markerX = state.marker_x; live.markerY = state.marker_y;
                     live.markerVisible = !!state.marker_visible;
                     live.markerScale = clampScale(state.marker_scale);
+                    live.markerIcon = String(state.marker_icon || '');
+                    live.markerColor = String(state.marker_color || '#c0533b');
                     live.pois = (state.pois || []).map(clonePoi);
                     paintHexes(); renderMarker(); renderPois(); refreshBadge();
                     showStatus("{{ 'Revealed to players' | t }}", false);
@@ -776,12 +864,21 @@
                     }
                 }
                 var color = validColor(poi.color) ? poi.color : null;
+                var bgColor = validColor(poi.icon_bg_color) ? poi.icon_bg_color : '#241d18';
                 var pin = document.createElement('div');
                 pin.className = 'poi__pin';
                 if (poi.icon) {
                     pin.classList.add('poi__pin--glyph');
                     pin.textContent = poi.icon;
                     if (color) pin.style.color = color;
+                    // Optional plate behind the glyph, its own colour. Off =
+                    // no border/background, just the bare glyph.
+                    if (poi.icon_bg) {
+                        pin.style.background = bgColor;
+                        pin.style.borderColor = color || 'var(--accent)';
+                    } else {
+                        pin.classList.add('poi__pin--nobg');
+                    }
                 } else if (color) {
                     pin.style.background = color;
                 }
@@ -839,147 +936,319 @@
         // The management list in the side panel: each POI is a card with its
         // name, a swatch preview, and controls for icon, colour, scale and
         // player-visibility, plus delete. Everything is staged.
+        // Master-only ordering: a list of POI ids kept in localStorage. It is
+        // NOT staged and never sent to players -- purely how the Master likes
+        // the side panel arranged. New/unknown POIs fall to the end.
+        var POI_ORDER_KEY = 'lhm.poiOrder';
+        function loadPoiOrder() {
+            try { return JSON.parse(localStorage.getItem(POI_ORDER_KEY)) || []; }
+            catch (e) { return []; }
+        }
+        function savePoiOrder(ids) {
+            try { localStorage.setItem(POI_ORDER_KEY, JSON.stringify(ids)); }
+            catch (e) {}
+        }
+        // Return draft.pois arranged by the saved order (stable; unknowns last).
+        function orderedPois() {
+            var order = loadPoiOrder();
+            var rank = {};
+            order.forEach(function (id, i) { rank[id] = i; });
+            return draft.pois.slice().sort(function (a, b) {
+                var ra = (a.id in rank) ? rank[a.id] : Infinity;
+                var rb = (b.id in rank) ? rank[b.id] : Infinity;
+                if (ra !== rb) return ra - rb;
+                return 0;
+            });
+        }
+
+        // Build one POI card element (all the per-POI controls).
+        function buildPoiCard(poi) {
+            var li = document.createElement('li');
+            li.className = 'poi-card';
+            li.setAttribute('draggable', 'false');
+            li.setAttribute('data-poi-card', poi.id);
+
+            // --- head: drag handle + swatch + name ---
+            var head = document.createElement('div');
+            head.className = 'poi-card__head';
+
+            var handle = document.createElement('span');
+            handle.className = 'poi-card__handle';
+            handle.textContent = '\u2630';           // ☰ drag affordance
+            handle.title = "{{ 'Drag to reorder' | t }}";
+            // Only the handle starts a drag, so the inputs stay selectable.
+            // The card is draggable=false until the handle is pressed.
+            handle.addEventListener('mousedown', function () { li.setAttribute('draggable', 'true'); });
+            handle.addEventListener('touchstart', function () { li.setAttribute('draggable', 'true'); }, { passive: true });
+
+            var swatch = document.createElement('span');
+            swatch.className = 'poi-card__swatch';
+            function paintSwatch() {
+                var col = validColor(poi.color) ? poi.color : 'var(--accent)';
+                if (poi.icon) {
+                    swatch.textContent = poi.icon;
+                    swatch.style.background = 'var(--border)';
+                    swatch.style.color = col;
+                } else {
+                    swatch.textContent = '';
+                    swatch.style.background = col;
+                    swatch.style.color = '';
+                }
+            }
+            paintSwatch();
+
+            var name = document.createElement('input');
+            name.type = 'text';
+            name.value = poi.label;
+            name.placeholder = "{{ 'Unnamed' | t }}";
+            name.addEventListener('input', function () {
+                poi.label = name.value.slice(0, 80);
+                renderPoiLabelsOnly();
+                refreshBadge();
+            });
+            name.addEventListener('change', function () { persistPois(); });
+
+            head.appendChild(handle);
+            head.appendChild(swatch);
+            head.appendChild(name);
+
+            // --- grid: icon + colour ---
+            var grid = document.createElement('div');
+            grid.className = 'poi-card__grid';
+
+            var iconWrap = document.createElement('div');
+            var iconLabel = document.createElement('label');
+            iconLabel.textContent = "{{ 'Icon (a letter or emoji)' | t }}";
+            var icon = document.createElement('input');
+            icon.type = 'text';
+            icon.value = poi.icon;
+            icon.maxLength = 8;
+            icon.placeholder = "{{ 'default pin' | t }}";
+            icon.addEventListener('input', function () {
+                poi.icon = icon.value.slice(0, 8);
+                paintSwatch(); renderPois(); refreshBadge();
+            });
+            icon.addEventListener('change', function () { persistPois(); });
+            iconWrap.appendChild(iconLabel);
+            iconWrap.appendChild(icon);
+
+            var colorWrap = document.createElement('div');
+            var colorLabel = document.createElement('label');
+            colorLabel.textContent = "{{ 'Colour' | t }}";
+            var color = document.createElement('input');
+            color.type = 'color';
+            color.value = validColor(poi.color) ? poi.color : '#e8a83a';
+            color.addEventListener('input', function () {
+                poi.color = color.value;
+                paintSwatch(); renderPois(); refreshBadge();
+            });
+            color.addEventListener('change', function () { persistPois(); });
+            colorWrap.appendChild(colorLabel);
+            colorWrap.appendChild(color);
+
+            grid.appendChild(iconWrap);
+            grid.appendChild(colorWrap);
+
+            // --- icon background: toggle + its own colour ---
+            var bgWrap = document.createElement('div');
+            var bgToggleLabel = document.createElement('label');
+            bgToggleLabel.className = 'poi-card__vis';
+            var bgToggle = document.createElement('input');
+            bgToggle.type = 'checkbox';
+            bgToggle.checked = poi.icon_bg === true;
+            var bgColor = document.createElement('input');
+            bgColor.type = 'color';
+            bgColor.value = validColor(poi.icon_bg_color) ? poi.icon_bg_color : '#241d18';
+            bgColor.style.marginLeft = '6px';
+            bgColor.disabled = !bgToggle.checked;
+            bgToggle.addEventListener('change', function () {
+                poi.icon_bg = bgToggle.checked;
+                bgColor.disabled = !bgToggle.checked;
+                renderPois(); refreshBadge(); persistPois();
+            });
+            bgColor.addEventListener('input', function () {
+                poi.icon_bg_color = bgColor.value;
+                renderPois(); refreshBadge();
+            });
+            bgColor.addEventListener('change', function () { persistPois(); });
+            bgToggleLabel.appendChild(bgToggle);
+            bgToggleLabel.appendChild(document.createTextNode(" {{ 'Icon background' | t }}"));
+            bgWrap.appendChild(bgToggleLabel);
+            bgWrap.appendChild(bgColor);
+
+            // --- category + scale ---
+            var catWrap = document.createElement('div');
+            var catLabel = document.createElement('label');
+            catLabel.textContent = "{{ 'Category' | t }}";
+            var cat = document.createElement('input');
+            cat.type = 'text';
+            cat.value = poi.category || '';
+            cat.maxLength = 80;
+            cat.setAttribute('list', 'poi-category-list');
+            cat.placeholder = "{{ 'e.g. Cities' | t }}";
+            cat.addEventListener('input', function () {
+                poi.category = cat.value.slice(0, 80);
+                refreshBadge();
+            });
+            // Regroup only when the field loses focus, so typing doesn't yank
+            // the card between groups on every keystroke.
+            cat.addEventListener('change', function () {
+                persistPois(); renderPoiList();
+            });
+            catWrap.appendChild(catLabel);
+            catWrap.appendChild(cat);
+
+            var scaleWrap = document.createElement('div');
+            var scaleLabel = document.createElement('label');
+            scaleLabel.textContent = "{{ 'Size' | t }}";
+            var scaleRow = document.createElement('div');
+            scaleRow.className = 'poi-card__scale';
+            var scale = document.createElement('input');
+            scale.type = 'range';
+            scale.min = '0.3'; scale.max = '4'; scale.step = '0.05';
+            scale.value = clampScale(poi.scale);
+            var scaleVal = document.createElement('span');
+            scaleVal.className = 'poi-card__scaleval';
+            scaleVal.textContent = clampScale(poi.scale).toFixed(1) + '\u00d7';
+            scale.addEventListener('input', function () {
+                poi.scale = clampScale(scale.value);
+                scaleVal.textContent = poi.scale.toFixed(1) + '\u00d7';
+                var el = poiLayer.querySelector('.poi[data-poi="' + cssEsc(poi.id) + '"]');
+                if (el) el.style.setProperty('--poi-scale', poi.scale);
+                refreshBadge();
+            });
+            scale.addEventListener('change', function () { persistPois(); });
+            scaleRow.appendChild(scale);
+            scaleRow.appendChild(scaleVal);
+            scaleWrap.appendChild(scaleLabel);
+            scaleWrap.appendChild(scaleRow);
+
+            var grid2 = document.createElement('div');
+            grid2.className = 'poi-card__grid';
+            grid2.appendChild(catWrap);
+            grid2.appendChild(scaleWrap);
+
+            // --- foot: visibility + delete ---
+            var foot = document.createElement('div');
+            foot.className = 'poi-card__foot';
+
+            var visWrap = document.createElement('label');
+            visWrap.className = 'poi-card__vis';
+            var vis = document.createElement('input');
+            vis.type = 'checkbox';
+            vis.checked = poi.always_visible;
+            vis.addEventListener('change', function () {
+                poi.always_visible = vis.checked;
+                renderPois(); refreshBadge();
+                persistPois();
+            });
+            visWrap.appendChild(vis);
+            visWrap.appendChild(document.createTextNode(" {{ 'Always visible to players' | t }}"));
+
+            var del = document.createElement('button');
+            del.type = 'button';
+            del.className = 'btn btn--ghost';
+            del.textContent = '\uD83D\uDDD1';
+            del.setAttribute('aria-label', "{{ 'Delete' | t }}");
+            del.addEventListener('click', function () {
+                draft.pois = draft.pois.filter(function (q) { return q.id !== poi.id; });
+                renderPois(); refreshBadge();
+                persistPois("{{ 'Saving\u2026' | t }}");
+            });
+
+            foot.appendChild(visWrap);
+            foot.appendChild(del);
+
+            li.appendChild(head);
+            li.appendChild(grid);
+            li.appendChild(bgWrap);
+            li.appendChild(grid2);
+            li.appendChild(foot);
+            bindCardDrag(li, poi);
+            return li;
+        }
+
+        // Drag & drop: reorder cards. On drop we read the DOM order of all
+        // cards and persist that id list to localStorage (master-only).
+        var dragSrcId = null;
+        function bindCardDrag(li, poi) {
+            li.addEventListener('dragstart', function (e) {
+                dragSrcId = poi.id;
+                li.classList.add('poi-card--dragging');
+                try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', poi.id); } catch (_) {}
+            });
+            li.addEventListener('dragend', function () {
+                dragSrcId = null;
+                li.classList.remove('poi-card--dragging');
+                li.setAttribute('draggable', 'false');
+                poiList.querySelectorAll('.poi-card--over').forEach(function (n) { n.classList.remove('poi-card--over'); });
+            });
+            li.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                try { e.dataTransfer.dropEffect = 'move'; } catch (_) {}
+                li.classList.add('poi-card--over');
+            });
+            li.addEventListener('dragleave', function () { li.classList.remove('poi-card--over'); });
+            li.addEventListener('drop', function (e) {
+                e.preventDefault();
+                li.classList.remove('poi-card--over');
+                if (!dragSrcId || dragSrcId === poi.id) return;
+                // Move dragged id to just before the drop target in the order.
+                var ids = orderedPois().map(function (q) { return q.id; });
+                var from = ids.indexOf(dragSrcId);
+                if (from > -1) ids.splice(from, 1);
+                var to = ids.indexOf(poi.id);
+                ids.splice(to, 0, dragSrcId);
+                savePoiOrder(ids);
+                renderPoiList();
+            });
+        }
+
+        // Render the POI manager: cards grouped under their category headings,
+        // in the master's saved order.
         function renderPoiList() {
             poiList.innerHTML = '';
             poiEmpty.hidden = draft.pois.length > 0;
-            draft.pois.forEach(function (poi) {
-                var li = document.createElement('li');
-                li.className = 'poi-card';
+            refreshCategoryDatalist();
 
-                // --- head: swatch preview + name ---
-                var head = document.createElement('div');
-                head.className = 'poi-card__head';
+            var ordered = orderedPois();
+            // Group by category (empty category -> "Uncategorised"), preserving
+            // the order in which each category first appears.
+            var groups = [];
+            var byCat = {};
+            ordered.forEach(function (poi) {
+                var key = (poi.category || '').trim();
+                if (!(key in byCat)) { byCat[key] = []; groups.push(key); }
+                byCat[key].push(poi);
+            });
 
-                var swatch = document.createElement('span');
-                swatch.className = 'poi-card__swatch';
-                function paintSwatch() {
-                    var col = validColor(poi.color) ? poi.color : 'var(--accent)';
-                    if (poi.icon) {
-                        swatch.textContent = poi.icon;
-                        swatch.style.background = 'var(--border)';
-                        swatch.style.color = col;
-                    } else {
-                        swatch.textContent = '';
-                        swatch.style.background = col;
-                        swatch.style.color = '';
-                    }
+            groups.forEach(function (key) {
+                if (groups.length > 1 || key) {
+                    var h = document.createElement('li');
+                    h.className = 'poi-group-head';
+                    h.textContent = key || "{{ 'Uncategorised' | t }}";
+                    poiList.appendChild(h);
                 }
-                paintSwatch();
-
-                var name = document.createElement('input');
-                name.type = 'text';
-                name.value = poi.label;
-                name.placeholder = "{{ 'Unnamed' | t }}";
-                name.addEventListener('input', function () {
-                    poi.label = name.value.slice(0, 80);
-                    renderPoiLabelsOnly();
-                    refreshBadge();
+                byCat[key].forEach(function (poi) {
+                    poiList.appendChild(buildPoiCard(poi));
                 });
-                name.addEventListener('change', function () { persistPois(); });
+            });
+        }
 
-                head.appendChild(swatch);
-                head.appendChild(name);
-
-                // --- grid: icon + colour ---
-                var grid = document.createElement('div');
-                grid.className = 'poi-card__grid';
-
-                var iconWrap = document.createElement('div');
-                var iconLabel = document.createElement('label');
-                iconLabel.textContent = "{{ 'Icon (a letter or emoji)' | t }}";
-                var icon = document.createElement('input');
-                icon.type = 'text';
-                icon.value = poi.icon;
-                icon.maxLength = 8;
-                icon.placeholder = "{{ 'default pin' | t }}";
-                icon.addEventListener('input', function () {
-                    poi.icon = icon.value.slice(0, 8);
-                    paintSwatch(); renderPois(); refreshBadge();
-                });
-                icon.addEventListener('change', function () { persistPois(); });
-                iconWrap.appendChild(iconLabel);
-                iconWrap.appendChild(icon);
-
-                var colorWrap = document.createElement('div');
-                var colorLabel = document.createElement('label');
-                colorLabel.textContent = "{{ 'Colour' | t }}";
-                var color = document.createElement('input');
-                color.type = 'color';
-                color.value = validColor(poi.color) ? poi.color : '#e8a83a';
-                color.addEventListener('input', function () {
-                    poi.color = color.value;
-                    paintSwatch(); renderPois(); refreshBadge();
-                });
-                color.addEventListener('change', function () { persistPois(); });
-                colorWrap.appendChild(colorLabel);
-                colorWrap.appendChild(color);
-
-                grid.appendChild(iconWrap);
-                grid.appendChild(colorWrap);
-
-                // --- scale slider ---
-                var scaleWrap = document.createElement('div');
-                var scaleLabel = document.createElement('label');
-                scaleLabel.textContent = "{{ 'Size' | t }}";
-                var scaleRow = document.createElement('div');
-                scaleRow.className = 'poi-card__scale';
-                var scale = document.createElement('input');
-                scale.type = 'range';
-                scale.min = '0.3'; scale.max = '4'; scale.step = '0.05';
-                scale.value = clampScale(poi.scale);
-                var scaleVal = document.createElement('span');
-                scaleVal.className = 'poi-card__scaleval';
-                scaleVal.textContent = clampScale(poi.scale).toFixed(1) + '\u00d7';
-                scale.addEventListener('input', function () {
-                    poi.scale = clampScale(scale.value);
-                    scaleVal.textContent = poi.scale.toFixed(1) + '\u00d7';
-                    // live-update just this pin's scale without a full rebuild
-                    var el = poiLayer.querySelector('.poi[data-poi="' + cssEsc(poi.id) + '"]');
-                    if (el) el.style.setProperty('--poi-scale', poi.scale);
-                    refreshBadge();
-                });
-                scale.addEventListener('change', function () { persistPois(); });
-                scaleRow.appendChild(scale);
-                scaleRow.appendChild(scaleVal);
-                scaleWrap.appendChild(scaleLabel);
-                scaleWrap.appendChild(scaleRow);
-
-                // --- foot: visibility + delete ---
-                var foot = document.createElement('div');
-                foot.className = 'poi-card__foot';
-
-                var visWrap = document.createElement('label');
-                visWrap.className = 'poi-card__vis';
-                var vis = document.createElement('input');
-                vis.type = 'checkbox';
-                vis.checked = poi.always_visible;
-                vis.addEventListener('change', function () {
-                    poi.always_visible = vis.checked;
-                    renderPois(); refreshBadge();
-                    persistPois();
-                });
-                visWrap.appendChild(vis);
-                visWrap.appendChild(document.createTextNode(" {{ 'Always visible to players' | t }}"));
-
-                var del = document.createElement('button');
-                del.type = 'button';
-                del.className = 'btn btn--ghost';
-                del.textContent = '\uD83D\uDDD1';
-                del.setAttribute('aria-label', "{{ 'Delete' | t }}");
-                del.addEventListener('click', function () {
-                    draft.pois = draft.pois.filter(function (q) { return q.id !== poi.id; });
-                    renderPois(); refreshBadge();
-                    persistPois("{{ 'Saving\u2026' | t }}");
-                });
-
-                foot.appendChild(visWrap);
-                foot.appendChild(del);
-
-                li.appendChild(head);
-                li.appendChild(grid);
-                li.appendChild(scaleWrap);
-                li.appendChild(foot);
-                poiList.appendChild(li);
+        // Keep the <datalist> of existing categories fresh for autocomplete.
+        function refreshCategoryDatalist() {
+            var dl = document.getElementById('poi-category-list');
+            if (!dl) return;
+            var seen = {};
+            dl.innerHTML = '';
+            draft.pois.forEach(function (poi) {
+                var c = (poi.category || '').trim();
+                if (c && !seen[c]) {
+                    seen[c] = true;
+                    var o = document.createElement('option');
+                    o.value = c;
+                    dl.appendChild(o);
+                }
             });
         }
         // Escape an id for use in a CSS attribute selector (ids are UUIDs or
@@ -1032,7 +1301,8 @@
             var id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
                      : 'poi-' + Date.now() + '-' + Math.floor(Math.random() * 1e6);
             draft.pois.push({ id: id, label: '', x: Number(x.toFixed(2)), y: Number(y.toFixed(2)),
-                              always_visible: true, icon: '', color: '#e8a83a', scale: 1 });
+                              always_visible: true, icon: '', color: '#e8a83a', scale: 1, category: '',
+                              icon_bg: false, icon_bg_color: '#241d18' });
             placingPoi = false;
             poiBtn.classList.remove('is-active');
             viewport.classList.remove('is-placing');

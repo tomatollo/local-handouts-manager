@@ -33,6 +33,53 @@ CATALOG = {
         'Recent': 'Recenti',
         'Rows': 'Elenco',
         'Cards': 'Schede',
+        'Tree': 'Albero',
+        'Handout tree': 'Albero dei documenti',
+        'empty': 'vuoto',
+        'No handouts yet.': 'Ancora nessun documento.',
+        'Ungrouped': 'Non raggruppati',
+        'Group by': 'Raggruppa per',
+        'View': 'Vista',
+        'Details': 'Dettagli',
+        'Select a handout from the tree to see it here.':
+            'Seleziona un documento dall\'albero per vederlo qui.',
+        'Open': 'Apri',
+        'Icon background': 'Sfondo icona',
+        # ---- Footer, Create page, status, passphrase nag ----
+        'Create': 'Crea',
+        'Create a Handout': 'Crea un Documento',
+        'Upload a scroll, map or tome and file it away.':
+            'Carica una pergamena, una mappa o un tomo e archivialo.',
+        'Upload a new handout and manage folders on their own page.':
+            'Carica un nuovo documento e gestisci le cartelle in una pagina dedicata.',
+        'Footer': 'Piè di pagina',
+        'Updated': 'Aggiornato',
+        'Online': 'Online',
+        'Offline': 'Offline',
+        'Interactive Map': 'Mappa Interattiva',
+        'Built for the table: for the maps unrolled, the secrets kept, and the handouts slid across to the right player at the right moment.':
+            'Fatto per il tavolo: per le mappe srotolate, i segreti custoditi e i documenti fatti scivolare al giocatore giusto al momento giusto.',
+        'Thanks to my players for every session, and to every Game Master keeping worlds alive.':
+            'Grazie ai miei giocatori per ogni sessione, e a ogni Master che tiene vivi i suoi mondi.',
+        'No passphrase set - the Master side is open to anyone on this network.':
+            'Nessuna passphrase impostata - il lato Master è aperto a chiunque sia su questa rete.',
+        'Set one': 'Impostane una',
+        'Dismiss for now': 'Ignora per ora',
+        # ---- QR join page ----
+        'Join by QR': 'Accedi con QR',
+        'QR': 'QR',
+        'QR code': 'Codice QR',
+        'Point a phone camera at the code to open the player page.':
+            'Inquadra il codice con la fotocamera del telefono per aprire la pagina dei giocatori.',
+        'Scan to open the players\' handouts on this device.':
+            'Scansiona per aprire i documenti dei giocatori su questo dispositivo.',
+        'Player URL': 'Indirizzo giocatori',
+        'Copy link': 'Copia link',
+        'Copied!': 'Copiato!',
+        'Print': 'Stampa',
+        'Open': 'Apri',
+        'You opened this page on localhost, so the code points back to this computer only. Open the app using your computer\'s network address (e.g. 192.168.x.x) for other devices to connect.':
+            'Hai aperto questa pagina su localhost, quindi il codice punta solo a questo computer. Apri l\'app usando l\'indirizzo di rete del computer (es. 192.168.x.x) perché altri dispositivi possano collegarsi.',
         'View mode': 'Modalità di visualizzazione',
         'Clear': 'Azzera',
         'Search': 'Cerca',
@@ -62,8 +109,8 @@ CATALOG = {
         # ---- Master: dashboard ----
         'Master Dashboard': 'Pannello del Master',
         "Master's Screen": 'Schermo del Master',
-        'Forge scrolls and ancient tomes from here.':
-            'Forgia pergamene e tomi antichi da qui.',
+        'View scrolls and ancient tomes from here.':
+            'Visualizza pergamene e tomi antichi.',
         'Search handouts...': 'Cerca documenti...',
         'Search handouts': 'Cerca documenti',
         'No handouts match your search.': 'Nessun documento corrisponde alla ricerca.',
@@ -118,8 +165,8 @@ CATALOG = {
         'Add': 'Aggiungi',
         'Folder name': 'Nome cartella',
         'Rename': 'Rinomina',
-        'No folders yet — create one below.':
-            'Ancora nessuna cartella — creane una qui sotto.',
+        'No folders yet, create one below.':
+            'Ancora nessuna cartella, creane una qui sotto.',
         'Backup & Transfer': 'Backup e Trasferimento',
         'Move your whole library (handouts, images, folders) to another computer.':
             "Sposta l'intera libreria (documenti, immagini, cartelle) su un altro computer.",

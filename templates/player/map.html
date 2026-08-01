@@ -38,9 +38,17 @@
             width: 28px; height: 28px;
             transform: translate(-50%, -50%) scale(var(--marker-scale, 1)) rotate(45deg);
             transform-origin: center;
-            background: var(--accent-2); border: 3px solid var(--ink);
+            background: var(--marker-color, var(--accent-2)); border: 3px solid var(--ink);
             box-shadow: 0 0 0 2px var(--border), 0 0 12px rgba(192,83,43,0.8);
             z-index: 5; transition: left 0.8s ease, top 0.8s ease;
+        }
+        .marker--glyph {
+            transform: translate(-50%, -50%) scale(var(--marker-scale, 1));
+            background: transparent; border: none; box-shadow: none;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; line-height: 1;
+            color: var(--marker-color, var(--accent-2));
+            text-shadow: 0 0 3px #000, 0 0 3px #000;
         }
         .map-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
         .map-hint { color: var(--ink-dim); font-style: italic; margin: 0 0 12px; }
@@ -68,6 +76,11 @@
             color: var(--accent); font-size: 0.9rem; line-height: 1;
             padding: 1px 4px; text-align: center;
             display: flex; align-items: center; justify-content: center;
+        }
+        .poi__pin--nobg {
+            background: transparent !important; border: none !important;
+            padding: 0; box-shadow: none;
+            text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 2px #000;
         }
         .poi__label {
             font-family: var(--font-display); font-size: 0.62rem; line-height: 1;
@@ -111,6 +124,10 @@
                 </div>
             </div>
         </div>
+
+        {% set footer_scope = 'player' %}
+        {% set footer_page = 'player/map.html' %}
+        {% include '_footer.html' %}
     </div>
 
     <script id="map-initial" type="application/json">{{ map_state | tojson }}</script>
@@ -180,6 +197,15 @@
                 if (typeof s.marker_y === 'number') marker.style.top  = s.marker_y + '%';
                 var msc = Math.max(0.3, Math.min(4, +s.marker_scale || 1));
                 marker.style.setProperty('--marker-scale', msc);
+                var mcol = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(s.marker_color || '') ? s.marker_color : '#c0533b';
+                marker.style.setProperty('--marker-color', mcol);
+                if (s.marker_icon) {
+                    marker.classList.add('marker--glyph');
+                    marker.textContent = s.marker_icon;
+                } else {
+                    marker.classList.remove('marker--glyph');
+                    marker.textContent = '';
+                }
             } else {
                 marker.style.display = 'none';
             }
@@ -277,6 +303,8 @@
                 var sc = Math.max(0.3, Math.min(4, +poi.scale || 1));
                 el.style.setProperty('--poi-scale', sc);
                 var color = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(poi.color || '') ? poi.color : null;
+                var bgOk = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(poi.icon_bg_color || '');
+                var bgColor = bgOk ? poi.icon_bg_color : '#241d18';
                 var pin = document.createElement('div');
                 pin.className = 'poi__pin';
                 if (poi.icon) {
@@ -284,6 +312,12 @@
                     pin.classList.add('poi__pin--glyph');
                     pin.textContent = poi.icon;
                     if (color) pin.style.color = color;
+                    if (poi.icon_bg) {
+                        pin.style.background = bgColor;
+                        pin.style.borderColor = color || 'var(--accent)';
+                    } else {
+                        pin.classList.add('poi__pin--nobg');
+                    }
                 } else if (color) {
                     pin.style.background = color;
                 }

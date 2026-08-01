@@ -27,7 +27,7 @@ the phase of work that produced them, newest first.
   - **Persistent by design:** the POP lives in `settings.pop` in the DB, not in
     memory, so a player who joins late, reloads, or wakes their phone still
     receives the POP the Master fired, and a server restart does not replay an
-    old one. Only the newest POP is kept — there is no queue, because a queue
+    old one. Only the newest POP is kept there is no queue, because a queue
     would make the table work through a backlog of reveals in the wrong order.
   - Popping is refused on hidden handouts (`400`): a route named "pop" must
     not be a back door to publishing. `/api/pop` re-checks `visible` on every
@@ -43,8 +43,8 @@ the phase of work that produced them, newest first.
   - On first run the app stays open (there is nothing to authenticate against
     yet) and the dashboard shows a warning banner until a passphrase is set.
 - **Quick Wiki**, split into two collections:
-  - **Players Wiki** (`/wiki`) — read-only, lore the party has learnt.
-  - **Master Wiki** (`/dm-panel/wiki/master`) — secrets, guarded.
+  - **Players Wiki** (`/wiki`) read-only, lore the party has learnt.
+  - **Master Wiki** (`/dm-panel/wiki/master`) secrets, guarded.
   - Pages carry a `scope`; the player routes only ever query the players'
     scope, so there is no request parameter that could reach master pages.
     Requesting a master page's id from the player side returns `404`, not
@@ -75,9 +75,9 @@ the phase of work that produced them, newest first.
 ### Fixed
 - **Export bundles no longer carry credentials.** `export_bytes()` dumped the
   whole DB, and the new passphrase hash + session signing key live under
-  `settings` — so every `.zip` would have shipped them. A bundle is emailed or
+  `settings` so every `.zip` would have shipped them. A bundle is emailed or
   carried on a USB stick, so it is now treated as public: both are stripped
-  (`transfer.PRIVATE_SETTINGS`). The signing key mattered most — holding it
+  (`transfer.PRIVATE_SETTINGS`). The signing key mattered most holding it
   lets anyone forge an `is_master` cookie without knowing the passphrase.
 - **Import now carries wiki pages.** The merge only handled handouts and
   folders, so wiki pages would have been silently dropped on transfer. New
@@ -98,7 +98,7 @@ the phase of work that produced them, newest first.
 - Seven themes, each overriding the full token set (palette + display/body font
   pair + heading scale), inspired by official D&D campaigns.
 - Only the active theme's fonts are fetched, and font families needing explicit
-  axis tuples are spelled out — the Google Fonts `css2` API fails the whole
+  axis tuples are spelled out the Google Fonts `css2` API fails the whole
   request if one family is under-specified, which silently killed both faces.
 
 ### Internationalisation

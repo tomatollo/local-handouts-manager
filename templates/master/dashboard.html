@@ -5,6 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ 'Master Dashboard' | t }}</title>
     {% include '_head.html' %}
+    <style>
+        /* Terminal-style handout tree (Tree view mode). */
+        .tree-layout { display: flex; gap: 16px; align-items: flex-start; }
+        .handout-tree {
+            flex: 1 1 auto; min-width: 0;
+            font-family: ui-monospace, "Cascadia Code", "Fira Code", Consolas, monospace;
+            font-size: 0.82rem; line-height: 1.5; margin: 0; padding: 8px 4px;
+            white-space: pre; overflow-x: auto; color: var(--ink-dim, #b8a888);
+        }
+        .handout-tree .tree-node { color: var(--accent, #e8a83a); font-weight: bold; }
+        .handout-tree .tree-leaf {
+            color: var(--ink, #f4ecd8); text-decoration: none; cursor: pointer;
+            border-bottom: 1px dotted transparent;
+        }
+        .handout-tree .tree-leaf:hover { color: var(--accent, #e8a83a); border-bottom-color: currentColor; }
+        .handout-tree .tree-leaf--active { color: var(--accent, #e8a83a); font-weight: bold; border-bottom-color: currentColor; }
+        .tree-section { padding-top: 8px; }
+        /* Side detail panel shows the clicked handout as a card. */
+        .tree-detail {
+            flex: 0 0 300px; border-left: 1px solid var(--border, #6b4f34);
+            padding-left: 16px; min-height: 120px;
+        }
+        @media (max-width: 760px) {
+            .tree-layout { flex-direction: column; }
+            .tree-detail { flex-basis: auto; width: 100%; border-left: none;
+                border-top: 1px solid var(--border, #6b4f34); padding-left: 0; padding-top: 12px; }
+        }
+        .tree-detail__hint { margin: 0; }
+        .tree-detail__card:empty { display: none; }
+        /* Toolbar: visually separate the "Group by" and "View" clusters. */
+        .toolbar-cluster { display: inline-flex; align-items: center; gap: 6px; }
+        .toolbar-cluster + .toolbar-cluster {
+            margin-left: 10px; padding-left: 12px;
+            border-left: 1px solid var(--border, #6b4f34);
+        }
+        .toolbar-cluster__label {
+            font-family: var(--font-display, Georgia, serif); font-size: 0.6rem;
+            text-transform: uppercase; letter-spacing: 0.04em;
+            color: var(--ink-dim, #b8a888);
+        }
+        @media (max-width: 620px) {
+            .toolbar-cluster + .toolbar-cluster {
+                margin-left: 0; padding-left: 0; border-left: none;
+            }
+        }
+        /* Create moved to the header: one row up top, so the lists get the
+           whole width below instead of sharing it with a right column. */
+        .hub-top__actions { display: flex; align-items: center; gap: 10px; }
+        .btn--create { white-space: nowrap; }
+        .master-layout { display: block; }
+        .master-lists { width: 100%; }
+    </style>
 </head>
 <body>
     {# ---- Reusable handout row/card. Carries data-search for live filtering. ---- #}
@@ -98,7 +150,11 @@
             </div>
             {# The language switcher moved INTO the menu with the other
                preferences; the header now carries one control, not two. #}
-            {% with active = 'dashboard' %}{% include 'master/_menu.html' %}{% endwith %}
+            <div class="hub-top__actions">
+                <a class="btn btn--create" href="{{ url_for('master.create_page') }}">&#10133; {{ 'Create a Handout' | t }}</a>
+                <a class="btn btn--ghost" href="{{ url_for('master.map_control') }}">🗺️ {{ 'Map' | t }}</a>
+                {% with active = 'dashboard' %}{% include 'master/_menu.html' %}{% endwith %}
+            </div>
         </div>
 
         {# First run: the master side is open to the whole Wi-Fi until a
@@ -120,16 +176,23 @@
                         <input type="search" id="handout-search" class="list-search"
                                placeholder="{{ 'Search handouts...' | t }}" aria-label="{{ 'Search handouts' | t }}">
                         <div class="toolbar-right">
-                            <div class="group-switch">
-                                {% set gmodes = [('recent','Recent'), ('folder','Folders'), ('tag','Tags'), ('session','Sessions')] %}
-                                {% for key, label in gmodes %}
-                                <a class="btn btn--ghost group-btn {% if mode == key %}group-btn--active{% endif %}"
-                                   href="{{ url_for('master.dm_panel', by=key) }}">{{ label | t }}</a>
-                                {% endfor %}
+                            <div class="toolbar-cluster">
+                                <span class="toolbar-cluster__label">{{ 'Group by' | t }}</span>
+                                <div class="group-switch">
+                                    {% set gmodes = [('recent','Recent'), ('folder','Folders'), ('tag','Tags'), ('session','Sessions')] %}
+                                    {% for key, label in gmodes %}
+                                    <a class="btn btn--ghost group-btn {% if mode == key %}group-btn--active{% endif %}"
+                                       href="{{ url_for('master.dm_panel', by=key) }}">{{ label | t }}</a>
+                                    {% endfor %}
+                                </div>
                             </div>
-                            <div class="view-switch" role="group" aria-label="{{ 'View mode' | t }}">
-                                <button type="button" class="btn btn--ghost view-btn" data-view="rows">{{ 'Rows' | t }}</button>
-                                <button type="button" class="btn btn--ghost view-btn" data-view="cards">{{ 'Cards' | t }}</button>
+                            <div class="toolbar-cluster">
+                                <span class="toolbar-cluster__label">{{ 'View' | t }}</span>
+                                <div class="view-switch" role="group" aria-label="{{ 'View mode' | t }}">
+                                    <button type="button" class="btn btn--ghost view-btn" data-view="rows">{{ 'Rows' | t }}</button>
+                                    <button type="button" class="btn btn--ghost view-btn" data-view="cards">{{ 'Cards' | t }}</button>
+                                    <button type="button" class="btn btn--ghost view-btn" data-view="tree">{{ 'Tree' | t }}</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -152,159 +215,28 @@
                             {{ group_list(public_groups, 'Nothing published yet.' | t) }}
                         </div>
                     </section>
+
+                    {# Tree view: a terminal-style outline of the whole archive,
+                       built client-side from the two lists above. Clicking a
+                       leaf shows that handout's card in the side panel. #}
+                    <section class="list-section tree-section" id="tree-section" hidden>
+                        <div class="tree-layout">
+                            <pre class="handout-tree" id="handout-tree" aria-label="{{ 'Handout tree' | t }}"></pre>
+                            <aside class="tree-detail" id="tree-detail" aria-live="polite">
+                                <p class="subtitle tree-detail__hint">{{ 'Select a handout from the tree to see it here.' | t }}</p>
+                                <div class="tree-detail__card view--cards" id="tree-detail-card"></div>
+                            </aside>
+                        </div>
+                    </section>
                 </div>
-            </div>
-
-            {# ============ RIGHT: create form + folder management ============ #}
-            <div class="master-aside">
-                <div class="panel">
-                    <h2>{{ 'Upload a Handout' | t }}</h2>
-                    <form action="{{ url_for('master.upload_handout') }}" method="post"
-                          enctype="multipart/form-data" class="form-grid">
-                        <div class="field field--wide">
-                            <label for="title">{{ 'Title' | t }}</label>
-                            <input type="text" id="title" name="title" placeholder="Old Kingdom Map" required>
-                        </div>
-
-                        <div class="field field--wide">
-                            <label for="description">{{ 'Description' | t }}</label>
-                            <input type="text" id="description" name="description"
-                                   placeholder="A weathered map of the fallen kingdom.">
-                        </div>
-
-                        <div class="field">
-                            <label for="category">{{ 'Category' | t }}</label>
-                            <input type="text" id="category" name="category" list="category-list"
-                                   placeholder="Map, NPC...">
-                            <datalist id="category-list">
-                                {% for c in categories %}<option value="{{ c }}">{% endfor %}
-                            </datalist>
-                        </div>
-
-                        <div class="field">
-                            <label for="view_type">{{ 'Viewer' | t }}</label>
-                            <select id="view_type" name="view_type">
-                                {% for vt in view_types %}
-                                <option value="{{ vt }}" {% if vt == default_view_type %}selected{% endif %}>{{ vt|capitalize }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <div class="field field--wide">
-                            <label for="tags">{{ 'Tags' | t }} <span class="hint">{{ 'comma-separated' | t }}</span></label>
-                            <input type="text" id="tags" name="tags" list="tag-list"
-                                   placeholder="map, kingdom, cursed">
-                            <datalist id="tag-list">
-                                {% for t in tags %}<option value="{{ t }}">{% endfor %}
-                            </datalist>
-                        </div>
-
-                        <div class="field field--wide">
-                            <label>{{ 'Folders' | t }}</label>
-                            {% if folders %}
-                            <div class="folder-picker">
-                                {% for fo in folders %}
-                                <label class="folder-choice">
-                                    <input type="checkbox" name="folders" value="{{ fo.id }}"> {{ fo.name }}
-                                </label>
-                                {% endfor %}
-                            </div>
-                            {% else %}
-                            <p class="subtitle">{{ 'No folders yet — create one below.' | t }}</p>
-                            {% endif %}
-                        </div>
-
-                        <div class="field">
-                            <label for="session_number">{{ 'Session #' | t }}</label>
-                            <input type="number" id="session_number" name="session_number" min="1" step="1" placeholder="1">
-                        </div>
-
-                        <div class="field">
-                            <label for="session_title">{{ 'Session Title' | t }}</label>
-                            <input type="text" id="session_title" name="session_title" placeholder="The Sunless Citadel">
-                        </div>
-
-                        <div class="field">
-                            <label for="found_location">{{ 'Place of Discovery' | t }}</label>
-                            <input type="text" id="found_location" name="found_location" placeholder="Port Nyanzaru">
-                        </div>
-
-                        <div class="field">
-                            <label for="found_date">{{ 'Date of Discovery' | t }}</label>
-                            <input type="text" id="found_date" name="found_date" placeholder="15 Kythorn, 1492 DR">
-                        </div>
-
-                        <div class="field field--wide">
-                            <label for="file">{{ 'Files' | t }} <span class="hint">{{ 'images or PDF' | t }}</span></label>
-                            <input type="file" id="file" name="files"
-                                   accept=".png,.jpg,.jpeg,.gif,.webp,.pdf" multiple required>
-                            <p class="subtitle">{{ 'Select several images to build a carousel or book.' | t }}</p>
-                        </div>
-
-                        <div class="field field--wide">
-                            <label for="back_cover">{{ 'Back Cover' | t }} <span class="hint">{{ 'Book viewer, optional' | t }}</span></label>
-                            <input type="file" id="back_cover" name="back_cover"
-                                   accept=".png,.jpg,.jpeg,.gif,.webp,.pdf">
-                            <p class="subtitle">{{ 'Shown as the last page in the Book viewer.' | t }}</p>
-                        </div>
-
-                        {# Two submits, one form. The plain one keeps the old
-                           behaviour (upload hidden, publish later); the second
-                           sets `pop` so upload_handout publishes and pops in a
-                           single step. A checkbox would be quieter, but this is
-                           the one control that reveals a handout the instant it
-                           is created, so it says so on its face. #}
-                        <div class="field field--wide">
-                            <button type="submit" class="btn btn--block">{{ 'Forge Handout' | t }}</button>
-                        </div>
-
-                        <div class="field field--wide">
-                            <button type="submit" name="pop" value="1" class="btn btn--pop btn--block"
-                                    data-confirm="{{ 'Publish this handout and pop it onto every player screen now?' | t }}">
-                                &#128226; {{ 'Forge & POP' | t }}
-                            </button>
-                            <p class="subtitle">{{ 'Publishes immediately and shows it on every player screen.' | t }}</p>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="panel">
-                    <h2>{{ 'Folders' | t }}</h2>
-                    <p class="subtitle">{{ 'Group handouts any way you like. A handout can sit in several folders.' | t }}</p>
-
-                    <form action="{{ url_for('master.create_folder') }}" method="post" class="folder-new">
-                        <input type="text" name="name" placeholder="{{ 'New folder name' | t }}" required aria-label="{{ 'New folder name' | t }}">
-                        <button type="submit" class="btn">{{ 'Add' | t }}</button>
-                    </form>
-
-                    {# Pulled out so the apostrophe doesn't fight the attribute quotes. #}
-                    {% set del_folder_msg = "Delete this folder? Handouts stay, they're just unfiled from it." | t %}
-                    {% if folders %}
-                    <div class="folder-list">
-                        {% for fo in folders %}
-                        <div class="folder-row">
-                            <form action="{{ url_for('master.rename_folder', folder_id=fo.id) }}" method="post" class="folder-rename">
-                                <input type="text" name="name" value="{{ fo.name }}" aria-label="{{ 'Folder name' | t }}">
-                                <button type="submit" class="btn btn--ghost">{{ 'Rename' | t }}</button>
-                            </form>
-                            <form action="{{ url_for('master.delete_folder', folder_id=fo.id) }}" method="post"
-                                  data-confirm="{{ del_folder_msg }} &mdash; {{ fo.name }}">
-                                <button type="submit" class="btn btn--danger">{{ 'Delete' | t }}</button>
-                            </form>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-
-                {# Appearance (theme + language) and Backup & Transfer used to
-                   sit here. They are once-a-session-at-most controls that were
-                   pushing the upload form and folder list off-screen, so they
-                   now live behind the menu at master.appearance and
-                   master.transfer_page. #}
             </div>
         </div>
+        {% set footer_scope = 'master' %}
+        {% set footer_page = 'master/dashboard.html' %}
+        {% set footer_full = true %}
+        {% include '_footer.html' %}
     </div>
+
 
     <script>
         (function () {
@@ -331,13 +263,23 @@
             }
             if (search) search.addEventListener('input', applySearch);
 
-            // ---- Rows / cards view switch (remembered on this laptop) ----
+            // ---- Rows / cards / tree view switch (remembered on this laptop) ----
             var scopes = [].slice.call(document.querySelectorAll('.dm-list'));
+            var treeSection = document.getElementById('tree-section');
+            var listSections = [].slice.call(document.querySelectorAll('.list-section:not(.tree-section)'));
             function setView(view) {
-                scopes.forEach(function (s) {
-                    s.classList.remove('view--rows', 'view--cards');
-                    s.classList.add('view--' + view);
-                });
+                var isTree = view === 'tree';
+                // Normal lists vs the tree outline are mutually exclusive.
+                listSections.forEach(function (s) { s.hidden = isTree; });
+                if (treeSection) treeSection.hidden = !isTree;
+                if (!isTree) {
+                    scopes.forEach(function (s) {
+                        s.classList.remove('view--rows', 'view--cards');
+                        s.classList.add('view--' + view);
+                    });
+                } else {
+                    buildTree();
+                }
                 localStorage.setItem('dm-view', view);
                 document.querySelectorAll('.view-btn').forEach(function (b) {
                     b.classList.toggle('view-btn--active', b.dataset.view === view);
@@ -347,6 +289,108 @@
                 setView(localStorage.getItem('dm-view') || 'rows');
                 document.querySelectorAll('.view-btn').forEach(function (btn) {
                     btn.addEventListener('click', function () { setView(btn.dataset.view); });
+                });
+            }
+
+            // ---- Build the terminal-style tree from the two lists ----------
+            // Roots are Hidden / Public; under each, the current grouping's
+            // folders (a group with no label becomes "Ungrouped"); leaves are
+            // handout titles linking to their edit page. Pure box-drawing text.
+            function buildTree() {
+                var pre = document.getElementById('handout-tree');
+                if (!pre) return;
+                pre.innerHTML = '';
+
+                var roots = [
+                    { label: "{{ 'Hidden' | t }}", scope: 'hidden' },
+                    { label: "{{ 'Public' | t }}", scope: 'public' }
+                ];
+
+                function line(prefix, connector, text, sourceItem) {
+                    var span = document.createElement('span');
+                    span.className = 'tree-line';
+                    span.appendChild(document.createTextNode(prefix + connector));
+                    if (sourceItem) {
+                        var a = document.createElement('a');
+                        a.href = '#'; a.textContent = text; a.className = 'tree-leaf';
+                        a.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            showDetail(sourceItem, a);
+                        });
+                        span.appendChild(a);
+                    } else {
+                        var b = document.createElement('span');
+                        b.textContent = text; b.className = 'tree-node';
+                        span.appendChild(b);
+                    }
+                    span.appendChild(document.createTextNode('\n'));
+                    pre.appendChild(span);
+                }
+
+                roots.forEach(function (root, ri) {
+                    var scopeEl = document.querySelector('.dm-list[data-scope="' + root.scope + '"]');
+                    var rootLast = ri === roots.length - 1;
+                    line('', rootLast ? '└── ' : '├── ', root.label + '/');
+                    var childPrefix = rootLast ? '    ' : '│   ';
+
+                    var groups = scopeEl ? [].slice.call(scopeEl.querySelectorAll('.h-group')) : [];
+                    // Only groups that actually have items (search may hide some).
+                    var realGroups = groups.filter(function (g) {
+                        return g.querySelectorAll('.h-item').length > 0;
+                    });
+                    if (!realGroups.length) {
+                        line(childPrefix, '└── ', "{{ 'empty' | t }}");
+                        return;
+                    }
+                    realGroups.forEach(function (g, gi) {
+                        var gLast = gi === realGroups.length - 1;
+                        var headEl = g.querySelector('.h-group__head');
+                        var gname = headEl ? headEl.textContent.trim() : "{{ 'Ungrouped' | t }}";
+                        line(childPrefix, gLast ? '└── ' : '├── ', gname + '/');
+                        var itemPrefix = childPrefix + (gLast ? '    ' : '│   ');
+
+                        var items = [].slice.call(g.querySelectorAll('.h-item'));
+                        items.forEach(function (it, ii) {
+                            var iLast = ii === items.length - 1;
+                            var titleEl = it.querySelector('.h-title');
+                            var title = titleEl ? titleEl.textContent.trim() : '(untitled)';
+                            line(itemPrefix, iLast ? '└── ' : '├── ', title, it);
+                        });
+                    });
+                });
+
+                if (!pre.childNodes.length) {
+                    pre.textContent = "{{ 'No handouts yet.' | t }}";
+                }
+            }
+
+            // Show the clicked handout as a card in the side panel. We clone the
+            // real .h-item (so it carries the same thumbnail, meta and action
+            // buttons as the Cards view) into the detail area and mark the leaf.
+            function showDetail(sourceItem, leafEl) {
+                var card = document.getElementById('tree-detail-card');
+                var hint = document.querySelector('.tree-detail__hint');
+                if (!card) return;
+                card.innerHTML = '';
+                var clone = sourceItem.cloneNode(true);
+                clone.style.display = '';           // undo any search-hide inline style
+                card.appendChild(clone);
+                // Re-bind confirm prompts on the cloned forms (listeners don't clone).
+                clone.querySelectorAll('form[data-confirm]').forEach(function (form) {
+                    form.addEventListener('submit', function (e) {
+                        if (!window.confirm(form.dataset.confirm)) e.preventDefault();
+                    });
+                });
+                if (hint) hint.hidden = true;
+                // Highlight the active leaf.
+                var pre = document.getElementById('handout-tree');
+                if (pre) pre.querySelectorAll('.tree-leaf--active').forEach(function (n) { n.classList.remove('tree-leaf--active'); });
+                if (leafEl) leafEl.classList.add('tree-leaf--active');
+            }
+            // Rebuild the tree as the user searches, so it stays in sync.
+            if (search) {
+                search.addEventListener('input', function () {
+                    if (treeSection && !treeSection.hidden) buildTree();
                 });
             }
 

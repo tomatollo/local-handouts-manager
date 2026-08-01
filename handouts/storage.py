@@ -127,6 +127,10 @@ def _normalize(data):
     map_state.setdefault('marker_visible', False)
     # How big the party marker is drawn, as a multiplier on its base size.
     map_state.setdefault('marker_scale', 1.0)
+    # The party marker is customisable like a POI: an optional custom glyph
+    # and a colour. Empty icon = the default diamond marker.
+    map_state.setdefault('marker_icon', '')
+    map_state.setdefault('marker_color', '#c0533b')
     # Grid the Master can size to match a printed map (e.g. Chult is 23x24).
     map_state.setdefault('grid_cols', 20)
     map_state.setdefault('grid_rows', 15)
@@ -180,6 +184,8 @@ def _normalize(data):
     pending.setdefault('marker_y', map_state['marker_y'])
     pending.setdefault('marker_visible', map_state['marker_visible'])
     pending.setdefault('marker_scale', map_state['marker_scale'])
+    pending.setdefault('marker_icon', map_state['marker_icon'])
+    pending.setdefault('marker_color', map_state['marker_color'])
     pending.setdefault('grid_cols', map_state['grid_cols'])
     pending.setdefault('grid_rows', map_state['grid_rows'])
     pending.setdefault('fog_color', map_state['fog_color'])
@@ -381,6 +387,8 @@ def get_map_state(db):
         'marker_y': 0,
         'marker_visible': False,
         'marker_scale': 1.0,
+        'marker_icon': '',
+        'marker_color': '#c0533b',
         'grid_cols': 20,
         'grid_rows': 15,
         'fog_color': '#0d0b0a',
@@ -477,6 +485,9 @@ def _clean_pois(raw, previous):
             y = 0.0
         # icon: a short custom glyph. Empty string means "use the default pin".
         icon = str(item.get('icon') or '').strip()[:POI_ICON_MAX]
+        # category: a free-text group the Master assigns (e.g. "Cities",
+        # "Ruins"). Empty = uncategorised. Capped so it stays a tag, not prose.
+        category = str(item.get('category') or '').strip()[:POI_LABEL_MAX]
         cleaned.append({
             'id': pid,
             'label': label,
@@ -486,6 +497,11 @@ def _clean_pois(raw, previous):
             'icon': icon,
             'color': _clean_color(item.get('color')),
             'scale': _clean_scale(item.get('scale')),
+            'category': category,
+            # Optional filled background behind the icon/pin, with its own
+            # colour independent of the icon colour. icon_bg False = no plate.
+            'icon_bg': bool(item.get('icon_bg', False)),
+            'icon_bg_color': _clean_color(item.get('icon_bg_color'), '#241d18'),
         })
     return cleaned
 
@@ -521,6 +537,12 @@ def _coerce_map_fields(target, data):
 
     if 'marker_scale' in data:
         target['marker_scale'] = _clean_scale(data['marker_scale'])
+
+    if 'marker_icon' in data:
+        target['marker_icon'] = str(data['marker_icon'] or '').strip()[:POI_ICON_MAX]
+
+    if 'marker_color' in data:
+        target['marker_color'] = _clean_color(data['marker_color'], '#c0533b')
 
     for key in ('grid_cols', 'grid_rows'):
         if key in data:
@@ -601,7 +623,8 @@ def confirm_map_state(db):
     state = get_map_state(db)
     pending = state.get('pending', {})
     for key in ('revealed_hexes', 'marker_x', 'marker_y', 'marker_visible',
-                'marker_scale', 'grid_cols', 'grid_rows', 'fog_color',
+                'marker_scale', 'marker_icon', 'marker_color',
+                'grid_cols', 'grid_rows', 'fog_color',
                 'map_image', 'offset_x', 'offset_y', 'hex_size', 'pois'):
         if key in pending:
             # Copy lists by value so the two layers don't alias. POIs need a
@@ -630,6 +653,8 @@ def discard_map_state(db):
         'marker_y': state['marker_y'],
         'marker_visible': state['marker_visible'],
         'marker_scale': state['marker_scale'],
+        'marker_icon': state['marker_icon'],
+        'marker_color': state['marker_color'],
         'grid_cols': state['grid_cols'],
         'grid_rows': state['grid_rows'],
         'fog_color': state['fog_color'],

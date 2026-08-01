@@ -1,6 +1,6 @@
 """Grouping, ordering and searching of handouts for display.
 
-Pure functions over lists of handout dicts — no Flask, no I/O — so they're
+Pure functions over lists of handout dicts no Flask, no I/O so they're
 easy to reason about and test. Covers session/folder/tag grouping, a plain
 chronological ordering, and free-text search.
 
@@ -150,7 +150,7 @@ def search(handouts, query):
     """Filter handouts by a free-text query (case-insensitive).
 
     Matches against title, description, category, tags, session number/title
-    and per-file descriptions — i.e. everything a player might recall. An
+    and per-file descriptions i.e. everything a player might recall. An
     empty query returns the list unchanged.
     """
     q = (query or '').strip().lower()

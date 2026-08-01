@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'Join by QR' | t }}</title>
+    {% include '_head.html' %}
+    <style>
+        .qr-wrap { max-width: 520px; margin: 0 auto; text-align: center; }
+        .qr-box {
+            display: inline-block; padding: 16px; background: #fff;
+            border: 3px solid var(--border, #6b4f34); box-shadow: 4px 4px 0 0 var(--shadow, #0005);
+            margin: 8px 0 14px;
+        }
+        .qr-box svg { display: block; width: 260px; height: 260px; }
+        .qr-url {
+            display: flex; gap: 8px; align-items: stretch; justify-content: center;
+            flex-wrap: wrap; margin: 8px 0 16px;
+        }
+        .qr-url input {
+            flex: 1 1 260px; min-width: 0; text-align: center;
+            font-family: ui-monospace, Consolas, monospace; font-size: 0.95rem;
+            padding: 8px; background: #1c1712; color: var(--ink, #f4ecd8);
+            border: 1px solid var(--border, #6b4f34);
+        }
+        .qr-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+        .qr-hint { color: var(--ink-dim, #b8a888); font-size: 0.85rem; }
+        .qr-warn {
+            color: var(--ink-dim, #b8a888); font-size: 0.8rem; margin-top: 10px;
+            font-style: italic;
+        }
+        @media print {
+            body * { visibility: hidden; }
+            .qr-print, .qr-print * { visibility: visible; }
+            .qr-print { position: absolute; left: 0; top: 0; width: 100%; text-align: center; }
+            .qr-box { border-color: #000; box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="hub-top">
+            <div>
+                <h1>{{ 'Join by QR' | t }} &#128241;</h1>
+                <p class="subtitle">{{ 'Point a phone camera at the code to open the player page.' | t }}</p>
+            </div>
+        </div>
+
+        <div class="qr-wrap qr-print">
+            <p class="qr-hint">{{ 'Scan to open the players\' handouts on this device.' | t }}</p>
+            <div class="qr-box" id="qr-box" aria-label="{{ 'QR code' | t }}"></div>
+
+            <div class="qr-url">
+                <input type="text" id="qr-url" readonly aria-label="{{ 'Player URL' | t }}">
+            </div>
+
+            <div class="qr-actions">
+                <button type="button" class="btn" id="qr-copy">{{ 'Copy link' | t }}</button>
+                <button type="button" class="btn btn--ghost" id="qr-print">{{ 'Print' | t }}</button>
+                <a class="btn btn--ghost" id="qr-open" href="#" target="_blank" rel="noopener">{{ 'Open' | t }}</a>
+            </div>
+
+            <p class="qr-warn" id="qr-localhost-warn" hidden>
+                {{ 'You opened this page on localhost, so the code points back to this computer only. Open the app using your computer\'s network address (e.g. 192.168.x.x) for other devices to connect.' | t }}
+            </p>
+        </div>
+
+        {% set footer_scope = 'player' %}
+        {% set footer_page = 'qr.html' %}
+        {% include '_footer.html' %}
+    </div>
+
+    <script src="{{ url_for('static', filename='vendor/qrcode.min.js') }}"></script>
+    <script>
+        (function () {
+            // Build the player URL from the address the user opened THIS page
+            // with, so the QR carries the real LAN host (not localhost) whenever
+            // the Master reached the app that way. player.home is '/'.
+            var playerPath = {{ url_for('player.home') | tojson }};
+            var url = window.location.origin + playerPath;
+
+            var input = document.getElementById('qr-url');
+            var openLink = document.getElementById('qr-open');
+            input.value = url;
+            openLink.href = url;
+
+            // Render the QR as scalable SVG (crisp at any print size).
+            try {
+                var qr = qrcode(0, 'M');        // type 0 = auto-fit, M = ~15% ECC
+                qr.addData(url);
+                qr.make();
+                document.getElementById('qr-box').innerHTML =
+                    qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
+            } catch (e) {
+                document.getElementById('qr-box').textContent = 'QR error';
+                console.error(e);
+            }
+
+            // Warn if this is localhost/127.* — the code would only work on this
+            // machine. Others need the LAN address.
+            var host = window.location.hostname;
+            if (host === 'localhost' || host === '127.0.0.1' || host === '::1') {
+                document.getElementById('qr-localhost-warn').hidden = false;
+            }
+
+            document.getElementById('qr-copy').addEventListener('click', function () {
+                var btn = this;
+                function done() { btn.textContent = {{ 'Copied!' | t | tojson }}; setTimeout(function(){ btn.textContent = {{ 'Copy link' | t | tojson }}; }, 1500); }
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(url).then(done, function(){ input.select(); document.execCommand('copy'); done(); });
+                } else {
+                    input.select(); document.execCommand('copy'); done();
+                }
+            });
+            document.getElementById('qr-print').addEventListener('click', function () { window.print(); });
+        })();
+    </script>
+</body>
+</html>

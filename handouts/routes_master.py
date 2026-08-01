@@ -95,7 +95,7 @@ def set_passphrase():
 # Dashboard + library management. All guarded.
 # --------------------------------------------------------------------------
 
-@bp.route('/dm-panel')
+@bp.route('/dm-panel', strict_slashes=False)
 @auth.master_required
 def dm_panel():
     db = storage.load_db()
@@ -124,6 +124,28 @@ def dm_panel():
                            default_view_type=storage.DEFAULT_VIEW_TYPE,
                            # The theme picker moved to master.appearance, so
                            # the dashboard no longer needs the theme table.
+                           passphrase_set=auth.is_configured(db))
+
+
+@bp.route('/dm-panel/create')
+@auth.master_required
+def create_page():
+    """The 'Create' page: the upload form + folder management on their own page.
+
+    These used to live in the dashboard's right column, where they crowded out
+    the handout lists and, as the Master noted, don't belong beside the lists
+    they're used far less often than. Same data the dashboard passed to the
+    form, just rendered on a dedicated page reached from the menu / a Create
+    button. The form still POSTs to upload_handout as before.
+    """
+    db = storage.load_db()
+    folders = storage.all_folders(db)
+    return render_template('master/create.html',
+                           categories=storage.all_categories(db),
+                           tags=storage.all_tags(db),
+                           folders=folders,
+                           view_types=storage.VIEW_TYPES,
+                           default_view_type=storage.DEFAULT_VIEW_TYPE,
                            passphrase_set=auth.is_configured(db))
 
 

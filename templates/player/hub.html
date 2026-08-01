@@ -6,6 +6,35 @@
     <title>{{ 'Player Hub' | t }}</title>
     {% include '_head.html' %}
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/page-flip.css') }}">
+    <style>
+        /* Terminal-style handout tree (player Tree view). */
+        .tree-section { margin-top: 8px; }
+        .tree-layout { display: flex; gap: 16px; align-items: flex-start; }
+        .handout-tree {
+            flex: 1 1 auto; min-width: 0;
+            font-family: ui-monospace, "Cascadia Code", "Fira Code", Consolas, monospace;
+            font-size: 0.85rem; line-height: 1.55; margin: 0; padding: 8px 4px;
+            white-space: pre; overflow-x: auto; color: var(--ink-dim, #b8a888);
+        }
+        .handout-tree .tree-node { color: var(--accent, #e8a83a); font-weight: bold; }
+        .handout-tree .tree-leaf {
+            color: var(--ink, #f4ecd8); text-decoration: none; cursor: pointer;
+            border-bottom: 1px dotted transparent;
+        }
+        .handout-tree .tree-leaf:hover { color: var(--accent, #e8a83a); border-bottom-color: currentColor; }
+        .handout-tree .tree-leaf--active { color: var(--accent, #e8a83a); font-weight: bold; border-bottom-color: currentColor; }
+        .tree-detail {
+            flex: 0 0 320px; border-left: 1px solid var(--border, #6b4f34);
+            padding-left: 16px; min-height: 120px;
+        }
+        @media (max-width: 760px) {
+            .tree-layout { flex-direction: column; }
+            .tree-detail { flex-basis: auto; width: 100%; border-left: none;
+                border-top: 1px solid var(--border, #6b4f34); padding-left: 0; padding-top: 12px; }
+        }
+        .tree-detail__hint { margin: 0; }
+        .tree-detail__card:empty { display: none; }
+    </style>
 </head>
 <body>
     <div class="wrap">
@@ -16,6 +45,7 @@
             </div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
                 <a class="btn btn--ghost" href="{{ url_for('player.map_view') }}">🗺️ {{ 'Map' | t }}</a>
+                <a class="btn btn--ghost" href="{{ url_for('qr_page') }}">&#128241; {{ 'QR' | t }}</a>
                 <button type="button" class="btn" id="browse-btn" aria-controls="drawer" aria-expanded="false">&#9776; {{ 'Browse' | t }}</button>
             </div>
         </div>
@@ -29,11 +59,12 @@
                    href="{{ url_for('player.home', by=key, q=query or None) }}">{{ label | t }}</a>
                 {% endfor %}
             </div>
-            {# Rows/cards only make sense for handout lists, not the collection cards. #}
+            {# Rows/cards/tree only make sense for handout lists, not the collection cards. #}
             {% if folder_cards is none %}
             <div class="view-switch" role="group" aria-label="{{ 'View mode' | t }}">
                 <button type="button" class="btn btn--ghost view-btn" data-view="rows">{{ 'Rows' | t }}</button>
                 <button type="button" class="btn btn--ghost view-btn" data-view="cards">{{ 'Cards' | t }}</button>
+                <button type="button" class="btn btn--ghost view-btn" data-view="tree">{{ 'Tree' | t }}</button>
             </div>
             {% endif %}
             {% include '_lang_switch.html' %}
@@ -131,8 +162,26 @@
         </div>
         {% endif %}
         {% endfor %}
+
+        {# Tree view: terminal-style outline of the revealed handouts. Player
+           side starts at the groups (no Hidden/Public roots). Clicking a leaf
+           opens that handout's card in the side panel. Built client-side. #}
+        <section class="tree-section" id="tree-section" hidden>
+            <div class="tree-layout">
+                <pre class="handout-tree" id="handout-tree" aria-label="{{ 'Handout tree' | t }}"></pre>
+                <aside class="tree-detail" id="tree-detail" aria-live="polite">
+                    <p class="subtitle tree-detail__hint">{{ 'Select a handout from the tree to see it here.' | t }}</p>
+                    <div class="tree-detail__card view--cards hub-list" id="tree-detail-card"></div>
+                </aside>
+            </div>
+        </section>
         {% endif %}
     </div>
+
+    {% set footer_scope = 'player' %}
+    {% set footer_page = 'player/hub.html' %}
+    {% set footer_full = true %}
+    {% include '_footer.html' %}
 
     {# ---- Browse drawer: search box + shortcuts (folders / sessions / tags) ---- #}
     <div id="drawer" class="drawer" hidden aria-hidden="true">
@@ -194,13 +243,23 @@
 
     <script>
         (function () {
-            // ---- Rows / cards view switch (remembered on this device) ----
+            // ---- Rows / cards / tree view switch (remembered on this device) ----
             var lists = document.querySelectorAll('.hub-list');
+            var treeSection = document.getElementById('tree-section');
+            // Everything that is a normal group block (not the tree section).
+            var groupBlocks = [].slice.call(document.querySelectorAll('.session-block'));
             function setView(view) {
-                lists.forEach(function (l) {
-                    l.classList.remove('view--rows', 'view--cards');
-                    l.classList.add('view--' + view);
-                });
+                var isTree = view === 'tree';
+                groupBlocks.forEach(function (b) { b.style.display = isTree ? 'none' : ''; });
+                if (treeSection) treeSection.hidden = !isTree;
+                if (!isTree) {
+                    lists.forEach(function (l) {
+                        l.classList.remove('view--rows', 'view--cards');
+                        l.classList.add('view--' + view);
+                    });
+                } else {
+                    buildTree();
+                }
                 localStorage.setItem('player-view', view);
                 document.querySelectorAll('.view-btn').forEach(function (b) {
                     b.classList.toggle('view-btn--active', b.dataset.view === view);
@@ -211,6 +270,92 @@
                 document.querySelectorAll('.view-btn').forEach(function (btn) {
                     btn.addEventListener('click', function () { setView(btn.dataset.view); });
                 });
+            }
+
+            // ---- Build the terminal-style tree (player: no Hidden/Public) ----
+            // Roots are the group blocks themselves (folders/sessions/tags/…);
+            // leaves are handout titles. Clicking a leaf shows the card in the
+            // side panel; clicking that card opens the lightbox.
+            function buildTree() {
+                var pre = document.getElementById('handout-tree');
+                if (!pre) return;
+                pre.innerHTML = '';
+
+                function line(prefix, connector, text, sourceCard) {
+                    var span = document.createElement('span');
+                    span.appendChild(document.createTextNode(prefix + connector));
+                    if (sourceCard) {
+                        var a = document.createElement('a');
+                        a.href = '#'; a.textContent = text; a.className = 'tree-leaf';
+                        a.addEventListener('click', function (e) {
+                            e.preventDefault(); showDetail(sourceCard, a);
+                        });
+                        span.appendChild(a);
+                    } else {
+                        var b = document.createElement('span');
+                        b.textContent = text; b.className = 'tree-node';
+                        span.appendChild(b);
+                    }
+                    span.appendChild(document.createTextNode('\n'));
+                    pre.appendChild(span);
+                }
+
+                // Only blocks that actually contain cards (search may hide some).
+                var blocks = groupBlocks.filter(function (bl) {
+                    return bl.querySelectorAll('.handout-card').length > 0;
+                });
+                if (!blocks.length) {
+                    pre.textContent = "{{ 'No handouts yet.' | t }}";
+                    return;
+                }
+                blocks.forEach(function (bl, bi) {
+                    var bLast = bi === blocks.length - 1;
+                    var headEl = bl.querySelector('.session-head');
+                    var gname = headEl ? headEl.textContent.trim().replace(/\s+/g, ' ') : "{{ 'Ungrouped' | t }}";
+                    line('', bLast ? '└── ' : '├── ', gname + '/');
+                    var itemPrefix = bLast ? '    ' : '│   ';
+
+                    var cards = [].slice.call(bl.querySelectorAll('.handout-card'));
+                    cards.forEach(function (card, ci) {
+                        var cLast = ci === cards.length - 1;
+                        var title = card.getAttribute('data-title') ||
+                                    (card.querySelector('.h-title') ? card.querySelector('.h-title').textContent.trim() : '(untitled)');
+                        line(itemPrefix, cLast ? '└── ' : '├── ', title, card);
+                    });
+                });
+            }
+
+            // Show the clicked handout's card in the side panel. Clicking that
+            // clone opens the lightbox via the shared window.Lightbox API.
+            function showDetail(sourceCard, leafEl) {
+                var host = document.getElementById('tree-detail-card');
+                var hint = document.querySelector('.tree-detail__hint');
+                if (!host) return;
+                host.innerHTML = '';
+                var clone = sourceCard.cloneNode(true);
+                clone.style.display = '';
+                // Open the lightbox from the clone, built from its data-* attrs.
+                function openFromClone() {
+                    if (!window.Lightbox) return;
+                    var data = {};
+                    try { data.files = JSON.parse(clone.getAttribute('data-files')); } catch (e) { data.files = []; }
+                    try { var b = clone.getAttribute('data-back'); data.back_cover = b ? JSON.parse(b) : null; } catch (e) { data.back_cover = null; }
+                    data.view_type = clone.getAttribute('data-view') || 'carousel';
+                    data.title = clone.getAttribute('data-title') || '';
+                    data.description = clone.getAttribute('data-desc') || '';
+                    data.found_location = clone.getAttribute('data-location') || '';
+                    data.found_date = clone.getAttribute('data-date') || '';
+                    window.Lightbox.openData(data);
+                }
+                clone.addEventListener('click', openFromClone);
+                clone.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFromClone(); }
+                });
+                host.appendChild(clone);
+                if (hint) hint.hidden = true;
+                var pre = document.getElementById('handout-tree');
+                if (pre) pre.querySelectorAll('.tree-leaf--active').forEach(function (n) { n.classList.remove('tree-leaf--active'); });
+                if (leafEl) leafEl.classList.add('tree-leaf--active');
             }
 
             // ---- Browse drawer open/close ----

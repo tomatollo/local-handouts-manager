@@ -22,7 +22,7 @@
 
         <div class="panel">
             <h2>{{ 'Theme' | t }}</h2>
-            <p class="subtitle">{{ 'Colours and fonts for everyone — players see this too.' | t }}</p>
+            <p class="subtitle">{{ 'Colours and fonts for everyone. Players see this too.' | t }}</p>
             <form action="{{ url_for('master.set_theme') }}" method="post">
                 <div class="theme-picker">
                     {% for th in themes %}
@@ -50,7 +50,7 @@
 
         <div class="panel">
             <h2>{{ 'Interface language' | t }}</h2>
-            <p class="subtitle">{{ 'Your own choice — it does not affect the players.' | t }}</p>
+            <p class="subtitle">{{ 'Your own choice. It does not affect the players.' | t }}</p>
             {% include '_lang_switch.html' %}
         </div>
     </div>
