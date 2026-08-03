@@ -1,11 +1,3 @@
-Nessun problema! In realtà, usare la prima persona singolare ("I") per un progetto personale non solo è corretto, ma è anche la scelta più onesta e trasparente per un paper a firma singola. È una pratica comunemente accettata nell'ingegneria del software.
-
-Ho corretto i pronomi ("we" in "I", "our" in "my"), lasciando il plurale solamente all'interno della citazione delle quattro domande di Shostack (nella sezione 2), poiché si tratta di un costrutto standard del settore.
-
-Ecco il tuo paper aggiornato:
-
----
-
 # Security Design of the Local Handouts Manager
 
 *A study of the access-control, request-integrity, and availability decisions
