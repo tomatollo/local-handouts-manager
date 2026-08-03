@@ -44,8 +44,6 @@
                 <p class="subtitle">{{ 'Handouts revealed by your Game Master appear below.' | t }}</p>
             </div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <a class="btn btn--ghost" href="{{ url_for('player.map_view') }}">🗺️ {{ 'Map' | t }}</a>
-                <a class="btn btn--ghost" href="{{ url_for('qr_page') }}">&#128241; {{ 'QR' | t }}</a>
                 <button type="button" class="btn" id="browse-btn" aria-controls="drawer" aria-expanded="false">&#9776; {{ 'Browse' | t }}</button>
             </div>
         </div>
@@ -199,11 +197,17 @@
                 <button type="submit" class="btn btn--block">{{ 'Search' | t }}</button>
             </form>
 
-            {# App Guide for players #}
+            {# Wayfinding links for players #}
             <div class="drawer__section">
-                <h3>{{ 'Help' | t }}</h3>
+                <h3>{{ 'Navigate' | t }}</h3>
                 <a class="drawer__link" href="{{ url_for('player.map_view') }}">🗺️ {{ 'Interactive Map' | t }}</a>
                 <a class="drawer__link" href="{{ url_for('app_guide') }}">📖 {{ 'App Guide' | t }}</a>
+                <a class="drawer__link" href="{{ url_for('qr_page') }}">📱 {{ 'Join by QR' | t }}</a>
+            </div>
+
+            {# Language selector, moved here from the top toolbar #}
+            <div class="drawer__section">
+                <h3>{{ 'Language' | t }}</h3>
             </div>
 
             <div class="drawer__section">

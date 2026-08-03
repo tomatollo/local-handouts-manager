@@ -11,6 +11,56 @@
    leaving the (quote-free) colours working. #}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 <link rel="stylesheet" href="{{ theme_fonts_url | safe }}">
+{# CSRF: the per-session token, exposed once here for the whole app.
+   * The <meta> lets fetch()/XHR callers (the interactive map) read it and send
+     it back in an X-CSRF-Token header.
+   * The inline script auto-injects a hidden csrf_token field into every POST
+     form at submit time, so no individual <form> has to remember it and a new
+     form can never ship unprotected. GET forms are left alone. See
+     handouts/security.py for the server-side check. #}
+<meta name="csrf-token" content="{{ csrf_token }}">
+<script>
+(function () {
+    var token = "{{ csrf_token }}";
+    // 1) Auto-inject a hidden csrf_token into every POST <form> at submit time.
+    document.addEventListener("submit", function (e) {
+        var form = e.target;
+        if (!form || form.method.toLowerCase() !== "post") return;
+        if (form.querySelector('input[name="csrf_token"]')) return;
+        var input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "csrf_token";
+        input.value = token;
+        form.appendChild(input);
+    }, true);
+
+    // 2) Add the X-CSRF-Token header to same-origin, state-changing fetch()
+    //    calls (the interactive map posts JSON via fetch, not a form). We wrap
+    //    fetch once here so no call site has to remember the header. GET/HEAD
+    //    are left untouched, and cross-origin requests are never given the
+    //    token.
+    var SAFE = { GET: 1, HEAD: 1, OPTIONS: 1, TRACE: 1 };
+    var nativeFetch = window.fetch;
+    if (nativeFetch) {
+        window.fetch = function (input, init) {
+            init = init || {};
+            var method = (init.method
+                || (input && input.method)
+                || "GET").toUpperCase();
+            var url = (typeof input === "string") ? input
+                : (input && input.url) || "";
+            var sameOrigin = url.indexOf("http") !== 0
+                || url.indexOf(window.location.origin) === 0;
+            if (!SAFE[method] && sameOrigin) {
+                var headers = new Headers(init.headers || (input && input.headers) || {});
+                if (!headers.has("X-CSRF-Token")) headers.set("X-CSRF-Token", token);
+                init = Object.assign({}, init, { headers: headers });
+            }
+            return nativeFetch.call(this, input, init);
+        };
+    }
+})();
+</script>
 <style>{{ theme_css | safe }}</style>
 <style>
     /* ---- Shared site footer (see templates/_footer.html) ---- */

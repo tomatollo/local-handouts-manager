@@ -149,6 +149,208 @@ THEMES = {
             '--good': '#6aa9c4',
         },
     },
+    'vecna-eve-of-ruin': {
+        'name': 'Vecna: Eve of Ruin',
+        'blurb': 'Necromancy: grave-dark, corpse-light green, and rotten violet.',
+        # Grenze Gotisch is a blackletter that stays legible at UI sizes -- the
+        # Whispered One's gothic menace without Strahd's near-unreadable
+        # Unifraktur. EB Garamond keeps the long text an old-grimoire serif.
+        'fonts': ('Grenze Gotisch', 'EB Garamond'),
+        # A blackletter display face, so it needs a strong bump like Strahd,
+        # though Grenze is wider and more even than Unifraktur, so a touch less.
+        'scale': 1.75,
+        'vars': {
+            # The one green theme in the table: Vecna's necrotic pallor. No
+            # other preset uses corpse-green as its accent, so it reads as
+            # unmistakably "the lich" beside the golds, blues and reds.
+            '--bg': '#0b0f0b',          # grave earth, near-black with a green cast
+            '--bg-panel': '#141a16',    # mausoleum stone
+            '--ink': '#e4e2d0',         # bone / old vellum
+            '--ink-dim': '#8f9c86',     # lichen grey-green
+            '--accent': '#7bc74d',      # necrotic corpse-light green
+            '--accent-2': '#8a4fbf',    # rotten arcane violet (Vecna's magic)
+            '--border': '#050705',
+            '--shadow': '#000000',
+            '--good': '#5f9e6a',
+        },
+    },
+    'tashas-cauldron': {
+        'name': "Tasha's Cauldron of Everything",
+        'blurb': 'Chaotic arcana: bubbling violet brew, copper, and malachite.',
+        # Cinzel Decorative is an ornate, flourished display -- the grimoire
+        # feel of an experimental spellbook. Cormorant Garamond keeps the long
+        # text a fine alchemical serif.
+        'fonts': ('Cinzel Decorative', 'Cormorant Garamond'),
+        'scale': 1.45,
+        'vars': {
+            '--bg': '#170f1e',          # deep witch-violet, near black
+            '--bg-panel': '#241633',    # brewed amethyst
+            '--ink': '#f2e9d8',         # warm parchment
+            '--ink-dim': '#b49bc4',     # dilute lilac
+            '--accent': '#c084e0',      # arcane violet glow
+            '--accent-2': '#c9822e',    # cauldron copper
+            '--border': '#0c0713',
+            '--shadow': '#000000',
+            '--good': '#3fae8f',        # malachite bubbling
+        },
+        # Tasha is chaos and experiment: the cauldron never sits still. A slow
+        # radial "brew" simmers on the page background, panels shimmer a copper
+        # rim, headings pour a violet-to-copper gradient, and buttons pulse an
+        # arcane glow on hover. All motion is behind prefers-reduced-motion.
+        'extra_css': """
+/* ---- Tasha's Cauldron: bubbling arcane brew ---- */
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(60% 45% at 22% 88%, rgba(192,132,224,0.22), transparent 60%),
+    radial-gradient(50% 40% at 82% 78%, rgba(201,130,46,0.18), transparent 62%),
+    radial-gradient(45% 35% at 50% 108%, rgba(63,174,143,0.20), transparent 60%);
+  background-attachment: fixed;
+}
+@media (prefers-reduced-motion: no-preference) {
+  body {
+    background-size: 140% 140%, 130% 130%, 160% 160%;
+    animation: tasha-brew 26s ease-in-out infinite alternate;
+  }
+  @keyframes tasha-brew {
+    0%   { background-position: 20% 90%, 80% 80%, 50% 110%; }
+    50%  { background-position: 26% 82%, 74% 86%, 46% 104%; }
+    100% { background-position: 18% 94%, 86% 74%, 54% 112%; }
+  }
+}
+/* Panels get a faint copper inner rim that slowly breathes. */
+.panel, .h-item, .wiki-card, .handout-card, .folder-card {
+  position: relative;
+}
+.panel::after {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  border: 1px solid rgba(201,130,46,0.35);
+  box-shadow: inset 0 0 18px rgba(192,132,224,0.10);
+  mix-blend-mode: screen;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .panel::after { animation: tasha-rim 7s ease-in-out infinite alternate; }
+  @keyframes tasha-rim {
+    from { opacity: 0.55; }
+    to   { opacity: 1; }
+  }
+}
+/* Headings pour a violet-to-copper gradient into the letterforms. */
+h1, h2, h3, .pixel {
+  background: linear-gradient(100deg, var(--accent) 0%, #e6c7a0 55%, var(--accent-2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+/* Buttons glow like a stirred brew when hovered. */
+@media (hover: hover) {
+  .btn { transition: box-shadow 0.25s ease, transform 0.06s steps(2); }
+  .btn:hover {
+    box-shadow: var(--px) var(--px) 0 0 var(--shadow),
+                0 0 14px rgba(192,132,224,0.65);
+  }
+}
+/* The POP button simmers copper instead. */
+@media (hover: hover) {
+  .btn--pop:hover {
+    box-shadow: var(--px) var(--px) 0 0 var(--shadow),
+                0 0 16px rgba(201,130,46,0.7);
+  }
+}
+""",
+    },
+    'xanathars-guide': {
+        'name': "Xanathar's Guide to Everything",
+        'blurb': 'The beholder watches: acid green, magenta, and a staring eye.',
+        # Nova Square is a squared, alien-tech display face -- criminal-
+        # syndicate signage / a surveillance readout, but fully legible
+        # (unlike the earlier Rubik Glitch, which was decorative to the point
+        # of unreadable). Cardo keeps the body text a clean serif.
+        'fonts': ('Nova Square', 'Cardo'),
+        'scale': 1.5,
+        'vars': {
+            '--bg': '#06090a',          # black observation room
+            '--bg-panel': '#0e1518',    # dark scrying glass
+            '--ink': '#e7f5ec',         # cold white
+            '--ink-dim': '#7fa597',     # dim eye-shine
+            '--accent': '#8cff3b',       # aberrant acid green
+            '--accent-2': '#ff2fd0',    # eye-stalk magenta
+            '--border': '#020404',
+            '--shadow': '#000000',
+            '--good': '#48d97a',
+        },
+        # Xanathar IS an eye. A magenta/green pupil dilates at the centre of
+        # the page, faint scanlines crawl like a surveillance feed, panels iris
+        # a thin ring, and buttons fire an eye-ray flash on hover. All motion
+        # is behind prefers-reduced-motion.
+        'extra_css': """
+/* ---- Xanathar's Guide: the watching beholder ---- */
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(closest-side at 50% 42%, rgba(255,47,208,0.20), rgba(140,255,59,0.08) 45%, transparent 70%),
+    repeating-linear-gradient(0deg, rgba(140,255,59,0.05) 0 1px, transparent 1px 3px);
+  background-attachment: fixed, fixed;
+  background-size: 120% 120%, 100% 100%;
+}
+/* A dark vignette so the centre reads as a staring pupil. */
+body::before {
+  content: "";
+  position: fixed; inset: 0; z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(closest-side at 50% 42%, transparent 40%, rgba(0,0,0,0.55) 100%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  body {
+    animation: xan-pupil 9s ease-in-out infinite alternate;
+  }
+  /* The pupil dilates and contracts. */
+  @keyframes xan-pupil {
+    from { background-size: 118% 118%, 100% 100%; }
+    to   { background-size: 138% 138%, 100% 100%; }
+  }
+}
+/* Panels get a thin aberrant iris ring. */
+.panel {
+  position: relative;
+  box-shadow: var(--px) var(--px) 0 0 var(--shadow),
+              inset 0 0 0 1px rgba(255,47,208,0.30),
+              inset 0 0 22px rgba(140,255,59,0.06);
+}
+/* Headings: acid green with a magenta chromatic-aberration shadow. */
+h1, h2, h3, .pixel {
+  color: var(--accent);
+  text-shadow: -1px 0 rgba(255,47,208,0.65), 1px 0 rgba(140,255,59,0.35);
+}
+/* Count badges become little pupils. */
+.count-badge {
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, var(--accent-2) 0 32%, var(--border) 34%);
+  color: var(--accent);
+}
+/* Buttons fire an eye-ray flash on hover. */
+@media (hover: hover) {
+  .btn { transition: box-shadow 0.2s ease, transform 0.06s steps(2); }
+  .btn:hover {
+    box-shadow: var(--px) var(--px) 0 0 var(--shadow),
+                0 0 12px rgba(140,255,59,0.75),
+                0 0 4px rgba(255,47,208,0.9);
+  }
+}
+/* Public handouts already glow green; make their edge pulse like a live feed. */
+@media (prefers-reduced-motion: no-preference) {
+  .h-item--public { animation: xan-scan 3.2s ease-in-out infinite; }
+  @keyframes xan-scan {
+    0%, 100% { box-shadow: var(--px) var(--px) 0 0 var(--good); }
+    50%      { box-shadow: var(--px) var(--px) 0 0 var(--good),
+                           0 0 12px rgba(140,255,59,0.55); }
+  }
+}
+""",
+    },
 }
 
 DEFAULT_THEME = 'dungeon-torch'
@@ -182,6 +384,18 @@ _FONT_QUERY = {
     'Press Start 2P': 'family=Press+Start+2P',
     'Metamorphous': 'family=Metamorphous',
     'Cardo': 'family=Cardo:ital,wght@0,400;0,700;1,400',
+    # Vecna theme. Grenze Gotisch (blackletter display) is a variable font on
+    # the wght axis; EB Garamond (body) carries ital + wght. Both axes are
+    # spelled out so the css2 API accepts them instead of failing the request.
+    'Grenze Gotisch': 'family=Grenze+Gotisch:wght@300;400;500;600;700;800;900',
+    'EB Garamond': 'family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;'
+                   '1,400;1,500;1,600;1,700',
+    # Tasha theme. Cinzel Decorative (ornate display) has a static wght axis;
+    # its body face Cormorant Garamond is already listed above.
+    'Cinzel Decorative': 'family=Cinzel+Decorative:wght@400;700;900',
+    # Xanathar theme. Nova Square is a single-style squared display; Cardo
+    # (body) is already listed above.
+    'Nova Square': 'family=Nova+Square',
 }
 
 
@@ -228,6 +442,14 @@ def css_vars(theme_id):
     quotes around font names to `&#39;`, which is not a valid font-family
     value, so the browser would drop those declarations and keep the default
     face while the (quote-free) colours still applied.
+
+    A theme may also carry an optional `extra_css` string: extra rules (custom
+    textures, animations, per-theme component tweaks) that go BEYOND repainting
+    tokens. It is appended after the :root block and is emitted ONLY when that
+    theme is active -- css_vars is always called with the current theme -- so
+    no `[data-theme=...]` guard is needed and other themes never pay for it.
+    Keep such rules scoped to real selectors (.panel, .btn, body::before, ...)
+    and wrap motion in `prefers-reduced-motion: no-preference`.
     """
     theme = THEMES[clean_theme(theme_id)]
     display, body = theme['fonts']
@@ -241,4 +463,8 @@ def css_vars(theme_id):
     # under a blackletter or serif it just looks smudged.
     if theme['fonts'][0] != 'Press Start 2P':
         lines.append('  --display-shadow: none;')
-    return Markup(':root {\n' + '\n'.join(lines) + '\n}')
+    block = ':root {\n' + '\n'.join(lines) + '\n}'
+    extra = theme.get('extra_css')
+    if extra:
+        block += '\n' + extra.strip() + '\n'
+    return Markup(block)

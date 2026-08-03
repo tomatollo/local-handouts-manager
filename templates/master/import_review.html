@@ -96,6 +96,51 @@
             </div>
             {% endif %}
 
+            {# Interactive map. It is a single global object, not a per-id
+               collection, so it gets ONE choice rather than a per-item merge.
+               Shown only when analyze() decided it is a real decision (the
+               incoming map has content and differs from the local one). The
+               default is to KEEP the local map, so an import can never wipe a
+               map the Master is mid-session on without them choosing to. #}
+            {% if map_report %}
+            <div class="panel">
+                <h2>{{ 'Interactive Map' | t }}</h2>
+                <p class="subtitle">{{ 'The bundle carries a map. Keep your current map, or replace it with the imported one. This is all-or-nothing: the map is a single scene, not a merge.' | t }}</p>
+                <div class="conflict">
+                    <div class="conflict__row">
+                        <div class="conflict__side">
+                            <h4>{{ 'Local' | t }}</h4>
+                            {% if map_report.local_has_content %}
+                            <div class="h-meta">
+                                <span class="tag">{{ 'Revealed hexes' | t }} {{ map_report.local_hexes }}</span>
+                                <span class="tag">{{ 'Points of interest' | t }} {{ map_report.local_pois }}</span>
+                                {% if map_report.local_has_image %}<span class="tag tag--viewer">{{ 'Background image' | t }}</span>{% endif %}
+                            </div>
+                            {% else %}
+                            <div class="h-title">{{ 'No map yet.' | t }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="conflict__side">
+                            <h4>{{ 'Imported' | t }}</h4>
+                            <div class="h-meta">
+                                <span class="tag">{{ 'Revealed hexes' | t }} {{ map_report.incoming_hexes }}</span>
+                                <span class="tag">{{ 'Points of interest' | t }} {{ map_report.incoming_pois }}</span>
+                                {% if map_report.incoming_has_image %}<span class="tag tag--viewer">{{ 'Background image' | t }}</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="conflict__choice">
+                        <label class="radio-pill">
+                            <input type="radio" name="map_action" value="local" checked> {{ 'Keep my map' | t }}
+                        </label>
+                        <label class="radio-pill">
+                            <input type="radio" name="map_action" value="imported"> {{ 'Use imported map' | t }}
+                        </label>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             <div class="panel">
                 <button type="submit" class="btn btn--block">{{ 'Apply import' | t }}</button>
                 <a href="{{ url_for('master.dm_panel') }}" class="btn btn--ghost btn--block">{{ 'Cancel' | t }}</a>

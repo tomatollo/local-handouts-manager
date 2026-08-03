@@ -708,7 +708,8 @@ def import_library():
                            new=report['new'],
                            identical=report['identical'],
                            conflicts=report['conflicts'],
-                           new_wiki=report['new_wiki'])
+                           new_wiki=report['new_wiki'],
+                           map_report=report['map'])
 
 
 @bp.route('/import/apply', methods=['POST'])
@@ -731,8 +732,14 @@ def import_apply():
         if key.startswith('resolve_'):
             resolutions[key[len('resolve_'):]] = value
 
+    # The map is a single global object, resolved by one radio: map_action =
+    # 'imported' means replace the local map with the bundle's; anything else
+    # (incl. absent) keeps the local map.
+    import_map = request.form.get('map_action') == 'imported'
+
     try:
-        summary = transfer.apply_import(zip_bytes, resolutions)
+        summary = transfer.apply_import(zip_bytes, resolutions,
+                                        import_map=import_map)
     except ValueError as exc:
         abort(400, str(exc))
     finally:

@@ -13,14 +13,14 @@
                 <h1>📖 {{ 'La Guida Completa' | t }}</h1>
                 <p class="subtitle">{{ 'Tutto quello che devi sapere su Local Handouts Manager' | t }}</p>
             </div>
-            {% if is_master %}
+            {% if master_unlocked %}
             <a href="{{ url_for('master.dm_panel') }}" class="btn">{{ 'Torna alla Dashboard' | t }}</a>
             {% else %}
             <a href="{{ url_for('player.home') }}" class="btn">{{ "Torna all'Hub Giocatori" | t }}</a>
             {% endif %}
         </div>
 
-        {% if is_master %}
+        {% if master_unlocked %}
         <!-- ========================================== -->
         <!-- SEZIONE MASTER (Visibile SOLO al Game Master) -->
         <!-- ========================================== -->
@@ -67,7 +67,7 @@
         <!-- ========================================== -->
         <div class="panel" style="margin-top: 2rem;">
             <h2>🛡️ 
-                {% if is_master %}
+                {% if master_unlocked %}
                     {{ 'La Guida dei tuoi Giocatori' | t }}
                 {% else %}
                     {{ 'La Guida per i Giocatori' | t }}

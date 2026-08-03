@@ -8,7 +8,76 @@ the phase of work that produced them, newest first.
 
 ## Unreleased
 
+### Documentation
+- **README rewritten** and brought back in sync with the code: all ten themes
+  listed, the interactive map documented, the desktop launcher covered, the
+  routes table corrected, and a security section pointing to `SECURITY.md`. The
+  not-yet-built Wiki was moved to a "Roadmap" section rather than being
+  described as a live feature (it had no routes and would 404).
+- **`INSTALL.md` rewritten** as a full install guide for Windows, macOS and
+  Linux, covering both the double-click launcher and the terminal, plus
+  connecting phones, running under `waitress` for a real session, updating
+  safely, and a troubleshooting section. (The previous file was truncated
+  mid-command.)
+- Added **`docs/screenshots/`** with a guide to the expected screenshot
+  filenames; the README references them.
+
+### Fixed
+- **Export/Import now carries the whole app state.** Two gaps are closed:
+  - The **interactive-map background image** (in `static/maps`) is now included
+    in the export bundle. Before, only handout uploads travelled, so an
+    imported library pointed at a map image that never left the source machine
+    and the map came up blank.
+  - The **map state itself** (revealed hexes, POIs, marker, calibration, fog,
+    background) is now actually applied on import. Before, `apply_import`
+    merged only handouts, folders and wiki, silently ignoring the incoming
+    map.
+  The map is a single global scene, not a per-id collection, so import offers
+  **one explicit choice** on the review page — keep your current map or replace
+  it with the imported one — defaulting to *keep*, so an import can never wipe
+  a map you are mid-session on. The choice appears only when the incoming map
+  has content and differs from yours.
+
+### Security
+- **CSRF protection** on every state-changing request, via a per-session
+  synchronizer token (stdlib `hmac` + `secrets`, no Flask-WTF). The token is
+  emitted once in the shared `<head>` and delivered automatically: a script
+  injects a hidden field into every POST form, and `fetch` is wrapped to add an
+  `X-CSRF-Token` header to same-origin writes (the interactive map). See
+  `handouts/security.py` and `SECURITY.md` §4.
+- **Rate limiting** (in-memory token bucket, keyed by IP) to stop a request
+  loop from exhausting the server. Tight policy on the DB-touching pollers
+  (`/api/pop`, `/api/map/state`, `/api/map/reveal.png`), a loose ceiling
+  elsewhere; over-limit gets HTTP 429 + `Retry-After`. See `SECURITY.md` §5.
+- **Baseline hardening headers** on every response: `X-Content-Type-Options:
+  nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy:
+  strict-origin-when-cross-origin`.
+- **Debugger off by default.** The Werkzeug interactive debugger (which allows
+  arbitrary code execution) is now opt-in via `HANDOUTS_DEBUG=1`, never on by
+  default. See `SECURITY.md` §6.3.
+- **Guide information leak fixed.** The public `/guide` no longer shows the
+  Master section (or a "Back to Dashboard" link) during first-run, when the
+  master side is open to everyone. A new `auth.is_master_unlocked()` gates
+  master-only *content* on a real passphrase unlock, distinct from the
+  first-run fall-open that keeps the dashboard reachable. See `SECURITY.md`
+  §3.5.
+- Removed the temporary `/test-error/<code>` route.
+- **`SECURITY.md`** added: an account of the threat model and the reasoning
+  behind each control, with sources.
+
 ### Added
+- **Three new themes**, each inspired by a D&D sourcebook:
+  - *Vecna: Eve of Ruin* — necrotic grave-green and rotten violet.
+  - *Tasha's Cauldron of Everything* — a simmering arcane brew: animated
+    radial background, copper panel rim, violet-to-copper heading gradient,
+    glowing buttons.
+  - *Xanathar's Guide to Everything* — the watching beholder: a dilating
+    magenta/green pupil, surveillance scanlines, iris panel rings, eye-ray
+    button hovers.
+  Themes can now carry an optional `extra_css` block (in `theming.py`) for
+  per-theme textures and animations beyond colour/font tokens; it is emitted
+  only while that theme is active, and all motion sits behind
+  `prefers-reduced-motion`.
 - **POP Handout.** The Master can now push a handout onto every player's
   screen, instead of publishing it and asking the table to refresh.
   - **POP** on any public handout (dashboard) broadcasts it immediately.

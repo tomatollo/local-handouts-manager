@@ -114,6 +114,26 @@ def is_master():
     return not is_configured(storage.load_db())
 
 
+def is_master_unlocked():
+    """True ONLY if this session was really unlocked with the passphrase.
+
+    Unlike is_master(), this does NOT fall open during first-run. It answers a
+    different question -- "has this browser proven it is the Master?" rather
+    than "is the master side currently reachable?" -- and is used where showing
+    master-only *content* to an unauthenticated visitor would leak information,
+    even though the route behind it is (by first-run design) still open.
+
+    Concretely: the public /guide page renders a whole master section. Gating it
+    on is_master() meant that, before a passphrase was set, every player saw the
+    master instructions and a 'Back to Dashboard' link -- the app advertising
+    its own privileged side. Gating it on this function instead keeps that
+    section hidden until someone actually unlocks, without weakening the
+    deliberate first-run openness of the dashboard itself (which still needs to
+    be reachable so the Master can get in to set the passphrase).
+    """
+    return bool(session.get(SESSION_KEY))
+
+
 def master_required(view):
     """Guard a view so only an unlocked Master session may reach it.
 

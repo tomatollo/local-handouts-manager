@@ -1,18 +1,18 @@
-"""Local Handouts Manager — application entry point.
+"""Local Handouts Manager - application entry point.
 
 Thin by design: it builds the Flask app, wires up the cross-cutting concerns
-every template needs (language, theme, and who is looking), and registers the
-player, master and wiki blueprints. All data logic lives in the `handouts`
-package.
+every template needs (language, theme, who is looking, and the CSRF token), and
+registers the player and master blueprints. All data logic lives in the
+`handouts` package; the security primitives (CSRF + rate limiting) live in
+`handouts/security.py`.
 """
 
-from ast import Not
 from datetime import timedelta
 
-from flask import Flask, app, g, render_template, request
+from flask import Flask, g, render_template, request
 from jinja2 import pass_context
 
-from handouts import auth, i18n, storage, theming
+from handouts import auth, i18n, storage, theming, security
 from handouts.routes_player import bp as player_bp
 from handouts.routes_master import bp as master_bp
 
@@ -37,11 +37,48 @@ def create_app():
         # remember it so the next request doesn't need the querystring.
         g.lang, g.lang_changed = i18n.resolve(request)
 
+    @app.before_request
+    def _rate_limit():
+        # Guard against request-loop DoS. The player pollers hit the DB on
+        # every call, so they get the tighter 'poll' policy; everything else
+        # gets a loose ceiling. Static files are exempt: they don't touch the
+        # DB and the dev server/waitress serve them cheaply. See security.py.
+        if request.endpoint == 'static':
+            return
+        poll_paths = ('/api/pop', '/api/map/state', '/api/map/reveal.png')
+        policy = 'poll' if request.path in poll_paths else 'default'
+        security.enforce(policy)
+
+    @app.before_request
+    def _csrf_protect():
+        # Reject state-changing requests that lack a valid per-session token.
+        # Safe methods (GET/HEAD/OPTIONS) pass straight through. See security.py.
+        security.validate_request()
+
     @app.after_request
-    def _persist_language(response):
+    def _security_headers(response):
         if getattr(g, 'lang_changed', False):
             response.set_cookie(i18n.COOKIE_NAME, g.lang,
                                 max_age=i18n.COOKIE_MAX_AGE, samesite='Lax')
+        # Baseline hardening headers. These are cheap, static, and defend the
+        # whole app at once:
+        #   * nosniff stops a browser from MIME-guessing an uploaded file into
+        #     something executable (OWASP Secure Headers Project).
+        #   * DENY framing blocks clickjacking of the master controls.
+        #   * A conservative referrer policy keeps the LAN URL out of any
+        #     external request's Referer.
+        # A full Content-Security-Policy is intentionally NOT set here: the app
+        # loads its fonts from Google Fonts and uses inline <style>/<script> in
+        # several templates, so a strict CSP would need nonces threaded through
+        # every page -- a larger change tracked in SECURITY.md rather than
+        # bolted on half-done (a permissive CSP would be security theatre).
+        response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+        response.headers.setdefault('X-Frame-Options', 'DENY')
+        response.headers.setdefault('Referrer-Policy',
+                                    'strict-origin-when-cross-origin')
+        retry_after = getattr(g, 'rate_limited_retry_after', None)
+        if retry_after:
+            response.headers['Retry-After'] = str(retry_after)
         return response
 
     # `|t` is the only translation entry point templates use.
@@ -91,9 +128,16 @@ def create_app():
             'theme_css': theming.css_vars(theme),
             'theme_fonts_url': theming.fonts_url(theme),
             'is_master': auth.is_master(),
+            # Stricter than is_master: true only after a real passphrase
+            # unlock, never during first-run fall-open. Used by pages that
+            # render master-only *content* (e.g. the public guide) so they
+            # don't advertise the master side to an un-unlocked visitor.
+            'master_unlocked': auth.is_master_unlocked(),
             # True until a passphrase exists: the master side is open, and the
             # dashboard says so rather than pretending to be secure.
             'first_run': not auth.is_configured(db),
+            # Per-session CSRF token for every POST form + the fetch() header.
+            'csrf_token': security.get_token(),
         }
 
     app.register_blueprint(player_bp)
@@ -170,17 +214,27 @@ def create_app():
             error_msg="The Dungeon Master spilled coffee on the campaign notes. The fabric of reality is temporarily unstable."
         ), 500
 
-    from flask import abort
-
-    # ROTTA TEMPORANEA PER TESTARE GLI ERRORI
-    @app.route('/test-error/<int:code>')
-    def test_error(code):
-        # La funzione abort interrompe la richiesta e lancia l'errore HTTP specificato
-        abort(code)
+    @app.errorhandler(429)
+    def too_many_requests(e):
+        return render_template('error.html',
+            error_code=429,
+            error_type_en="Too Many Requests",
+            error_icon="\U0001F6D1",
+            error_title="Slow Down, Adventurer",
+            error_msg="You are hammering the gates faster than the guards can "
+                     "answer. Wait a moment and try again."
+        ), 429
 
     return app
 
 app = create_app()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000, debug=True)
+    import os
+    # debug is OFF by default: the Werkzeug debugger exposes an interactive
+    # console that runs arbitrary code on any request that errors, which is a
+    # remote-code-execution hole if the port is reachable. Opt in explicitly
+    # with HANDOUTS_DEBUG=1 only on a machine you trust, never for the LAN
+    # server the players reach. (Werkzeug docs, "Debugging Applications".)
+    debug = os.environ.get('HANDOUTS_DEBUG', '').strip() in ('1', 'true', 'yes')
+    app.run(host='0.0.0.0', port=8000, debug=debug)

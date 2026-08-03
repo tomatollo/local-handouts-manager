@@ -16,6 +16,9 @@
                 <span class="tag">{{ 'Replaced' | t }} {{ summary.replaced }}</span>
                 <span class="tag">{{ 'Kept local' | t }} {{ summary.kept_local }}</span>
                 <span class="tag">{{ 'Wiki pages added' | t }} {{ summary.wiki_added }}</span>
+                {% if summary.map_imported %}
+                <span class="tag tag--viewer">{{ 'Map imported' | t }}</span>
+                {% endif %}
             </div>
             <a href="{{ url_for('master.dm_panel') }}" class="btn btn--block">{{ "Back to Master's Screen" | t }}</a>
         </div>

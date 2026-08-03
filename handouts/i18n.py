@@ -312,6 +312,16 @@ CATALOG = {
         'Kept local': 'Tenuti locali',
         'New wiki pages': 'Nuove pagine wiki',
         'Wiki pages added': 'Pagine wiki aggiunte',
+        # ---- Import: interactive map section ----
+        'The bundle carries a map. Keep your current map, or replace it with the imported one. This is all-or-nothing: the map is a single scene, not a merge.':
+            'Il pacchetto contiene una mappa. Tieni la tua mappa attuale oppure sostituiscila con quella importata. \u00c8 tutto-o-niente: la mappa \u00e8 una scena unica, non una fusione.',
+        'Revealed hexes': 'Esagoni rivelati',
+        'Points of interest': 'Punti di interesse',
+        'Background image': 'Immagine di sfondo',
+        'No map yet.': 'Ancora nessuna mappa.',
+        'Keep my map': 'Tieni la mia mappa',
+        'Use imported map': 'Usa la mappa importata',
+        'Map imported': 'Mappa importata',
         'Keep Local': 'Tieni il locale',
         'Replace with imported': "Sostituisci con l'importato",
         'Apply import': 'Applica importazione',
