@@ -59,6 +59,51 @@
                 <li style="margin-bottom: 0.5rem;">{{ 'Nomi chiari (ma non troppo): Nomina i file in modo che i player possano riconoscerli in futuro, ma evita spoiler nel titolo.' | t }}</li>
                 <li style="margin-bottom: 0.5rem;">{{ 'Pulisci la vista: Se una campagna è molto lunga, usa l\'archiviazione o riorganizza le vecchie cartelle per non intasare l\'interfaccia dei player.' | t }}</li>
             </ul>
+
+            <hr style="margin: 2rem 0; border: 0; border-top: 1px dashed var(--btn-border, #ccc);">
+
+            <!-- ========================================== -->
+            <!-- INSTALLAZIONE E AGGIORNAMENTO (riassunto di INSTALL.md) -->
+            <!-- ========================================== -->
+            <h2>⚙️ {{ 'Installazione e Aggiornamento' | t }}</h2>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'Questa è una versione sintetica. La guida completa, con tutti i dettagli per Windows, macOS e Linux, si trova nel file INSTALL.md nella cartella del progetto.' | t }}</p>
+
+            <h3 style="margin-top: 1.5rem;">{{ 'Cosa serve' | t }}</h3>
+            <ul style="line-height: 1.6; padding-left: 1.5rem;">
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Python 3.9 o più recente.' | t }}</strong> {{ 'Su Windows, durante l\'installazione ricorda di spuntare "Add python.exe to PATH".' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Git' | t }}</strong> {{ '(consigliato, rende gli aggiornamenti immediati) oppure il download del codice come file ZIP.' | t }}</li>
+            </ul>
+
+            <h3 style="margin-top: 1.5rem;">{{ 'Prima installazione (una volta sola)' | t }}</h3>
+            <ol style="line-height: 1.6; padding-left: 1.5rem;">
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Scarica il codice:' | t }}</strong> {{ 'con Git, clona il repository ed entra nella cartella del progetto; oppure estrai lo ZIP e aprivi un terminale.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Crea l\'ambiente virtuale e installa le dipendenze:' | t }}</strong> {{ 'crea una cartella .venv, attivala e lancia l\'installazione dei pacchetti richiesti. Il launcher cerca .venv in automatico, quindi vale la pena crearla.' | t }}</li>
+            </ol>
+            <p style="line-height: 1.6; margin-bottom: 1rem;"><strong>{{ 'Windows (PowerShell):' | t }}</strong></p>
+            <pre style="background: var(--code-bg, rgba(0,0,0,0.15)); padding: 1rem; border-radius: 8px; overflow-x: auto; line-height: 1.5;"><code>python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt</code></pre>
+            <p style="line-height: 1.6; margin: 1rem 0;"><strong>{{ 'macOS / Linux:' | t }}</strong></p>
+            <pre style="background: var(--code-bg, rgba(0,0,0,0.15)); padding: 1rem; border-radius: 8px; overflow-x: auto; line-height: 1.5;"><code>python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt</code></pre>
+
+            <h3 style="margin-top: 1.5rem;">{{ 'Avviare il programma' | t }}</h3>
+            <ul style="line-height: 1.6; padding-left: 1.5rem;">
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Con il launcher (consigliato):' | t }}</strong> {{ 'su Windows fai doppio clic su start_launcher.bat; su macOS/Linux lancia python launcher.py con la .venv attiva. Poi premi "Start server" e leggi l\'indirizzo di rete da dare ai giocatori.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Da terminale:' | t }}</strong> {{ 'con la .venv attiva, lancia python app.py e apri http://localhost:8000. Comodo per le prove veloci.' | t }}</li>
+            </ul>
+
+            <hr style="margin: 2rem 0; border: 0; border-top: 1px dashed var(--btn-border, #ccc);">
+
+            <h3 style="margin-top: 1.5rem;">🔄 {{ 'Come aggiornare il software' | t }}</h3>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'I dati della tua campagna vivono nella cartella data/ e i file caricati in static/uploads/ e static/maps/. Questi sono esclusi dal controllo di versione, quindi un normale aggiornamento non li tocca mai.' | t }}</p>
+            <p style="line-height: 1.6; margin-bottom: 1rem;"><strong>{{ 'Se hai usato Git:' | t }}</strong></p>
+            <pre style="background: var(--code-bg, rgba(0,0,0,0.15)); padding: 1rem; border-radius: 8px; overflow-x: auto; line-height: 1.5;"><code>git pull
+# poi, con la .venv attiva, se le dipendenze sono cambiate:
+pip install -r requirements.txt</code></pre>
+            <p style="line-height: 1.6; margin: 1rem 0;"><strong>{{ 'Se hai scaricato lo ZIP:' | t }}</strong> {{ 'fai una copia di sicurezza delle cartelle data/ e static/, estrai la nuova versione sopra la vecchia, e rimetti al loro posto quelle cartelle.' | t }}</p>
+            <p style="line-height: 1.6; margin-bottom: 1rem;"><strong>{{ 'Fai sempre un backup, comunque.' | t }}</strong> {{ 'Il backup più sicuro è l\'Export dell\'app stessa (Master → Backup & Transfer): raccoglie il database, tutte le immagini e la mappa interattiva in un unico file .zip che puoi reimportare ovunque. Dopo l\'aggiornamento, riavvia il server per applicare le modifiche.' | t }}</p>
         </div>
         {% endif %}
 

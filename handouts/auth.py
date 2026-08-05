@@ -18,9 +18,9 @@ The model is deliberately small:
     signed with SECRET_KEY, so a player cannot forge `is_master` by editing it.
   * The passphrase is stored as a salted PBKDF2 hash in the DB, never in clear.
 
-The threat model is honest about its limits: this stops a curious player at the
-table from reading the Master's notes. It is not hardened against an attacker
-on the network (the app is plain HTTP), and it is not meant to be -- the app is
+The threat model limits: this stops a curious player at the table from reading 
+the Master's notes. It is not hardened against an attacker on the network 
+(the app is plain HTTP), and it is not meant to be. Also, the app is
 built to be served on a trusted home Wi-Fi.
 """
 

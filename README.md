@@ -94,8 +94,7 @@ in a browser, a language switch, a dark/light toggle, and a guarded
 | --- | --- |
 | ![POP handout](docs/screenshots/pop.png) | ![Interactive map](docs/screenshots/interactive-map.png) |
 
-*(Screenshots live in [`docs/screenshots/`](docs/screenshots/) - see the note
-there for the filenames the README expects.)*
+*(Screenshots live in [`docs/screenshots/`](docs/screenshots/))*
 
 ---
 

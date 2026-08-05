@@ -40,6 +40,15 @@
             <div class="panel">
                 <h2>{{ 'Conflicts' | t }} <span class="count-badge">{{ conflicts|length }}</span></h2>
                 <p class="subtitle">{{ 'These handouts exist on both sides but differ. Choose which to keep for each.' | t }}</p>
+                {# Bulk shortcut: flip every conflict to one side at once, so a
+                   Master syncing from a trusted master copy doesn't have to
+                   click through each row. It only sets the radios below; the
+                   Master still reviews and submits, and can override any
+                   single row afterwards. #}
+                <div class="conflict__choice" style="margin-bottom:1rem">
+                    <button type="button" class="btn btn--ghost" onclick="setAllConflicts('imported')">{{ 'Replace all with imported' | t }}</button>
+                    <button type="button" class="btn btn--ghost" onclick="setAllConflicts('local')">{{ 'Keep all local' | t }}</button>
+                </div>
                 {% for cf in conflicts %}
                 <div class="conflict">
                     <div class="conflict__row">
@@ -147,5 +156,17 @@
             </div>
         </form>
     </div>
+    <script>
+        // Set every conflict's resolution radio to the given side ('imported'
+        // or 'local') in one click. Named inputs are resolve_<id>; selecting
+        // the matching value per group leaves the Master free to change any
+        // individual row before submitting.
+        function setAllConflicts(side) {
+            document.querySelectorAll('input[type=radio][name^="resolve_"]')
+                .forEach(function (radio) {
+                    if (radio.value === side) { radio.checked = true; }
+                });
+        }
+    </script>
 </body>
 </html>

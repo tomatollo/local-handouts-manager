@@ -16,6 +16,9 @@
                 <span class="tag">{{ 'Replaced' | t }} {{ summary.replaced }}</span>
                 <span class="tag">{{ 'Kept local' | t }} {{ summary.kept_local }}</span>
                 <span class="tag">{{ 'Wiki pages added' | t }} {{ summary.wiki_added }}</span>
+                {% if summary.restored_files %}
+                <span class="tag">{{ 'Images restored' | t }} {{ summary.restored_files }}</span>
+                {% endif %}
                 {% if summary.map_imported %}
                 <span class="tag tag--viewer">{{ 'Map imported' | t }}</span>
                 {% endif %}

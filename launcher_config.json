@@ -3,5 +3,5 @@
   "port": 8000,
   "autostart": false,
   "lang": "en",
-  "theme": "light"
+  "theme": "dark"
 }

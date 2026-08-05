@@ -52,6 +52,9 @@ def do_import(args):
     summary = transfer.apply_import(zip_bytes, resolutions)
     print(f'Done. Added {summary["added"]}, replaced {summary["replaced"]}, '
           f'kept {summary["kept_local"]} local.')
+    if summary.get('restored_files'):
+        print(f'Restored {summary["restored_files"]} missing image file(s) '
+              f'for handouts already present.')
 
 
 def main():

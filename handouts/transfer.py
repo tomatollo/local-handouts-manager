@@ -295,6 +295,33 @@ def _extract_files_for(handout, zf):
                     out.write(src.read())
 
 
+def _ensure_files_on_disk(handout, zf):
+    """Extract only the handout's files that are MISSING on disk.
+
+    Used for handouts the merge does not otherwise touch (identical records, or
+    conflicts the Master kept local). Their DB record already exists, but on a
+    fresh machine -- or one where the JSON was copied over without its uploads,
+    or the two were ever separated -- the referenced images are absent, so the
+    player screens show broken pictures. This restores them from the bundle
+    without overwriting anything that is already present (a kept-local record's
+    own files stay as they are). Returns the number of files restored.
+    """
+    os.makedirs(storage.UPLOAD_DIR, exist_ok=True)
+    members = set(zf.namelist())
+    restored = 0
+    for name in _handout_filenames(handout):
+        dest = os.path.join(storage.UPLOAD_DIR, name)
+        if os.path.exists(dest):
+            continue
+        member = BUNDLE_UPLOADS + name
+        if member in members:
+            with zf.open(member) as src:
+                with open(dest, 'wb') as out:
+                    out.write(src.read())
+            restored += 1
+    return restored
+
+
 def _extract_map_images(incoming, zf):
     """Copy the incoming map background image(s) out of the bundle into
     static/maps. Missing members are skipped. Safe to call even if the map has
@@ -342,6 +369,9 @@ def apply_import(zip_bytes, resolutions, import_map=False):
     local_by_id = {h['id']: h for h in db['handouts']}
 
     added = replaced = kept = 0
+    # Files pulled back from the bundle for records the merge didn't rewrite
+    # (identical / kept-local) but whose images were missing on disk.
+    restored_files = 0
 
     # Merge folders first (by id) so membership references stay valid.
     local_folder_ids = {fo['id'] for fo in db.get('folders', [])}
@@ -358,7 +388,11 @@ def apply_import(zip_bytes, resolutions, import_map=False):
             db['handouts'].append(h)
             added += 1
         elif _content_signature(cur) == _content_signature(h):
-            # identical - nothing to do
+            # Identical record: nothing to merge, but the files it points at may
+            # be missing on this machine (fresh device, or a DB copied without
+            # its uploads). Restore any that aren't already on disk so the
+            # images actually load, then move on.
+            restored_files += _ensure_files_on_disk(h, zf)
             continue
         else:
             choice = resolutions.get(hid, 'local')
@@ -373,6 +407,12 @@ def apply_import(zip_bytes, resolutions, import_map=False):
                 db['handouts'][idx] = h
                 replaced += 1
             else:
+                # Kept local: the Master's own record wins, but its images may
+                # still be absent here. Restore only the files that are missing
+                # (the two sides share id-scoped filenames, so the bundle is a
+                # valid source), never overwriting what is already on disk, so a
+                # kept-local handout still shows its pictures.
+                restored_files += _ensure_files_on_disk(cur, zf)
                 kept += 1
 
     # Wiki pages: add the ones we don't have. Their scope rides along with the
@@ -409,4 +449,5 @@ def apply_import(zip_bytes, resolutions, import_map=False):
 
     storage.save_db(db)
     return {'added': added, 'replaced': replaced, 'kept_local': kept,
-            'wiki_added': wiki_added, 'map_imported': map_imported}
+            'wiki_added': wiki_added, 'map_imported': map_imported,
+            'restored_files': restored_files}
