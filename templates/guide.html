@@ -18,6 +18,7 @@
             {% else %}
             <a href="{{ url_for('player.home') }}" class="btn">{{ "Torna all'Hub Giocatori" | t }}</a>
             {% endif %}
+            <button type="button" class="btn" id="browse-btn" aria-controls="drawer" aria-expanded="false">&#9776; {{ 'Browse' | t }}</button>
         </div>
 
         {% if master_unlocked %}
@@ -133,5 +134,8 @@ pip install -r requirements.txt</code></pre>
             <p style="line-height: 1.6;">{{ 'Se il Master ti invia un\'immagine con la funzione POP, questa apparirà da sola a tutto schermo. Per chiuderla, ti basterà cliccare sulla "X" in alto o cliccare fuori dall\'immagine.' | t }}</p>
         </div>
     </div>
+
+    {# ---- Browse drawer: shared player navigation ---- #}
+    {% include 'player/_drawer.html' %}
 </body>
 </html>

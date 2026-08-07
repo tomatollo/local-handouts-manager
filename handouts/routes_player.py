@@ -19,10 +19,17 @@ MODES = ('folder', 'session', 'tag', 'recent')
 @bp.route('/')
 def home():
     db = storage.load_db()
-    
+
+    # Older carousel handouts stored PDFs as PDFs (shown in an iframe). Both
+    # viewers now render images only, so expand any lingering PDF pages into
+    # page images once, here, and persist if anything changed. Non-destructive:
+    # the source PDFs stay on disk (see pdfs.backfill_carousel_pdfs).
+    changed = pdfs.backfill_carousel_pdfs(db)
     # Older PDFs predate thumbnails; render any that are missing so cards show
     # a real preview instead of the grey placeholder.
     if pdfs.backfill_thumbs(db):
+        changed = True
+    if changed:
         storage.save_db(db)
 
     visible = [h for h in db['handouts'] if h.get('visible')]

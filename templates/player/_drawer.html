@@ -1,0 +1,133 @@
+{# =====================================================================
+   Shared player navigation: the Browse (hamburger) button + the slide-in
+   drawer that used to be copy-pasted into hub.html and folder.html.
+
+   Include it on ANY player-facing page to give it the same navigation:
+
+       {% include 'player/_drawer.html' %}
+
+   It renders BOTH the trigger button and the drawer, plus the small
+   open/close script, so a page needs nothing else. Place the trigger where
+   you want it by putting an element with id="browse-btn" in your header;
+   if none exists this partial appends its own into `.hub-top`. To keep every
+   page identical, the standard is to add the button in the header yourself:
+
+       <button type="button" class="btn" id="browse-btn"
+               aria-controls="drawer" aria-expanded="false">&#9776; {{ 'Browse' | t }}</button>
+
+   Data it uses, all OPTIONAL (guarded so a page that doesn't pass them still
+   renders a working drawer):
+     * folders  - list of {id, name}; provided globally by the context
+                  processor, so present on every page.
+     * tags     - list of strings; likewise global.
+     * mode     - current organize mode (folder/session/tag/recent). Defaults
+                  to 'folder' when a page has none (e.g. map/guide/qr).
+     * query    - current search text. Defaults to empty.
+   ===================================================================== #}
+
+{# Normalise the optional bits so the markup below never trips on 'undefined'. #}
+{% set _mode = mode if mode is defined else 'folder' %}
+{% set _query = query if query is defined else '' %}
+{% set _nav_modes = [('folder','Folders'), ('session','Sessions'), ('tag','Tags'), ('recent','Recent')] %}
+
+<div id="drawer" class="drawer" hidden aria-hidden="true">
+    <div class="drawer__backdrop" data-drawer-close></div>
+    <div class="drawer__panel" role="dialog" aria-modal="true" aria-label="{{ 'Browse handouts' | t }}">
+        <div class="drawer__head">
+            <h2>{{ 'Browse' | t }}</h2>
+            <button type="button" class="lightbox__close" data-drawer-close aria-label="{{ 'Close' | t }}">&times;</button>
+        </div>
+
+        <form action="{{ url_for('player.home') }}" method="get" class="drawer__search">
+            <input type="hidden" name="by" value="{{ _mode }}">
+            <label for="q">{{ 'Search' | t }}</label>
+            <input type="text" id="q" name="q" value="{{ _query }}" placeholder="{{ 'Title, tag, session...' | t }}">
+            <button type="submit" class="btn btn--block">{{ 'Search' | t }}</button>
+        </form>
+
+        {# Wayfinding: the same shortcuts on every page. #}
+        <div class="drawer__section">
+            <h3>{{ 'Navigate' | t }}</h3>
+            <a class="drawer__link" href="{{ url_for('player.home') }}">🏠 {{ 'Player Hub' | t }}</a>
+            <a class="drawer__link" href="{{ url_for('player.map_view') }}">🗺️ {{ 'Interactive Map' | t }}</a>
+            <a class="drawer__link" href="{{ url_for('app_guide') }}">📖 {{ 'App Guide' | t }}</a>
+            <a class="drawer__link" href="{{ url_for('qr_page') }}">📱 {{ 'Join by QR' | t }}</a>
+        </div>
+
+        <div class="drawer__section">
+            <h3>{{ 'Organize by' | t }}</h3>
+            {% for key, label in _nav_modes %}
+            <a class="drawer__link {% if _mode == key %}drawer__link--active{% endif %}"
+               href="{{ url_for('player.home', by=key, q=_query or None) }}">{{ label | t }}</a>
+            {% endfor %}
+        </div>
+
+        {% if folders %}
+        <div class="drawer__section">
+            <h3>{{ 'Folders' | t }}</h3>
+            {% for fo in folders %}
+            <a class="drawer__link" href="{{ url_for('player.home', by='folder', q=fo.name) }}">{{ fo.name }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if tags %}
+        <div class="drawer__section">
+            <h3>{{ 'Tags' | t }}</h3>
+            <div class="drawer__tags">
+                {% for tg in tags %}
+                <a class="tag tag--tag" href="{{ url_for('player.home', by='tag', q=tg) }}">{{ tg }}</a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    (function () {
+        var drawer = document.getElementById('drawer');
+        if (!drawer) return;
+
+        // The trigger is whatever element carries id="browse-btn". If the page
+        // didn't include one in its header, drop a default button into the top
+        // bar so navigation is never missing.
+        var browseBtn = document.getElementById('browse-btn');
+        if (!browseBtn) {
+            var host = document.querySelector('.hub-top');
+            if (host) {
+                browseBtn = document.createElement('button');
+                browseBtn.type = 'button';
+                browseBtn.className = 'btn';
+                browseBtn.id = 'browse-btn';
+                browseBtn.setAttribute('aria-controls', 'drawer');
+                browseBtn.setAttribute('aria-expanded', 'false');
+                browseBtn.innerHTML = '\u2630 ' + {{ 'Browse' | t | tojson }};
+                host.appendChild(browseBtn);
+            }
+        }
+
+        function openDrawer() {
+            drawer.hidden = false;
+            drawer.setAttribute('aria-hidden', 'false');
+            if (browseBtn) browseBtn.setAttribute('aria-expanded', 'true');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeDrawer() {
+            drawer.hidden = true;
+            drawer.setAttribute('aria-hidden', 'true');
+            if (browseBtn) browseBtn.setAttribute('aria-expanded', 'false');
+            document.body.style.overflow = '';
+        }
+        if (browseBtn) browseBtn.addEventListener('click', openDrawer);
+        drawer.querySelectorAll('[data-drawer-close]').forEach(function (el) {
+            el.addEventListener('click', closeDrawer);
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && !drawer.hidden) closeDrawer();
+        });
+
+        // Expose so a page's own script can react if needed.
+        window.PlayerDrawer = { open: openDrawer, close: closeDrawer };
+    })();
+</script>

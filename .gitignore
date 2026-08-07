@@ -19,3 +19,5 @@ Thumbs.db
 /static/maps
 /data/map_cache
 /data
+data/database.json
+notes.md

@@ -7,6 +7,7 @@ so the route modules stay thin and free of persistence details.
 import json
 import os
 import re
+import threading
 import uuid
 from datetime import datetime, timezone
 
@@ -53,6 +54,48 @@ MAP_KEY = 'map_state'
 POP_TTL_SECONDS = 120
 
 
+# --------------------------------------------------------------------------
+# Concurrency + request-scoped caching
+#
+# waitress serves the app with a thread pool, so two requests can be inside a
+# load -> mutate -> save cycle at the same time. A bare open('w') + json.dump
+# can then interleave (or a reader can catch a half-written file), corrupting
+# database.json. `_DB_LOCK` serialises every write, and save_db writes to a
+# temp file then os.replace()s it into place, so a reader ALWAYS sees either
+# the old file or the new one whole, never a truncated middle.
+#
+# Separately, a single request calls load_db() many times (the language, CSRF
+# and rate-limit hooks, the UI context processor, and the view itself each
+# ask for it), and every call used to re-read and re-parse the whole file and
+# re-run _normalize. A per-request cache collapses those into one read. The
+# cache is OPT-IN and injected by the web layer: `set_request_cache_hooks`
+# hands storage two callables backed by flask.g, so this module keeps no Flask
+# import and stays usable from the CLI (where the hooks are simply never set,
+# and every load_db hits disk as before).
+# --------------------------------------------------------------------------
+
+_DB_LOCK = threading.RLock()
+
+# Filled in by set_request_cache_hooks(). `_cache_get()` returns the cached DB
+# for the current request or None; `_cache_set(db)` stores it. Left as no-ops
+# so a caller that never installs them (the CLI, tests) behaves exactly as it
+# did before this cache existed.
+_cache_get = lambda: None          # noqa: E731 - deliberately tiny
+_cache_set = lambda _db: None      # noqa: E731
+
+
+def set_request_cache_hooks(getter, setter):
+    """Install per-request DB cache callables (see the module comment above).
+
+    `getter()` returns the DB cached for the current request, or None if none
+    is cached yet (or there is no request context). `setter(db)` records one.
+    The web layer wires these to flask.g; other entry points leave them unset.
+    """
+    global _cache_get, _cache_set
+    _cache_get = getter
+    _cache_set = setter
+
+
 def clean_view_type(raw):
     """Return a valid view_type, falling back to the default for junk input.
 
@@ -77,14 +120,34 @@ def reader_for(ext):
 # --------------------------------------------------------------------------
 
 def load_db():
-    """Load the DB, creating an empty one if missing (robust for clones)."""
-    if not os.path.exists(DB_PATH):
-        os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-        with open(DB_PATH, 'w', encoding='utf-8') as f:
-            json.dump({'handouts': [], 'folders': []}, f)
-    with open(DB_PATH, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+    """Load the DB, creating an empty one if missing (robust for clones).
+
+    Within a single web request the parsed DB is cached (see the module
+    comment), so the many hooks and the view that each call load_db share one
+    read + normalize instead of re-parsing the file every time. The FIRST call
+    of a request populates the cache; later calls return that same object, so a
+    mutation made after an earlier load in the same request is visible to a
+    later load -- which is what the routes already assume when they load, edit,
+    then load again indirectly through a helper.
+
+    Outside a request context (CLI, tests) the hooks are unset and every call
+    reads from disk exactly as before.
+    """
+    cached = _cache_get()
+    if cached is not None:
+        return cached
+
+    # Reading under the same lock that guards writes means a concurrent save
+    # (temp-file + os.replace) is atomic with respect to us: we open either the
+    # old file or the new one, never a partial write.
+    with _DB_LOCK:
+        if not os.path.exists(DB_PATH):
+            os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+            _atomic_write({'handouts': [], 'folders': []})
+        with open(DB_PATH, 'r', encoding='utf-8') as f:
+            data = json.load(f)
     _normalize(data)
+    _cache_set(data)
     return data
 
 
@@ -238,9 +301,41 @@ def _normalize(data):
             h['back_cover'].setdefault('thumb', None)
 
 
-def save_db(data):
-    with open(DB_PATH, 'w', encoding='utf-8') as f:
+def _atomic_write(data):
+    """Serialise `data` to DB_PATH atomically: temp file, fsync, os.replace.
+
+    os.replace is atomic on both POSIX and Windows when source and destination
+    are on the same filesystem (here they share the data/ directory), so a
+    reader never observes a half-written file -- it sees the previous complete
+    file until the instant the new one takes its place. Caller must hold
+    _DB_LOCK. Kept separate from save_db so load_db can reuse it to seed a
+    missing database without recursing through the public entry point.
+    """
+    directory = os.path.dirname(DB_PATH)
+    os.makedirs(directory, exist_ok=True)
+    tmp = DB_PATH + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, DB_PATH)
+
+
+def save_db(data):
+    """Persist `data`, atomically and under the write lock.
+
+    The lock serialises the whole read-modify-write cycle across threads: two
+    master POSTs that each load, mutate and save can no longer interleave into
+    a corrupt or clobbered file. The write itself is atomic (see _atomic_write),
+    so even a reader that is NOT holding the lock only ever sees a complete DB.
+
+    The request cache (if installed) is refreshed to the just-saved object, so
+    a later load_db in the same request returns exactly what was written rather
+    than a stale earlier copy.
+    """
+    with _DB_LOCK:
+        _atomic_write(data)
+    _cache_set(data)
 
 
 # --------------------------------------------------------------------------

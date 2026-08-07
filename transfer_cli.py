@@ -20,10 +20,18 @@ from handouts import transfer
 
 def do_export(args):
     out = args[0] if args else 'handouts-export.zip'
-    data = transfer.export_bytes()
+    data, missing = transfer.export_bytes()
     with open(out, 'wb') as f:
         f.write(data)
     print(f'Exported library to {out} ({len(data)} bytes).')
+    if missing:
+        print(f'WARNING: {len(missing)} referenced file(s) were missing on '
+              f'disk and could NOT be included:')
+        for m in missing:
+            title = m.get('title') or '(untitled)'
+            print(f'  - {m["file"]}  [{title}]')
+        print('The backup is incomplete; these will be broken images after '
+              'import. Re-upload them and export again for a full backup.')
 
 
 def do_import(args):

@@ -83,15 +83,47 @@ def _map_image_names(db):
     return names
 
 
+# Name of the JSON entry listing files the export could NOT include because
+# they were referenced by the database but absent on disk. Its presence in a
+# bundle is a breadcrumb for the import side and for a human opening the zip.
+MISSING_MANIFEST_NAME = 'missing_files.json'
+
+
 def export_bytes():
-    """Build the export .zip in memory and return its raw bytes.
+    """Build the export .zip in memory and return (raw_bytes, missing).
 
     Includes the normalized database (minus this machine's credentials, see
     PRIVATE_SETTINGS), every upload it references, and the interactive-map
-    background image(s). Files that are referenced but missing on disk are
-    simply skipped (best-effort).
+    background image(s).
+
+    A file that is referenced by the database but not present on disk cannot be
+    put in the bundle. Rather than dropping it *silently* -- which is how an
+    imported library ends up with a handful of broken images "at random" -- such
+    files are collected and returned in `missing`, and also written into the
+    bundle as MISSING_MANIFEST_NAME so the fact travels with the zip. The caller
+    (the Master UI / the CLI) is expected to surface `missing` to the user.
+
+    Before scanning, any absent PDF thumbnails are re-rendered on the fly
+    (they are generated lazily elsewhere, so an export taken right after an
+    upload could otherwise miss them); a thumb that still can't be produced is
+    reported like any other missing file rather than aborting the export.
     """
     db = storage.load_db()
+
+    # Re-render any missing PDF thumbnails so a freshly-uploaded PDF doesn't
+    # export without its preview. backfill_thumbs mutates the db in memory and
+    # returns True if it changed anything; persist so the names it filled in
+    # match what we are about to zip and what the DB now claims.
+    try:
+        from . import pdfs
+        if pdfs.backfill_thumbs(db):
+            storage.save_db(db)
+    except Exception:
+        # Thumbnail rendering must never block a backup. A thumb that couldn't
+        # be produced simply shows up in `missing` below.
+        pass
+
+    missing = []
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
         zf.writestr(MANIFEST_NAME,
@@ -106,6 +138,12 @@ def export_bytes():
                 src = os.path.join(storage.UPLOAD_DIR, name)
                 if os.path.exists(src):
                     zf.write(src, BUNDLE_UPLOADS + name)
+                else:
+                    # Referenced but gone: record which handout it belonged to
+                    # so the Master can find and re-upload it.
+                    missing.append({'file': name, 'handout_id': h.get('id'),
+                                    'title': h.get('title', ''),
+                                    'kind': 'upload'})
         # Interactive-map background image(s), from static/maps. Without this
         # the imported map_state would point at a file that never travelled,
         # leaving the map blank on the destination machine.
@@ -113,8 +151,16 @@ def export_bytes():
             src = os.path.join(storage.MAP_DIR, name)
             if os.path.exists(src):
                 zf.write(src, BUNDLE_MAPS + name)
+            else:
+                missing.append({'file': name, 'handout_id': None,
+                                'title': 'Interactive map background',
+                                'kind': 'map'})
+        # Leave a breadcrumb inside the bundle itself.
+        if missing:
+            zf.writestr(MISSING_MANIFEST_NAME,
+                        json.dumps(missing, indent=2, ensure_ascii=False))
     buf.seek(0)
-    return buf.getvalue()
+    return buf.getvalue(), missing
 
 
 def _read_bundle(zip_bytes):

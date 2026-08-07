@@ -44,6 +44,7 @@
                 <h1>{{ 'Join by QR' | t }} &#128241;</h1>
                 <p class="subtitle">{{ 'Point a phone camera at the code to open the player page.' | t }}</p>
             </div>
+            <button type="button" class="btn" id="browse-btn" aria-controls="drawer" aria-expanded="false">&#9776; {{ 'Browse' | t }}</button>
         </div>
 
         <div class="qr-wrap qr-print">
@@ -69,6 +70,9 @@
         {% set footer_page = 'qr.html' %}
         {% include '_footer.html' %}
     </div>
+
+    {# ---- Browse drawer: shared player navigation ---- #}
+    {% include 'player/_drawer.html' %}
 
     <script src="{{ url_for('static', filename='vendor/qrcode.min.js') }}"></script>
     <script>

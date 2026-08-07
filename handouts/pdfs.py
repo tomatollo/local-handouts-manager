@@ -1,9 +1,12 @@
-"""PDF rendering helpers: page images for the Book viewer, plus thumbnails.
+"""PDF rendering helpers: page images for the Book AND Carousel viewers, plus
+thumbnails.
 
-The Book viewer flips through images, so a PDF destined for it is converted
-into one image per page at upload (or when the Master switches a handout to
-Book). Carousel keeps the original PDF and just gets a first-page thumbnail
-so the card shows a real preview instead of a grey placeholder.
+Neither player viewer flips a live PDF: both show images. A PDF destined for
+either is therefore converted into one image per page at upload (or when the
+Master edits the handout). The Book viewer flips those pages with a page-curl;
+the Carousel steps through them with arrows/dots. In both cases the viewer only
+ever sees `reader: 'image'` entries, so there is a single rendering path and no
+<iframe> anywhere.
 
 Rendering is done with PyMuPDF (fitz). Everything here works on filenames
 inside storage.UPLOAD_DIR and returns file entries in the same shape the rest
@@ -16,9 +19,11 @@ import fitz  # PyMuPDF
 
 from . import storage
 
-# Render resolution. 110 DPI keeps handouts readable when zoomed on a tablet
-# without producing huge files for a table-side app.
-PAGE_DPI = 110
+# Render resolution. A scanned text page needs more detail than a pixel-art
+# map: 150 DPI keeps body text crisp when a page is flipped or zoomed on a
+# tablet, while still producing files light enough for a table-side LAN app.
+# (It was 110, which left PDF text soft and hard to read in the Book viewer.)
+PAGE_DPI = 150
 # Thumbnails only need to look right in a card, so they can be much smaller.
 THUMB_DPI = 40
 
@@ -122,6 +127,60 @@ def expand_pdfs_for_book(files, handout_id):
         if entry.get('thumb'):
             discarded.append({'filename': entry['thumb']})
     return out, discarded
+
+
+# The two viewers now expand PDFs identically -- both show images, neither
+# flips a live PDF -- so carousel expansion is just an alias with a name that
+# reads correctly at its call sites. Kept as a separate name (rather than
+# renaming expand_pdfs_for_book everywhere) so each caller still says which
+# viewer it is building for.
+expand_pdfs_for_carousel = expand_pdfs_for_book
+
+
+def expand_pdfs(files, handout_id):
+    """View-agnostic PDF -> page-images expansion for a file list.
+
+    Both viewers want the same thing now, so this is the plain entry point when
+    the caller doesn't care to name a viewer. Same contract as
+    expand_pdfs_for_book: returns (new_files, discarded).
+    """
+    return expand_pdfs_for_book(files, handout_id)
+
+
+def backfill_carousel_pdfs(db):
+    """Expand any still-PDF carousel pages across the library into images.
+
+    Older carousel handouts (saved when the carousel showed PDFs in an iframe)
+    still carry `reader: 'pdf'` page entries. The carousel now renders images
+    only, so those would otherwise have nothing to show. This walks the DB and
+    converts them in place, exactly like the upload path does for new files.
+
+    Non-destructive by design: unlike the upload/edit path, the original PDF
+    (and its thumb) are LEFT on disk rather than deleted, so this migration is
+    reversible -- a Master who preferred the iframe can restore the old
+    behaviour without having lost the source file. The cost is a little dead
+    disk space, which the Master can reclaim by re-saving the handout.
+
+    Book handouts are untouched here: their PDFs were already expanded at
+    upload, so they carry no `reader: 'pdf'` pages to find. Returns True if it
+    changed anything, so the caller can persist.
+    """
+    changed = False
+    for h in db.get('handouts', []):
+        files = h.get('files', [])
+        if not any(is_pdf(f) for f in files):
+            continue
+        new_files, _discarded = expand_pdfs(files, h['id'])
+        # _discarded intentionally ignored: we keep the source PDFs on disk
+        # (see the docstring). Only the DB record is updated to point at the
+        # freshly rendered images.
+        if new_files != files:
+            h['files'] = new_files
+            changed = True
+        # A PDF back cover, if any, is a single flip page in the Book viewer
+        # and is handled by that path; the carousel ignores back covers, so we
+        # leave back_cover alone here.
+    return changed
 
 
 def attach_thumbs(files):

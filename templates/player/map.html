@@ -98,7 +98,7 @@
                 <p class="subtitle"><a href="{{ url_for('player.home') }}">&lsaquo; {{ 'Back to Hub' | t }}</a></p>
                 <h1>{{ 'Map' | t }}</h1>
             </div>
-            <button type="button" class="btn" onclick="location.href='{{ url_for('player.home') }}'">&#9776; {{ 'Hub' | t }}</button>
+            <button type="button" class="btn" id="browse-btn" aria-controls="drawer" aria-expanded="false">&#9776; {{ 'Browse' | t }}</button>
         </div>
 
         <div class="panel">
@@ -129,6 +129,9 @@
         {% set footer_page = 'player/map.html' %}
         {% include '_footer.html' %}
     </div>
+
+    {# ---- Browse drawer: shared player navigation ---- #}
+    {% include 'player/_drawer.html' %}
 
     <script id="map-initial" type="application/json">{{ map_state | tojson }}</script>
     <script id="map-base" type="application/json">"{{ url_for('static', filename='maps/') }}"</script>

@@ -1128,7 +1128,9 @@ a.tag { text-decoration: none; }
   width: 100%;
   height: 100%;
   object-fit: contain;
-  image-rendering: pixelated;
+  /* Book pages are photos or rendered PDF scans, not pixel-art: smooth them
+     so flipped text stays legible rather than sharpened into jaggies. */
+  image-rendering: auto;
   display: block;
 }
 .book-page[data-density="hard"] { background: var(--bg-panel); }

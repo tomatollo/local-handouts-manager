@@ -9,7 +9,7 @@ registers the player and master blueprints. All data logic lives in the
 
 from datetime import timedelta
 
-from flask import Flask, g, render_template, request
+from flask import Flask, g, has_app_context, render_template, request
 from jinja2 import pass_context
 
 from handouts import auth, i18n, storage, theming, security
@@ -19,6 +19,28 @@ from handouts.routes_master import bp as master_bp
 
 def create_app():
     app = Flask(__name__)
+
+    # Give storage a per-request DB cache backed by flask.g, so the several
+    # before_request hooks + the context processor + the view share ONE read
+    # and parse of database.json instead of re-reading it on every call. The
+    # hooks live here (not in storage) so storage keeps no Flask dependency and
+    # still works from the CLI, where the cache is simply never installed.
+    # g is request-scoped, so nothing leaks between requests.
+    #
+    # Both hooks tolerate being called with no application context: load_db is
+    # invoked once during create_app() itself (auth.secret_key below), before
+    # any request exists, and touching g there would raise. `has_app_context`
+    # makes those calls fall through to a normal disk read instead.
+    def _db_cache_get():
+        if not has_app_context():
+            return None
+        return getattr(g, '_db_cache', None)
+
+    def _db_cache_set(db):
+        if has_app_context():
+            g._db_cache = db
+
+    storage.set_request_cache_hooks(_db_cache_get, _db_cache_set)
 
     # Signs the session cookie that carries the Master's unlocked state. It is
     # read once at boot from the env or the DB (auth.secret_key persists a
@@ -138,6 +160,16 @@ def create_app():
             'first_run': not auth.is_configured(db),
             # Per-session CSRF token for every POST form + the fetch() header.
             'csrf_token': security.get_token(),
+            # Folders + tags are provided globally so the shared player
+            # navigation drawer (templates/player/_drawer.html) renders its
+            # Folders/Tags shortcuts on EVERY page, including ones whose route
+            # doesn't build them (map, guide, qr). A route that passes its own
+            # `folders`/`tags` to render_template still overrides these, since
+            # explicit template args win over context-processor values -- so
+            # the hub and folder pages keep passing their already-filtered
+            # lists and nothing changes for them.
+            'folders': storage.all_folders(db),
+            'tags': storage.all_tags(db),
         }
 
     app.register_blueprint(player_bp)

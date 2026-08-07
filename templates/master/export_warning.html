@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'Export Warning' | t }}</title>
+    {% include '_head.html' %}
+</head>
+<body>
+    <div class="wrap">
+        <p class="subtitle"><a href="{{ url_for('master.transfer_page') }}">&lsaquo; {{ 'Back to Backup & Transfer' | t }}</a></p>
+        <h1>⚠️ {{ 'Some files are missing' | t }}</h1>
+
+        <div class="panel">
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'The database references these files, but they are not on disk, so they cannot be put in the backup. If you export anyway, they will show as broken images after importing on another device.' | t }}</p>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'Usually this means a handout was created but its image was later moved or deleted by hand. You can re-upload the file to the handout below, then export again for a complete backup.' | t }}</p>
+
+            <div class="h-meta" style="margin-bottom: 1rem;">
+                <span class="tag tag--session">{{ 'Missing files' | t }} {{ missing|length }}</span>
+            </div>
+
+            <ul class="import-list">
+                {% for m in missing %}
+                <li>
+                    <strong>{{ m.title or ('Untitled' | t) }}</strong>
+                    {% if m.kind == 'map' %}<span class="tag tag--viewer">{{ 'Map' | t }}</span>{% endif %}
+                    <br>
+                    <code style="opacity: 0.75; word-break: break-all;">{{ m.file }}</code>
+                    {% if m.handout_id %}
+                    &nbsp;<a href="{{ url_for('master.edit_handout', handout_id=m.handout_id) }}">{{ 'Fix this handout' | t }}</a>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="panel">
+            <a href="{{ url_for('master.export_library', force=1) }}" class="btn btn--block">{{ 'Download anyway (incomplete)' | t }}</a>
+            <a href="{{ url_for('master.transfer_page') }}" class="btn btn--ghost btn--block">{{ 'Cancel' | t }}</a>
+        </div>
+    </div>
+</body>
+</html>

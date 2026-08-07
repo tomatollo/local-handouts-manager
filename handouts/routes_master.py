@@ -179,18 +179,18 @@ def upload_handout():
             abort(400, f'File type not allowed: {back_file.filename}')
         back_cover = storage.save_back_cover(back_file, handout_id)
 
-    # The Book viewer flips images, so any PDF becomes one image per page.
-    # Carousel keeps its PDFs and just gets thumbnails below.
-    if view_type == 'book':
-        stored_files, dropped = pdfs.expand_pdfs_for_book(
-            stored_files, handout_id)
+    # Both viewers show images, never a live PDF. Expand every PDF into one
+    # image per page now, for Book AND Carousel alike -- the only difference
+    # left between the two is how the player steps through those images
+    # (page-curl vs arrows). A back cover is expanded the same way and, being a
+    # single page, keeps its first rendered page.
+    stored_files, dropped = pdfs.expand_pdfs(stored_files, handout_id)
+    storage.remove_files(dropped)
+    if back_cover and pdfs.is_pdf(back_cover):
+        pages, dropped = pdfs.expand_pdfs([back_cover], handout_id)
+        # A back cover is a single page: keep the first rendered page.
+        back_cover = pages[0]
         storage.remove_files(dropped)
-        if back_cover and pdfs.is_pdf(back_cover):
-            pages, dropped = pdfs.expand_pdfs_for_book(
-                [back_cover], handout_id)
-            # A back cover is a single page: keep the first rendered page.
-            back_cover = pages[0]
-            storage.remove_files(dropped)
 
     # Every remaining PDF gets a first-page thumbnail for its card preview.
     pdfs.attach_thumbs(stored_files)
@@ -317,17 +317,17 @@ def edit_handout(handout_id):
             storage.remove_files([handout['back_cover']])
         handout['back_cover'] = storage.save_back_cover(back_file, handout_id)
 
-    # --- PDFs: Book needs images, so convert any PDF now. This also covers
-    # the Master switching an existing Carousel handout over to Book. ---
-    if handout['view_type'] == 'book':
-        handout['files'], dropped = pdfs.expand_pdfs_for_book(
-            handout['files'], handout_id)
+    # --- PDFs: both viewers show images, so convert any PDF now. This also
+    # covers a handout that still had PDF pages from before the carousel
+    # rendered images, and the Master switching an existing handout's viewer. ---
+    handout['files'], dropped = pdfs.expand_pdfs(
+        handout['files'], handout_id)
+    storage.remove_files(dropped)
+    if handout.get('back_cover') and pdfs.is_pdf(handout['back_cover']):
+        pages, dropped = pdfs.expand_pdfs(
+            [handout['back_cover']], handout_id)
+        handout['back_cover'] = pages[0]
         storage.remove_files(dropped)
-        if handout.get('back_cover') and pdfs.is_pdf(handout['back_cover']):
-            pages, dropped = pdfs.expand_pdfs_for_book(
-                [handout['back_cover']], handout_id)
-            handout['back_cover'] = pages[0]
-            storage.remove_files(dropped)
 
     # Any PDF still around (Carousel) gets a first-page thumbnail.
     pdfs.attach_thumbs(handout['files'])
@@ -673,7 +673,21 @@ def set_theme():
 @bp.route('/export')
 @auth.master_required
 def export_library():
-    data = transfer.export_bytes()
+    """Download the whole library as a .zip.
+
+    export_bytes() returns the bundle AND a list of files it could not include
+    because they were referenced by the database but missing on disk. If that
+    list is non-empty we do NOT just stream the (incomplete) zip: a silently
+    partial backup is exactly the bug that leaves 'random' broken images after
+    an import. Instead we show a warning page listing what is missing, with a
+    'download anyway' button (?force=1) for when the Master knowingly accepts a
+    partial backup.
+    """
+    data, missing = transfer.export_bytes()
+
+    if missing and not request.args.get('force'):
+        return render_template('master/export_warning.html', missing=missing)
+
     return Response(
         data,
         mimetype='application/zip',
