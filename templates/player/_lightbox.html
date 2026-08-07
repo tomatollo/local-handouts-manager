@@ -12,6 +12,13 @@
             <button class="lightbox__nav lightbox__nav--prev" type="button" aria-label="{{ 'Previous' | t }}">&lsaquo;</button>
             <div class="lightbox__media"><!-- filled by JS --></div>
             <button class="lightbox__nav lightbox__nav--next" type="button" aria-label="{{ 'Next' | t }}">&rsaquo;</button>
+            {# Zoom controller: needed on desktop (no pinch) and handy on touch.
+               Buttons stay live in every viewer; pinch + drag are wired in JS. #}
+            <div class="lightbox__zoom" role="group" aria-label="{{ 'Zoom' | t }}">
+                <button type="button" class="lightbox__zoombtn" data-zoom="out" aria-label="{{ 'Zoom out' | t }}">&minus;</button>
+                <button type="button" class="lightbox__zoombtn lightbox__zoomlevel" data-zoom="reset" aria-label="{{ 'Reset zoom' | t }}">100%</button>
+                <button type="button" class="lightbox__zoombtn" data-zoom="in" aria-label="{{ 'Zoom in' | t }}">&plus;</button>
+            </div>
         </div>
         <div class="lightbox__dots"><!-- filled by JS --></div>
         <div class="lightbox__caption">
@@ -22,6 +29,19 @@
             <div class="lightbox__info" hidden>
                 <div class="lightbox__desc"></div>
                 <div class="lightbox__found"></div>
+                {# Always present under the discovery info: a player can type a
+                   password the Master shared to reveal a hidden handout, which
+                   opens here in place of the current one. Shown even when this
+                   handout has no secret -- the box gives nothing away, and the
+                   server simply answers "wrong password" to anything typed. #}
+                <form class="lightbox__secret" autocomplete="off">
+                    <input type="password" class="lightbox__secret-input"
+                           placeholder="{{ 'Password' | t }}"
+                           aria-label="{{ 'Password' | t }}"
+                           autocomplete="off">
+                    <button type="submit" class="btn lightbox__secret-btn">{{ 'Reveal' | t }}</button>
+                    <span class="lightbox__secret-msg" role="status" aria-live="polite"></span>
+                </form>
             </div>
         </div>
     </div>
@@ -38,6 +58,9 @@
         var foundEl = box.querySelector('.lightbox__found');
         var infoBtn = box.querySelector('.lightbox__infobtn');
         var infoEl = box.querySelector('.lightbox__info');
+        var secretForm = box.querySelector('.lightbox__secret');
+        var secretInput = box.querySelector('.lightbox__secret-input');
+        var secretMsg = box.querySelector('.lightbox__secret-msg');
         var prevBtn = box.querySelector('.lightbox__nav--prev');
         var nextBtn = box.querySelector('.lightbox__nav--next');
         var stage = box.querySelector('.lightbox__stage');
@@ -50,18 +73,85 @@
         var T = {
             showInfo: {{ 'Show info' | t | tojson }},
             hideInfo: {{ 'Hide info' | t | tojson }},
-            foundAt: {{ 'Found at' | t | tojson }}
+            foundAt: {{ 'Found at' | t | tojson }},
+            wrongPassword: {{ 'Wrong password.' | t | tojson }},
+            revealError: {{ 'Could not check that right now.' | t | tojson }}
         };
+
+        // Endpoint the secret-reveal form posts to. The CSRF header is added
+        // automatically by the global fetch wrapper (see _head.html).
+        var REVEAL_URL = "{{ url_for('player.reveal_secret') }}";
 
         var files = [];       // page files [{filename, reader, description}]
         var back = null;      // optional back-cover file entry
         var view = 'carousel';
+        var hardCovers = true; // book: draw cover + back cover as rigid pages
         var index = 0;        // carousel file index
         var pageFlip = null;  // StPageFlip instance (book mode)
+        var currentId = null; // id of the handout on screen, for secret reveals
         // Set per-open by the POP watcher so it can drop its banner when the
         // player dismisses the modal, however they dismissed it (button,
         // backdrop and Escape all funnel through close()).
         var onClose = null;
+
+        // ---- Zoom / pan state -------------------------------------------
+        // One controller shared by both viewers. `zoom` is the scale factor;
+        // panX/panY shift the scaled media so the reader can reach the parts
+        // that overflow. Applied as CSS custom properties on .lightbox__media
+        // (see the stylesheet), so nothing here reaches into individual pages.
+        var ZOOM_MIN = 1, ZOOM_MAX = 4, ZOOM_STEP = 0.05;
+        var zoom = 1, panX = 0, panY = 0;
+        var zoomLevelEl = box.querySelector('.lightbox__zoomlevel');
+
+        function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+        // Keep the pan within what the current zoom can actually reveal, so the
+        // media can't be dragged off into empty space. The travel each axis
+        // allows is roughly half the extra size zoom adds to the stage.
+        function clampPan() {
+            var rect = stage.getBoundingClientRect();
+            var maxX = Math.max(0, (rect.width * (zoom - 1)) / 2);
+            var maxY = Math.max(0, (rect.height * (zoom - 1)) / 2);
+            panX = clamp(panX, -maxX, maxX);
+            panY = clamp(panY, -maxY, maxY);
+        }
+
+        function applyZoom() {
+            clampPan();
+            media.style.setProperty('--zoom', zoom);
+            media.style.setProperty('--pan-x', panX + 'px');
+            media.style.setProperty('--pan-y', panY + 'px');
+            media.classList.toggle('is-zoomed', zoom > 1);
+            if (zoomLevelEl) zoomLevelEl.textContent = Math.round(zoom * 100) + '%';
+        }
+
+        // Reset to 1x with no pan. Called on every open, page change and close
+        // so a handout never opens already zoomed from the last one.
+        function resetZoom() {
+            zoom = 1; panX = 0; panY = 0;
+            media.classList.remove('is-zoomed', 'is-panning');
+            applyZoom();
+        }
+
+        // Zoom by a delta, keeping the current centre. `anchor` (optional) is a
+        // {x,y} client point (a pinch midpoint) the zoom should stay centred
+        // on, so pinching zooms toward the fingers rather than the middle.
+        function zoomBy(delta, anchor) {
+            var prev = zoom;
+            zoom = clamp(+(zoom + delta).toFixed(3), ZOOM_MIN, ZOOM_MAX);
+            if (zoom === prev) return;
+            if (anchor) {
+                // Shift pan so the anchor point stays put as the scale changes.
+                var rect = stage.getBoundingClientRect();
+                var cx = anchor.x - rect.left - rect.width / 2;
+                var cy = anchor.y - rect.top - rect.height / 2;
+                var ratio = zoom / prev;
+                panX = (panX - cx) * ratio + cx;
+                panY = (panY - cy) * ratio + cy;
+            }
+            if (zoom === 1) { panX = 0; panY = 0; }
+            applyZoom();
+        }
 
         function makeImage(f) {
             var img = document.createElement('img');
@@ -95,7 +185,7 @@
                 files.forEach(function (_, i) {
                     var d = document.createElement('span');
                     d.className = 'dot' + (i === index ? ' dot--active' : '');
-                    d.addEventListener('click', function () { index = i; renderCarousel(); });
+                    d.addEventListener('click', function () { index = i; renderCarousel(); resetZoom(); });
                     dots.appendChild(d);
                 });
             }
@@ -107,12 +197,14 @@
         // Cover and back are marked hard so they behave like a real binding.
         // =====================================================================
         function bookPages() {
-            // Returns an ordered list of {file, hard} descriptors.
+            // Returns an ordered list of {file, hard} descriptors. The cover
+            // (files[0]) and the back cover are hard ONLY when the handout asks
+            // for it; with hardCovers off they flip like any inner leaf.
             var pages = [];
             files.forEach(function (f, i) {
-                pages.push({ file: f, hard: i === 0 });   // cover is hard
+                pages.push({ file: f, hard: hardCovers && i === 0 });
             });
-            if (back) pages.push({ file: back, hard: true });
+            if (back) pages.push({ file: back, hard: hardCovers });
             return pages;
         }
 
@@ -175,22 +267,31 @@
             }
         }
 
-        // ---- info toggle (description + discovery), one button for all ----
+        // ---- info toggle (description + discovery + password), one button ----
+        // The button is ALWAYS shown now: even a handout with no description
+        // and no discovery text still carries the password box (a player may
+        // have been given a code to type), so "Show info" must always be there
+        // to reach it.
         function setupInfo(desc, foundText) {
             descEl.textContent = desc || '';
             descEl.style.display = desc ? '' : 'none';
             foundEl.textContent = foundText || '';
             foundEl.style.display = foundText ? '' : 'none';
-            var hasInfo = !!(desc || foundText);
-            infoBtn.hidden = !hasInfo;
+            infoBtn.hidden = false;
             infoEl.hidden = true;                 // collapsed by default
             infoBtn.textContent = T.showInfo;
+            // Clear any password + message left over from the previous handout.
+            if (secretInput) secretInput.value = '';
+            if (secretMsg) secretMsg.textContent = '';
         }
 
         // ---- navigation ----
         function step(delta) {
             if (view === 'book') {
                 if (!pageFlip) return;
+                // Turning a page always returns to 100%: you read a page zoomed,
+                // then flip to see the next one whole.
+                resetZoom();
                 if (delta > 0) pageFlip.flipNext();
                 else pageFlip.flipPrev();
                 return;
@@ -198,6 +299,7 @@
             if (files.length < 2) return;
             index = (index + delta + files.length) % files.length;
             renderCarousel();
+            resetZoom();
         }
 
         // ---- open / close ----
@@ -213,7 +315,15 @@
             back = (data && data.back_cover) || null;
 
             view = (data && data.view_type) || 'carousel';
+            // Default TRUE so a payload that omits the flag (an older POP, a
+            // hand-built call) keeps the original rigid-cover behaviour.
+            hardCovers = !(data && data.hard_covers === false);
             index = 0;
+            // Remember which handout is on screen so the password box knows
+            // which handout's secret to check against. A card open (from the
+            // hub) carries no id, which is fine: the reveal endpoint then finds
+            // no source and simply reports "wrong password".
+            currentId = (data && data.id) || null;
             dialog.setAttribute('data-view', view);
 
             titleEl.textContent = (data && data.title) || '';
@@ -228,6 +338,7 @@
             destroyBook();
             if (view === 'book') renderBook();
             else renderCarousel();
+            resetZoom();   // a freshly opened handout always starts at 100%
 
             box.hidden = false;
             box.setAttribute('aria-hidden', 'false');
@@ -245,6 +356,10 @@
             } catch (e) { data.back_cover = null; }
 
             data.view_type = card.getAttribute('data-view') || 'carousel';
+            // data-hard-covers is the string "false" only when explicitly off;
+            // absent or any other value keeps covers hard.
+            data.hard_covers = card.getAttribute('data-hard-covers') !== 'false';
+            data.id = card.getAttribute('data-id') || null;
             data.title = card.getAttribute('data-title') || '';
             data.description = card.getAttribute('data-desc') || '';
             data.found_location = card.getAttribute('data-location') || '';
@@ -254,6 +369,7 @@
 
         function close() {
             destroyBook();
+            resetZoom();
             box.hidden = true;
             box.setAttribute('aria-hidden', 'true');
             media.innerHTML = '';
@@ -265,6 +381,44 @@
             infoEl.hidden = !infoEl.hidden;
             infoBtn.textContent = infoEl.hidden ? T.showInfo : T.hideInfo;
         });
+
+        // ---- Secret reveal: type a password to open a hidden handout --------
+        // Posts the typed password + the handout currently on screen; on a
+        // match the server returns the linked handout, which we open right here
+        // in place of the current one (openData replaces everything). A wrong
+        // password just shows a short message and leaves the current handout be.
+        if (secretForm) {
+            secretForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var pw = (secretInput.value || '').trim();
+                if (!pw) return;
+                secretMsg.textContent = '';
+                secretForm.querySelector('.lightbox__secret-btn').disabled = true;
+                fetch(REVEAL_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ handout_id: currentId, password: pw })
+                })
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (data) {
+                        if (data && data.handout) {
+                            // Swap the current handout for the revealed one. It
+                            // opens through the same path as a POP or a click.
+                            openData(data.handout);
+                        } else {
+                            secretMsg.textContent = T.wrongPassword;
+                        }
+                    })
+                    .catch(function () { secretMsg.textContent = T.revealError; })
+                    .then(function () {
+                        var btn = secretForm.querySelector('.lightbox__secret-btn');
+                        if (btn) btn.disabled = false;
+                    });
+            });
+        }
 
         document.querySelectorAll('.handout-card').forEach(function (card) {
             card.addEventListener('click', function () { open(card); });
@@ -283,16 +437,131 @@
             if (e.key === 'Escape') close();
             else if (e.key === 'ArrowLeft') step(-1);
             else if (e.key === 'ArrowRight') step(1);
+            else if (e.key === '+' || e.key === '=') zoomBy(ZOOM_STEP);
+            else if (e.key === '-' || e.key === '_') zoomBy(-ZOOM_STEP);
+            else if (e.key === '0') resetZoom();
         });
 
-        // swipe for carousel only; StPageFlip handles its own touch in book mode
+        // ---- Zoom buttons (needed on desktop, where there is no pinch) ----
+        box.querySelectorAll('[data-zoom]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var kind = btn.getAttribute('data-zoom');
+                if (kind === 'in') zoomBy(ZOOM_STEP);
+                else if (kind === 'out') zoomBy(-ZOOM_STEP);
+                else resetZoom();
+            });
+        });
+
+        // ---- Mouse wheel zoom on desktop. The lightbox is a fullscreen modal,
+        //      so the wheel has nothing else to scroll here and zooming it is
+        //      the natural gesture; anchored at the pointer. ----------------
+        stage.addEventListener('wheel', function (e) {
+            e.preventDefault();
+            var anchor = { x: e.clientX, y: e.clientY };
+            zoomBy(e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP, anchor);
+        }, { passive: false });
+
+        // ---- Double-click / double-tap to toggle 1x <-> 2x ---------------
+        stage.addEventListener('dblclick', function (e) {
+            if (zoom > 1) resetZoom();
+            else zoomBy(1, { x: e.clientX, y: e.clientY });
+        });
+
+        // ---- Drag to pan (mouse), only meaningful while zoomed ------------
+        var panning = false, panStart = null;
+        stage.addEventListener('mousedown', function (e) {
+            if (zoom <= 1) return;
+            panning = true;
+            panStart = { x: e.clientX, y: e.clientY, px: panX, py: panY };
+            media.classList.add('is-panning', 'lightbox__media--live');
+            e.preventDefault();
+        });
+        document.addEventListener('mousemove', function (e) {
+            if (!panning) return;
+            panX = panStart.px + (e.clientX - panStart.x);
+            panY = panStart.py + (e.clientY - panStart.y);
+            applyZoom();
+        });
+        document.addEventListener('mouseup', function () {
+            if (!panning) return;
+            panning = false;
+            media.classList.remove('is-panning', 'lightbox__media--live');
+        });
+
+        // ---- Touch: pinch to zoom, one-finger drag to pan while zoomed ----
+        // Bound in the CAPTURE phase so that, when zoomed, we can claim the
+        // gesture before StPageFlip's own touch handlers on the book canvas
+        // see it -- otherwise a drag would flip the page instead of panning.
+        var pinchStart = null;   // { dist, zoom, midX, midY }
+        var touchPan = null;     // { x, y, px, py }
+
+        function touchDist(t) {
+            var dx = t[0].clientX - t[1].clientX;
+            var dy = t[0].clientY - t[1].clientY;
+            return Math.hypot(dx, dy);
+        }
+        function touchMid(t) {
+            return { x: (t[0].clientX + t[1].clientX) / 2,
+                     y: (t[0].clientY + t[1].clientY) / 2 };
+        }
+
+        stage.addEventListener('touchstart', function (e) {
+            if (e.touches.length === 2) {
+                // Two fingers: begin a pinch. Claim it so the book doesn't flip.
+                var t = e.touches;
+                var mid = touchMid(t);
+                pinchStart = { dist: touchDist(t), zoom: zoom, midX: mid.x, midY: mid.y };
+                media.classList.add('lightbox__media--live');
+                e.stopPropagation();
+                e.preventDefault();
+            } else if (e.touches.length === 1 && zoom > 1) {
+                // One finger while zoomed: pan, and stop the book from flipping.
+                touchPan = { x: e.touches[0].clientX, y: e.touches[0].clientY, px: panX, py: panY };
+                media.classList.add('is-panning', 'lightbox__media--live');
+                e.stopPropagation();
+            }
+        }, { capture: true, passive: false });
+
+        stage.addEventListener('touchmove', function (e) {
+            if (pinchStart && e.touches.length === 2) {
+                var t = e.touches;
+                var ratio = touchDist(t) / (pinchStart.dist || 1);
+                var target = clamp(pinchStart.zoom * ratio, ZOOM_MIN, ZOOM_MAX);
+                var mid = touchMid(t);
+                // Apply as an absolute set, anchored at the pinch midpoint.
+                zoomBy(target - zoom, { x: mid.x, y: mid.y });
+                e.stopPropagation();
+                e.preventDefault();
+            } else if (touchPan && e.touches.length === 1) {
+                panX = touchPan.px + (e.touches[0].clientX - touchPan.x);
+                panY = touchPan.py + (e.touches[0].clientY - touchPan.y);
+                applyZoom();
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        }, { capture: true, passive: false });
+
+        stage.addEventListener('touchend', function (e) {
+            if (pinchStart && e.touches.length < 2) {
+                pinchStart = null;
+                media.classList.remove('lightbox__media--live');
+                if (zoom === 1) resetZoom();
+            }
+            if (touchPan && e.touches.length === 0) {
+                touchPan = null;
+                media.classList.remove('is-panning', 'lightbox__media--live');
+            }
+        }, { capture: true, passive: false });
+
+        // swipe for carousel only; StPageFlip handles its own touch in book
+        // mode. Skipped entirely while zoomed -- there a one-finger drag pans.
         var startX = null;
         stage.addEventListener('touchstart', function (e) {
-            if (view === 'book') return;
+            if (view === 'book' || zoom > 1) return;
             startX = e.touches[0].clientX;
         }, {passive: true});
         stage.addEventListener('touchend', function (e) {
-            if (view === 'book' || startX === null) { startX = null; return; }
+            if (view === 'book' || zoom > 1 || startX === null) { startX = null; return; }
             var dx = e.changedTouches[0].clientX - startX;
             if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1);
             startX = null;

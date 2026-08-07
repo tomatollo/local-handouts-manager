@@ -56,6 +56,46 @@
         .btn--create { white-space: nowrap; }
         .master-layout { display: block; }
         .master-lists { width: 100%; }
+
+        /* ---- Collapsible sections + groups (Rows / Cards) ----
+           The section heading (Hidden/Public) and each group heading (a folder,
+           tag, session or format) can be toggled shut to tuck their contents
+           away. A chevron shows the state; the collapsed state is remembered
+           per heading in localStorage (see the collapse JS). */
+        .collapse-head {
+            cursor: pointer; user-select: none;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .collapse-head:hover { color: var(--accent, #e8a83a); }
+        /* The chevron rotates from pointing down (open) to right (collapsed). */
+        .collapse-caret {
+            display: inline-block; flex: 0 0 auto;
+            transition: transform 0.15s ease; font-size: 0.8em;
+            color: var(--ink-dim, #b8a888);
+        }
+        .is-collapsed > .collapse-head .collapse-caret,
+        .collapse-head.is-collapsed .collapse-caret { transform: rotate(-90deg); }
+        /* When collapsed, hide everything in the block except its own heading. */
+        .h-group.is-collapsed > *:not(.collapse-head) { display: none; }
+        .list-section.is-collapsed .list-scope { display: none; }
+        /* During an active search, collapse must not hide matches: this class
+           on the lists container overrides the collapse rules so every hit
+           shows regardless of collapsed state. `revert` drops back to whatever
+           the normal (non-collapsed) rules set, which differs between Rows and
+           Cards, so we don't hard-code a display value here. Removed when the
+           search box is empty. */
+        .master-lists.is-searching .h-group.is-collapsed > *:not(.collapse-head) { display: revert; }
+        .master-lists.is-searching .list-section.is-collapsed .list-scope { display: revert; }
+        /* Keyboard focus visibility for the toggles. */
+        .collapse-head:focus-visible {
+            outline: 2px solid var(--accent, #e8a83a); outline-offset: 2px;
+        }
+        /* A collapsed Tree node hides its descendant lines. */
+        .handout-tree .tree-line--hidden { display: none; }
+        .handout-tree .tree-toggle {
+            cursor: pointer; color: var(--accent, #e8a83a); font-weight: bold;
+        }
+        .handout-tree .tree-toggle:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -133,8 +173,14 @@
     {% else %}
     {% for g in groups %}
     {% if g.handouts %}
-    <div class="h-group">
-        {% if g.label %}<h4 class="h-group__head">{{ g.label }}</h4>{% endif %}
+    <div class="h-group" {% if g.label %}data-group-key="{{ g.label }}"{% endif %}>
+        {% if g.label %}
+        <h4 class="h-group__head collapse-head" tabindex="0" role="button" aria-expanded="true">
+            <span class="collapse-caret" aria-hidden="true">&#9662;</span>
+            <span class="collapse-head__label">{{ g.label }}</span>
+            <span class="count-badge">{{ g.handouts|length }}</span>
+        </h4>
+        {% endif %}
         {% for h in g.handouts %}{{ handout_item(h) }}{% endfor %}
     </div>
     {% endif %}
@@ -179,7 +225,7 @@
                             <div class="toolbar-cluster">
                                 <span class="toolbar-cluster__label">{{ 'Group by' | t }}</span>
                                 <div class="group-switch">
-                                    {% set gmodes = [('recent','Recent'), ('folder','Folders'), ('tag','Tags'), ('session','Sessions')] %}
+                                    {% set gmodes = [('recent','Recent'), ('folder','Folders'), ('tag','Tags'), ('session','Sessions'), ('format','Format')] %}
                                     {% for key, label in gmodes %}
                                     <a class="btn btn--ghost group-btn {% if mode == key %}group-btn--active{% endif %}"
                                        href="{{ url_for('master.dm_panel', by=key) }}">{{ label | t }}</a>
@@ -198,8 +244,9 @@
                     </div>
                     <p class="subtitle no-results" id="no-results" hidden>{{ 'No handouts match your search.' | t }}</p>
 
-                    <section class="list-section">
-                        <div class="panel-head">
+                    <section class="list-section" data-section-key="hidden">
+                        <div class="panel-head collapse-head" tabindex="0" role="button" aria-expanded="true">
+                            <span class="collapse-caret" aria-hidden="true">&#9662;</span>
                             <h2>{{ 'Hidden' | t }} <span class="count-badge">{{ hidden_count }}</span></h2>
                         </div>
                         <div class="list-scope dm-list" data-scope="hidden">
@@ -207,8 +254,9 @@
                         </div>
                     </section>
 
-                    <section class="list-section">
-                        <div class="panel-head">
+                    <section class="list-section" data-section-key="public">
+                        <div class="panel-head collapse-head" tabindex="0" role="button" aria-expanded="true">
+                            <span class="collapse-caret" aria-hidden="true">&#9662;</span>
                             <h2>{{ 'Public' | t }} <span class="count-badge">{{ public_count }}</span></h2>
                         </div>
                         <div class="list-scope dm-list" data-scope="public">
@@ -248,6 +296,11 @@
 
             function applySearch() {
                 var q = (search.value || '').trim().toLowerCase();
+                // Toggle a flag on the lists container so collapsed sections
+                // and groups reveal their matches while a search is active,
+                // then return to their collapsed state when the box is cleared.
+                var listsHost = document.querySelector('.master-lists');
+                if (listsHost) listsHost.classList.toggle('is-searching', !!q);
                 var anyVisible = false;
                 items.forEach(function (it) {
                     var hit = !q || (it.getAttribute('data-search') || '').indexOf(q) !== -1;
@@ -262,6 +315,68 @@
                 if (noResults) noResults.hidden = anyVisible;
             }
             if (search) search.addEventListener('input', applySearch);
+
+            // ---- Collapsible sections (Hidden/Public) + groups (folders,
+            //      tags, sessions, formats) for the Rows/Cards views. State is
+            //      remembered per heading in localStorage so the dashboard
+            //      reopens exactly as the Master left it. Keys include the
+            //      current grouping mode so 'Hidden > Maps' collapsed under
+            //      Folders doesn't also collapse a same-named group elsewhere.
+            var GROUP_MODE = {{ mode | tojson }};
+            var COLLAPSE_PREFIX = 'dm-collapse:';
+
+            function collapseKey(kind, id) {
+                // kind: 'section' | 'group'. id: scope, or 'mode|scope|label'.
+                return COLLAPSE_PREFIX + kind + ':' + id;
+            }
+            function isStored(key) {
+                try { return localStorage.getItem(key) === '1'; }
+                catch (e) { return false; }
+            }
+            function storeState(key, collapsed) {
+                try {
+                    if (collapsed) localStorage.setItem(key, '1');
+                    else localStorage.removeItem(key);
+                } catch (e) { /* storage disabled: state just isn't remembered */ }
+            }
+
+            function setCollapsed(el, head, collapsed, key) {
+                el.classList.toggle('is-collapsed', collapsed);
+                if (head) head.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+                if (key) storeState(key, collapsed);
+            }
+
+            // Wire one collapsible block: clicking (or Enter/Space on) its head
+            // toggles it; its initial state is read from storage.
+            function wireCollapsible(el, head, key) {
+                if (!el || !head) return;
+                setCollapsed(el, head, isStored(key), null);   // apply stored, don't rewrite
+                function toggle() {
+                    setCollapsed(el, head, !el.classList.contains('is-collapsed'), key);
+                }
+                head.addEventListener('click', toggle);
+                head.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+                });
+            }
+
+            // Sections: Hidden / Public.
+            [].forEach.call(document.querySelectorAll('.list-section[data-section-key]'), function (sec) {
+                var head = sec.querySelector('.panel-head.collapse-head');
+                var key = collapseKey('section', sec.getAttribute('data-section-key'));
+                wireCollapsible(sec, head, key);
+            });
+            // Groups: each folder/tag/session/format block, scoped by its
+            // section so identically-named groups on the two sides are distinct.
+            [].forEach.call(document.querySelectorAll('.dm-list[data-scope]'), function (scopeEl) {
+                var scope = scopeEl.getAttribute('data-scope');
+                [].forEach.call(scopeEl.querySelectorAll('.h-group[data-group-key]'), function (grp) {
+                    var head = grp.querySelector('.h-group__head.collapse-head');
+                    var label = grp.getAttribute('data-group-key');
+                    var key = collapseKey('group', GROUP_MODE + '|' + scope + '|' + label);
+                    wireCollapsible(grp, head, key);
+                });
+            });
 
             // ---- Rows / cards / tree view switch (remembered on this laptop) ----
             var scopes = [].slice.call(document.querySelectorAll('.dm-list'));
@@ -296,6 +411,12 @@
             // Roots are Hidden / Public; under each, the current grouping's
             // folders (a group with no label becomes "Ungrouped"); leaves are
             // handout titles linking to their edit page. Pure box-drawing text.
+            //
+            // Nodes (roots and groups) are collapsible: clicking one hides every
+            // deeper line beneath it until the next line at the same or a
+            // shallower depth. Collapsed state is remembered in localStorage
+            // under the same scheme as the Rows/Cards collapse, so a tree node
+            // and its list counterpart share nothing and don't fight.
             function buildTree() {
                 var pre = document.getElementById('handout-tree');
                 if (!pre) return;
@@ -306,18 +427,41 @@
                     { label: "{{ 'Public' | t }}", scope: 'public' }
                 ];
 
-                function line(prefix, connector, text, sourceItem) {
+                // Each rendered line records its depth and, if it's a node, a
+                // stable key. We keep the list so a toggle can walk forward and
+                // hide the node's descendants.
+                var lines = [];   // { span, depth, nodeKey|null, collapsed }
+
+                function makeLine(prefix, connector, text, depth, opts) {
+                    opts = opts || {};
                     var span = document.createElement('span');
                     span.className = 'tree-line';
                     span.appendChild(document.createTextNode(prefix + connector));
-                    if (sourceItem) {
+                    if (opts.sourceItem) {
                         var a = document.createElement('a');
                         a.href = '#'; a.textContent = text; a.className = 'tree-leaf';
                         a.addEventListener('click', function (e) {
                             e.preventDefault();
-                            showDetail(sourceItem, a);
+                            showDetail(opts.sourceItem, a);
                         });
                         span.appendChild(a);
+                    } else if (opts.nodeKey) {
+                        // A collapsible node: the label itself is the toggle.
+                        var t = document.createElement('span');
+                        t.textContent = text; t.className = 'tree-node tree-toggle';
+                        t.setAttribute('role', 'button');
+                        t.setAttribute('tabindex', '0');
+                        span.appendChild(t);
+                        var rec = { span: span, depth: depth, nodeKey: opts.nodeKey, collapsed: false };
+                        function toggleNode() { setTreeCollapsed(rec, !rec.collapsed, true); }
+                        t.addEventListener('click', toggleNode);
+                        t.addEventListener('keydown', function (e) {
+                            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleNode(); }
+                        });
+                        span.appendChild(document.createTextNode('\n'));
+                        pre.appendChild(span);
+                        lines.push(rec);
+                        return rec;
                     } else {
                         var b = document.createElement('span');
                         b.textContent = text; b.className = 'tree-node';
@@ -325,13 +469,16 @@
                     }
                     span.appendChild(document.createTextNode('\n'));
                     pre.appendChild(span);
+                    lines.push({ span: span, depth: depth, nodeKey: null, collapsed: false });
+                    return null;
                 }
 
                 roots.forEach(function (root, ri) {
                     var scopeEl = document.querySelector('.dm-list[data-scope="' + root.scope + '"]');
                     var rootLast = ri === roots.length - 1;
-                    line('', rootLast ? '└── ' : '├── ', root.label + '/');
-                    var childPrefix = rootLast ? '    ' : '│   ';
+                    makeLine('', rootLast ? '\u2514\u2500\u2500 ' : '\u251c\u2500\u2500 ',
+                             root.label + '/', 0, { nodeKey: 'tree|' + root.scope });
+                    var childPrefix = rootLast ? '    ' : '\u2502   ';
 
                     var groups = scopeEl ? [].slice.call(scopeEl.querySelectorAll('.h-group')) : [];
                     // Only groups that actually have items (search may hide some).
@@ -339,29 +486,68 @@
                         return g.querySelectorAll('.h-item').length > 0;
                     });
                     if (!realGroups.length) {
-                        line(childPrefix, '└── ', "{{ 'empty' | t }}");
+                        makeLine(childPrefix, '\u2514\u2500\u2500 ', "{{ 'empty' | t }}", 1, {});
                         return;
                     }
                     realGroups.forEach(function (g, gi) {
                         var gLast = gi === realGroups.length - 1;
                         var headEl = g.querySelector('.h-group__head');
                         var gname = headEl ? headEl.textContent.trim() : "{{ 'Ungrouped' | t }}";
-                        line(childPrefix, gLast ? '└── ' : '├── ', gname + '/');
-                        var itemPrefix = childPrefix + (gLast ? '    ' : '│   ');
+                        var gkey = g.getAttribute('data-group-key') || gname;
+                        makeLine(childPrefix, gLast ? '\u2514\u2500\u2500 ' : '\u251c\u2500\u2500 ',
+                                 gname + '/', 1, { nodeKey: 'tree|' + root.scope + '|' + gkey });
+                        var itemPrefix = childPrefix + (gLast ? '    ' : '\u2502   ');
 
                         var items = [].slice.call(g.querySelectorAll('.h-item'));
                         items.forEach(function (it, ii) {
                             var iLast = ii === items.length - 1;
                             var titleEl = it.querySelector('.h-title');
                             var title = titleEl ? titleEl.textContent.trim() : '(untitled)';
-                            line(itemPrefix, iLast ? '└── ' : '├── ', title, it);
+                            makeLine(itemPrefix, iLast ? '\u2514\u2500\u2500 ' : '\u251c\u2500\u2500 ',
+                                     title, 2, { sourceItem: it });
                         });
                     });
                 });
 
-                if (!pre.childNodes.length) {
+                if (!lines.length) {
                     pre.textContent = "{{ 'No handouts yet.' | t }}";
+                    return;
                 }
+
+                // Because nodes can nest (root > group), a single node's toggle
+                // isn't enough on its own; recompute all visibility from the set
+                // of collapsed nodes so ancestors always win.
+                function refreshTree() {
+                    // First clear.
+                    lines.forEach(function (l) { l.span.classList.remove('tree-line--hidden'); });
+                    // For each collapsed node, hide its subtree.
+                    lines.forEach(function (rec) {
+                        if (!rec.nodeKey || !rec.collapsed) return;
+                        var idx = lines.indexOf(rec);
+                        for (var i = idx + 1; i < lines.length; i++) {
+                            if (lines[i].depth <= rec.depth) break;
+                            lines[i].span.classList.add('tree-line--hidden');
+                        }
+                    });
+                }
+
+                window.__refreshTree = refreshTree;   // used by setTreeCollapsed
+
+                // Apply any stored collapsed state, then paint once.
+                lines.forEach(function (rec) {
+                    if (rec.nodeKey && isStored(collapseKey('tree', rec.nodeKey))) {
+                        rec.collapsed = true;
+                    }
+                });
+                refreshTree();
+            }
+
+            // Toggle a tree node's collapsed flag, persist it, and repaint the
+            // whole tree so nested collapses compose correctly.
+            function setTreeCollapsed(rec, collapsed, persist) {
+                rec.collapsed = collapsed;
+                if (persist) storeState(collapseKey('tree', rec.nodeKey), collapsed);
+                if (window.__refreshTree) window.__refreshTree();
             }
 
             // Show the clicked handout as a card in the side panel. We clone the

@@ -591,6 +591,74 @@ select {
   background: #fff;
 }
 
+/* ---- Zoom controller -------------------------------------------
+   The whole media area is scaled + panned via a CSS transform set from JS
+   (--zoom / --pan-x / --pan-y). Works for both viewers because it transforms
+   the container, not a single <img>. When zoomed past 1x the media grabs
+   pointer/touch to pan; at 1x it behaves exactly as before. */
+.lightbox__media {
+  /* Defaults; JS overrides these three custom properties as the user zooms. */
+  --zoom: 1;
+  --pan-x: 0px;
+  --pan-y: 0px;
+  touch-action: pinch-zoom;   /* let the browser hand us pinch gestures */
+}
+.lightbox__media > * {
+  transform: translate(var(--pan-x), var(--pan-y)) scale(var(--zoom));
+  transform-origin: center center;
+  /* A short ease on button zooms; JS clears it during pinch/drag so those
+     track the finger 1:1 without lag. */
+  transition: transform 0.08s linear;
+}
+/* While actively pinching or dragging we add this class to kill the easing. */
+.lightbox__media--live > * { transition: none; }
+/* Zoomed in: show a grab cursor on desktop and stop the image capping its own
+   height, so panning can actually reveal the parts that overflow. */
+.lightbox__media.is-zoomed { cursor: grab; }
+.lightbox__media.is-zoomed.is-panning { cursor: grabbing; }
+.lightbox__media.is-zoomed img { max-height: none; }
+
+/* The +/-/reset cluster, pinned bottom-centre of the stage. */
+.lightbox__zoom {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  gap: 4px;
+  background: var(--bg-panel);
+  border: var(--px) solid var(--border);
+  box-shadow: var(--px) var(--px) 0 0 var(--shadow);
+  padding: 4px;
+}
+.lightbox__zoombtn {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  line-height: 1;
+  color: var(--border);
+  background: var(--accent);
+  border: 2px solid var(--border);
+  min-width: var(--tap);
+  min-height: var(--tap);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.lightbox__zoombtn:active { transform: translate(2px, 2px); }
+@media (hover: hover) {
+  .lightbox__zoombtn:hover { background: #f2bd5a; }
+}
+/* The middle button shows the current level (e.g. "150%") and resets on tap;
+   it's wider than the +/- squares to fit the text. */
+.lightbox__zoomlevel {
+  min-width: 64px;
+  font-size: 0.6rem;
+}
+/* The stage must be the positioning context for the cluster + clip the panned
+   media so a zoomed page never spills over the dialog chrome. */
+.lightbox__stage { position: relative; overflow: hidden; }
+
 .lightbox__nav {
   flex: 0 0 auto;
   font-family: var(--font-display);

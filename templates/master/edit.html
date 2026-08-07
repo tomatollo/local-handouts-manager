@@ -45,6 +45,14 @@
                     {% endfor %}
                 </select>
 
+                {# Book only: rigid cover + back cover, or soft-flipping ones. #}
+                <label class="folder-choice" style="margin-top:10px;">
+                    <input type="checkbox" name="hard_covers" value="1"
+                           {% if handout.hard_covers %}checked{% endif %}>
+                    {{ 'Hard covers (Book viewer)' | t }}
+                </label>
+                <p class="subtitle">{{ 'When on, the first and last page turn like a stiff book cover. Turn off to flip them like normal pages.' | t }}</p>
+
                 <label>{{ 'Folders' | t }} <span class="hint">{{ 'optional' | t }}</span></label>
                 {% if folders %}
                 <p class="subtitle">{{ 'A handout can live in several folders.' | t }}</p>

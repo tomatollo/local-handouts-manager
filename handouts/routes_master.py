@@ -23,7 +23,7 @@ bp = Blueprint('master', __name__)
 IMPORT_TMP_DIR = os.path.join(storage.BASE_DIR, 'data', 'import_tmp')
 
 # Grouping modes the master can pick for its two lists.
-MASTER_MODES = ('recent', 'folder', 'tag', 'session')
+MASTER_MODES = ('recent', 'folder', 'tag', 'session', 'format')
 
 
 # --------------------------------------------------------------------------
@@ -164,12 +164,22 @@ def upload_handout():
             abort(400, f'File type not allowed: {f.filename}')
 
     handout_id = storage.new_handout_id()
+    # Record the ORIGINAL format now, from the uploaded files, BEFORE the PDF
+    # expansion below turns a .pdf into .png pages. This is what the master's
+    # "Group by Format" view sorts on, so a PDF handout stays 'pdf' even though
+    # its stored pages become images.
+    source_format = storage.source_format_from_uploads(files)
     # Per-file descriptions arrive as new_desc, one input per file in order.
     descriptions = request.form.getlist('new_desc')
     stored_files = storage.save_files(files, handout_id,
                                       descriptions=descriptions)
 
     view_type = storage.clean_view_type(request.form.get('view_type'))
+    # Book viewer: an unticked "hard covers" box makes the cover and back cover
+    # flip like ordinary pages instead of stiff boards. A checkbox that is off
+    # sends no field at all, so absence means False here. Default-on lives in
+    # the create form's `checked` attribute and in _normalize for old records.
+    hard_covers = bool(request.form.get('hard_covers'))
 
     # Optional back cover (only meaningful for the Book viewer).
     back_cover = None
@@ -219,6 +229,8 @@ def upload_handout():
         'tags': storage.parse_tags(request.form.get('tags')),
         'folders': folder_ids,
         'view_type': view_type,
+        'hard_covers': hard_covers,
+        'source_format': source_format,
         'back_cover': back_cover,
         'session_number': storage.parse_session_number(
             request.form.get('session_number')),
@@ -258,6 +270,11 @@ def edit_handout(handout_id):
     handout['tags'] = storage.parse_tags(request.form.get('tags'))
     handout['view_type'] = storage.clean_view_type(
         request.form.get('view_type'))
+    # Book viewer: hard vs soft covers (see upload_handout). Off = no field, so
+    # absence means the Master unticked it. `source_format` is deliberately NOT
+    # touched here: it records what the handout ORIGINALLY was, so adding or
+    # swapping files in an edit doesn't relabel a PDF handout as PNG.
+    handout['hard_covers'] = bool(request.form.get('hard_covers'))
     handout['folders'] = storage.valid_folder_ids(
         db, request.form.getlist('folders'))
     handout['session_title'] = request.form.get('session_title', '').strip()

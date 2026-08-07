@@ -146,6 +146,63 @@ def group_by_tag(handouts):
     return groups
 
 
+# jpg/jpeg fold together; mirrors storage.normalize_format so grouping matches
+# the format labels the rest of the app records. Kept local to avoid importing
+# storage into this pure-function module.
+_FORMAT_ALIASES = {'jpeg': 'jpg'}
+# Filename marker every PDF-rendered page carries (see pdfs.PDF_PAGE_MARKER /
+# storage._PDF_PAGE_MARKER). Lets a handout converted from PDF to PNG before
+# `source_format` was recorded still group under 'pdf'.
+_PDF_PAGE_MARKER = '_pdf'
+
+
+def _format_of(h):
+    """A handout's original format label ('pdf', 'png', ...) for grouping.
+
+    Resolution order mirrors storage.format_of_handout: an explicit
+    `source_format` wins; else the cover's '_pdf' marker recovers a converted
+    PDF; else the cover file's extension. Returns '' when unknown.
+    """
+    fmt = (h.get('source_format') or '').strip().lower().lstrip('.')
+    if fmt:
+        return _FORMAT_ALIASES.get(fmt, fmt)
+    files = h.get('files') or []
+    name = files[0].get('filename', '') if files else ''
+    if name and _PDF_PAGE_MARKER in name:
+        return 'pdf'
+    fmt = name.rsplit('.', 1)[1].lower() if '.' in name else ''
+    return _FORMAT_ALIASES.get(fmt, fmt)
+
+
+def group_by_format(handouts):
+    """Group handouts by their original file format for the master's view.
+
+    One section per format ('PDF', 'PNG', ...), ordered alphabetically, so the
+    Master can sweep up every handout of a kind at once. A handout belongs to
+    exactly ONE format group -- that of its cover file -- so the counts add up
+    to the list total, unlike tags/folders where a handout can repeat. Handouts
+    whose format can't be determined fall into a trailing "Other" group. The
+    label is upper-cased ('PDF', not 'pdf') because a bare extension reads as a
+    filename fragment, while the upper form reads as a category heading.
+    """
+    buckets = {}
+    unknown = []
+    for h in handouts:
+        fmt = _format_of(h)
+        if fmt:
+            buckets.setdefault(fmt, []).append(h)
+        else:
+            unknown.append(h)
+
+    groups = [{'label': fmt.upper(), 'key': fmt,
+               'handouts': sort_chronological(items)}
+              for fmt, items in sorted(buckets.items())]
+    if unknown:
+        groups.append({'label': 'Other', 'key': None,
+                       'handouts': sort_chronological(unknown)})
+    return groups
+
+
 def search(handouts, query):
     """Filter handouts by a free-text query (case-insensitive).
 
@@ -209,6 +266,7 @@ def group_by_mode(handouts, mode, folders):
       'folder'  -> section per folder (+ Orphans), NOT collection cards
       'tag'     -> section per tag (+ Untagged)
       'session' -> section per session
+      'format'  -> section per file format (+ Other)
       'recent'  -> a single unlabelled group, newest-first
     Any unknown mode collapses to 'recent'. Every group has label/key/handouts.
     """
@@ -218,6 +276,8 @@ def group_by_mode(handouts, mode, folders):
         return group_by_tag(handouts)
     if mode == 'session':
         return group_by_session(handouts)
+    if mode == 'format':
+        return group_by_format(handouts)
     # recent / default: one flat, newest-first group
     return [{'label': '', 'key': None,
              'handouts': sort_chronological(handouts)}]

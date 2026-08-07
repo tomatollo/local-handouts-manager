@@ -39,10 +39,12 @@
         "ulafiel"
       ],
       "folders": [],
-      "found_location": "",
-      "found_date": "Un amuleto d'argento circolare con il simbolo di Selune su un lato, e la scritta \"Con amore, da Ravaquirelle.\" sull'altro lato",
+      "found_location": "Underdark Chultiano - Tempio del Grande Fungo",
+      "found_date": "20 giorno di Solealto 1493 DR",
       "view_type": "carousel",
-      "back_cover": null
+      "back_cover": null,
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "994356c3ea0c41a680fab643305567bc",
@@ -70,7 +72,9 @@
       "found_location": "1 km da Campo Vendetta",
       "found_date": "30 Giorno di Solealto 1493 DR",
       "view_type": "carousel",
-      "back_cover": null
+      "back_cover": null,
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "0705a0a322194e84bb77225e75e32783",
@@ -78,10 +82,16 @@
       "description": "Una ricetta particolare ritrovata nella tenda del Comandante del Guanto d'Arme Nill SpaccaOssa. Pronunciando \"Non farò di meno\", la lettera rivela un testo celato magicamente.",
       "files": [
         {
-          "filename": "0705a0a322194e84bb77225e75e32783_0.pdf",
-          "reader": "pdf",
+          "filename": "0705a0a322194e84bb77225e75e32783_pdf1786100743_0.png",
+          "reader": "image",
           "description": "Pagina 1: \"Ricetta della Crostata Halfling Mele & More di Cuore di rosa\" - \"Per preparare questa dolce, profumata e rustica delizia tipica delle tavole halfling, vi occorreranno: pasta per crostata, mele a fettine sottili, more fresche, zucchero, cannella, amido di mais, burro, uovo e un goccio di succo di limone. Procedimento: - In una grande ciotola mescolate zucchero, cannella e un cucchiaio di amido. Unite le fettine di mela e mescolate con delicatezza finché non iniziano a rilasciare un po’ di succo. - Stendetela prima sfoglia e sistematela in uno stampo da crostata lasciando il bordo leggermente sporgente. - In una ciotola unite le more con un cucchiaio, o due, di zucchero, l’amido rimasto e poche gocce di limone. - Versate le more nello stampo, creando un fondo uniforme. Se siete dotati di un minimo di talento magico, con un artificio druidico potete far sprigionare alle more un aroma ancora più fragrante. - Aggiungete sopra il composto di mele e qualche fiocchetto di burro. - Coprite con il secondo disco di pasta, tagliando l’eccesso e ripiegando i bordi per sigillare bene. - Infornate finché la crostata non diventa dorata e profumata *Gli halfling più impazienti si dilettano ad accelerare il processo tramite prestidigitazione, ma in questo caso non lo consigliamo, le ricette migliori sono preparate col tempo Perfetta per una merenda da fattoria halfling o per portare un tocco di magia semplice, sicura e decisamente golosa alla vostra tavola!\" - Simbolo di una torta rosso. Pagina 2: \"Alla cortese attenzione del Comandante Spacca Ossa e del Capitano Salhana del Guanto d'Arme, Chult\" - \"Vi invitiamo alla massima prudenza qualora doveste avvistare giganti del gelo nelle vostre peregrinazioni. Nonostante la loro temibile presenza, non sono venuti a Chult per seminare distruzione né per ostilità verso l’Ordine. Il loro unico obiettivo è Artus Cimber. Vi consigliamo pertanto di evitare ogni scontro diretto. Quando possibile, lasciateli proseguire e non interferite. Siamo consapevoli che la diplomazia non sempre ottiene i risultati sperati, ma in questo caso la fuga potrebbe essere la scelta più saggia. Inoltre confermiamo la presenza di Maghi Rossi del Thay nella penisola. Non disponiamo ancora di informazioni certe sul responsabile della loro spedizione sospettiamo che più gruppi indipendenti siano all’opera. Alcuni sembrano essere di poco conto, ma abbiamo forti ragioni di credere che almeno uno sia guidato da un diretto sottoposto di Szass Tam. Comprendiamo bene quanto Valentine sia motivo di seria preoccupazione, l’implicazione degli Zentahrin non è mai un piacere, ma finché non riusciremo a tagliare la testa non c’è molto da farci. Vi terremo informati man mano che emergono nuovi dettagli. Qualora il gruppo di cui ci avete parlato fosse interessato a collaborare, L’Angolo Colorato di Porto Nyanzaru sarà disposto ad accoglierli nuovamente ad ali aperte. Comprendiamo la vostra prudenza e il desiderio di metterli alla prova, il nostro arpista sarà felice di aiutarvi. - in servizio per la verità,\" - Simbolo degli arpisti in blu.",
-          "thumb": "0705a0a322194e84bb77225e75e32783_0.pdf.thumb.png"
+          "thumb": null
+        },
+        {
+          "filename": "0705a0a322194e84bb77225e75e32783_pdf1786100743_1.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
         }
       ],
       "visible": true,
@@ -100,7 +110,9 @@
       "view_type": "carousel",
       "back_cover": null,
       "found_location": "Campo Vendetta",
-      "found_date": ""
+      "found_date": "",
+      "hard_covers": true,
+      "source_format": "pdf"
     },
     {
       "id": "011fc723cda04053a1792bd74c6baa52",
@@ -130,7 +142,9 @@
       "view_type": "carousel",
       "back_cover": null,
       "found_location": "Nephropia, nel retro del negozio di Chuka-Tuk.",
-      "found_date": "4 giorno della Dissolvenza 1943 DR"
+      "found_date": "4 giorno della Dissolvenza 1943 DR",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "3e79d44c62e849e89c3dd4e2f6f1f3fd",
@@ -158,7 +172,9 @@
       "found_date": "1 Giorno della Dissolvenza 1493 DR",
       "created_at": "2026-07-14T06:54:29.543712+00:00",
       "view_type": "carousel",
-      "back_cover": null
+      "back_cover": null,
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "5e9dd1fdeae3442e81f183ea9483984d",
@@ -181,10 +197,12 @@
       "session_number": 1,
       "session_title": "",
       "found_location": "Baia di Chult",
-      "found_date": "7 Solealto 1493 DR",
+      "found_date": "7 giorno di Solealto 1493 DR",
       "created_at": "2026-07-14T06:58:31.957009+00:00",
       "view_type": "carousel",
-      "back_cover": null
+      "back_cover": null,
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "09b8b4d03c0049a4819ba91cab345380",
@@ -340,9 +358,21 @@
           "reader": "image",
           "description": "",
           "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1786120517_0.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        },
+        {
+          "filename": "09b8b4d03c0049a4819ba91cab345380_1786120517_1.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
         }
       ],
-      "visible": false,
+      "visible": true,
       "category": "Libro",
       "tags": [
         "virfang"
@@ -359,7 +389,9 @@
         "reader": "image",
         "description": "",
         "thumb": null
-      }
+      },
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "e47d83c98c654f99bccbd49d27dc727a",
@@ -386,8 +418,10 @@
       "session_number": 1,
       "session_title": "",
       "found_location": "Qualche km da Campo Vendetta",
-      "found_date": "2 della Dissolvenza 1493 DR",
-      "created_at": "2026-07-14T16:46:45.518716+00:00"
+      "found_date": "2 giorno della Dissolvenza 1493 DR",
+      "created_at": "2026-07-14T16:46:45.518716+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "66f8a277e7694142872518d36af5e434",
@@ -395,10 +429,16 @@
       "description": "Una lettera consegnata a Virfang per Ylwar da Neilwil: \"Per quando la leggerà, digli di pronunciare il nostro saluto.",
       "files": [
         {
-          "filename": "66f8a277e7694142872518d36af5e434_0.pdf",
-          "reader": "pdf",
+          "filename": "66f8a277e7694142872518d36af5e434_pdf1786100743_0.png",
+          "reader": "image",
           "description": "Una lettera con in basso l'emblema di Lathander. Recita una preghiera: \"O Lathander, Signore del Mattino, che porti luce là dove le ombre si annidano, che guidi i passi dei tuoi figli con la fiamma del rinnovamento, io ti rendo grazie. Ogni alba è un nuovo dono, ogni raggio è speranza, ogni giorno è l’occasione di ritrovare i lsentiero smarrito. Benedici i fratelli che camminano lontani, proteggi chi non vediamo, custodisci coloro che hai chiamato a portare il fuoco dell’aurora. Che la tua luce, o Padre del Giorno, raggiunga ogni terra del Faerûn, ché non c’è luogo che il sole non tocchi, e non c’è cuore che non possa risorgere.”",
-          "thumb": "66f8a277e7694142872518d36af5e434_0.pdf.thumb.png"
+          "thumb": null
+        },
+        {
+          "filename": "66f8a277e7694142872518d36af5e434_pdf1786100743_1.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
         }
       ],
       "visible": true,
@@ -414,12 +454,14 @@
       "session_title": "",
       "found_location": "Isole Moonshae",
       "found_date": "1492 DR circa",
-      "created_at": "2026-07-14T16:53:47.795432+00:00"
+      "created_at": "2026-07-14T16:53:47.795432+00:00",
+      "hard_covers": true,
+      "source_format": "pdf"
     },
     {
       "id": "28a7a1b9b81f4a87b5f07c025f08ee57",
       "title": "Foglio BelvaDistorcente 2",
-      "description": "Un messaggio rinvenuto nel collare di una Belva Distorcente.",
+      "description": "Un messaggio rinvenuto nel collare di una Belva Distorcente nei paraggi del Cuore di Ubtao.",
       "files": [
         {
           "filename": "28a7a1b9b81f4a87b5f07c025f08ee57_0.png",
@@ -428,7 +470,7 @@
           "thumb": null
         }
       ],
-      "visible": false,
+      "visible": true,
       "category": "Documento",
       "tags": [
         "malar",
@@ -437,11 +479,13 @@
       "folders": [],
       "view_type": "carousel",
       "back_cover": null,
-      "session_number": null,
+      "session_number": 25,
       "session_title": "",
       "found_location": "Foresta di Chult",
-      "found_date": "",
-      "created_at": "2026-07-14T16:56:05.048441+00:00"
+      "found_date": "6o giorno della Dissolvenza 1493 DR",
+      "created_at": "2026-07-14T16:56:05.048441+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "91bf22ead2044d33a3b22c74c2a21efa",
@@ -455,7 +499,7 @@
           "thumb": null
         }
       ],
-      "visible": false,
+      "visible": true,
       "category": "Documento",
       "tags": [
         "bacino degli aldani"
@@ -467,33 +511,9 @@
       "session_title": "",
       "found_location": "Bacino degli Aldani",
       "found_date": "6 giorno della Dissolvenza 1493 DR",
-      "created_at": "2026-07-14T16:59:00.730401+00:00"
-    },
-    {
-      "id": "c5751df609b24b639450435153c4f581",
-      "title": "Mappa Chult",
-      "description": "Legenda: Pallini Rossi - Accampamenti Valentine, Pallini Azzurri - Crateri, Rombo Giallo - Torre druidica, Fiore Bianco - Driadi, Cuore - Cuore di Ubtao",
-      "files": [
-        {
-          "filename": "c5751df609b24b639450435153c4f581_0.png",
-          "reader": "image",
-          "description": "",
-          "thumb": null
-        }
-      ],
-      "visible": true,
-      "category": "Mappa",
-      "tags": [
-        "mappa"
-      ],
-      "folders": [],
-      "view_type": "carousel",
-      "back_cover": null,
-      "session_number": 24,
-      "session_title": "",
-      "found_location": "",
-      "found_date": "",
-      "created_at": "2026-07-14T17:09:03.439239+00:00"
+      "created_at": "2026-07-14T16:59:00.730401+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "882f117adff84fab965723e07635fca4",
@@ -521,7 +541,9 @@
       "session_title": "",
       "found_location": "Foresta di Chult",
       "found_date": "24 giorno di Solealto 1493 DR",
-      "created_at": "2026-07-14T17:25:20.318578+00:00"
+      "created_at": "2026-07-14T17:25:20.318578+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "f7d0a7bff8e042b5a5b1a28f2a3b3fd0",
@@ -529,10 +551,10 @@
       "description": "Una lettera diretta a Valneinte dal Professor Frastel. Trovata in un cassetto chiuso a chiave in una tenda al cratere.",
       "files": [
         {
-          "filename": "f7d0a7bff8e042b5a5b1a28f2a3b3fd0_0.pdf",
-          "reader": "pdf",
+          "filename": "f7d0a7bff8e042b5a5b1a28f2a3b3fd0_pdf1786100743_0.png",
+          "reader": "image",
           "description": "Una lettera che recita: \"Von: Professor Frastel.\" - \"Vis: Signor Valentine\" - \"Liebster Herr Valentine, Io vi ringrazio infinitamente per il vostro großzügig sostegno ai mei esperimentos. Senza il vostro finanziamento, la zienza sarebbe ridotta a semplice... ehm... curiosität dilettantistica, ja ja…\" - \"Come da vostra cortese richiesta, ho sviluppato una Trivella con punta in Adamantio per sondare il meteorite, nonostante la harte del materiale. Il meccanismo è manovrabile tramite le leve interne; può ospitare due persone al suo interno, garantendo sicurezza e... diciamo... un certo brivido. Io ho aggiunto, benché non fosse richiesto, una Leva per l'autodistruzione, che può attivare una pergamena contenente una Palla di Fuoco. Curiosamente, è la stessa leva che attiva anche la protezione Magica... Nessuno dovrebbe confondere le due funzioni, ma, ehm... io un piccolissimo errore spererei... sarebbe spettacolare, ja ja!\" - \"Per le faccende più delicate, sto ancora indagando su chi possa essere l'infiltrato che ha prestato ai marmocchi aiuto nel vile omicidio dei vostri scagnozzi al Ponte del Terzo Windo... ehm, Terzo Vento. Al momento, nessuna pista concreta, leider…\" - \"I sistemi di Teletrasporto nel Chult avanzano, sebbene ci sia continuo sabotaggio... sembra esserci qualcuno molto curioso dei mei progressi.\" - \"Vi ringrazio anche per le risorse a Porto Nyanzaru succulente a dir poco! La qualità dei campioni è... ehm... eccellente per i mei esperimentos, davvero.\" - \"E se posso osare un piccolo favore wissenschaftlich, mi chiedevo se possiamo usare gli avventurieri come cavie: in particolare l'orco e la tartaruga. Il loro sangue potrebbe contenere esattamente quello che cerchiamo per aprire le porte. Naturalmente, la richiesta è puramente... scientifica... ja ja.\" - \"Resto, come sempre, vostro umilissimo und devotissimo servitore della Zienza, Professor Frastel... Auf wiedersehen!\"",
-          "thumb": "f7d0a7bff8e042b5a5b1a28f2a3b3fd0_0.pdf.thumb.png"
+          "thumb": null
         }
       ],
       "visible": true,
@@ -550,7 +572,9 @@
       "session_title": "",
       "found_location": "Cratere di Drex",
       "found_date": "25 giorno di Solealto 1493 DR",
-      "created_at": "2026-07-14T17:31:43.874851+00:00"
+      "created_at": "2026-07-14T17:31:43.874851+00:00",
+      "hard_covers": true,
+      "source_format": "pdf"
     },
     {
       "id": "ea94a924c14944be8f8fdf32f560fc30",
@@ -558,10 +582,28 @@
       "description": "Una lettera diretta a Valneinte dal Professor Frastel. Trovate sulla scrivania in una tenda al cratere.",
       "files": [
         {
-          "filename": "ea94a924c14944be8f8fdf32f560fc30_0.pdf",
-          "reader": "pdf",
+          "filename": "ea94a924c14944be8f8fdf32f560fc30_pdf1786100744_0.png",
+          "reader": "image",
           "description": "Oggi ho dedicato gran parte della giornata a osservare con attenzione i flussi commerciali verso Porto Nyanzaru. Le navi arrivano cariche di merci provenienti da ogni angolo del Chult, e ogni scambio racconta qualcosa dello stato della città e dei suoi abitanti. La città pulsa di vita propria, eppure, se la si osserva con sufficiente pazienza, ogni movimento svela schemi precisi: quali merci vengono privilegiate, quali rotte sono più frequentate, chi procede con calma e chi sembra muoversi a tentoni tra le responsabilità quotidiane. Alcuni principi parlano di espansione, altri di ricchezze nascoste. Tutto questo, combinato, disegna una trama che appare quasi naturale, come se la città respirasse secondo leggi proprie, indipendenti da chi la governa. È affascinante vedere come le rotte commerciali si intreccino senza bisogno di intervento apparente, e quanto ogni dettaglio, per quanto piccolo, contribuisca a mantenere l’equilibrio complessivo. Le carte per l’organizzazione delle prime pattuglie sono pronte per la firma. Ho studiato attentamente la sequenza delle istruzioni, la disposizione dei dettagli e i piccoli segnali nascosti tra le righe. La maggior parte degli osservatori li ignorerebbe, ma chi presta attenzione percepisce la logica sottostante. Dispiegate le prime pattuglie, arrestato qualche criminale, tutti penseranno sia conveniente investire sui miei uomini. Porto Nyanzaru mi si venderà all’insegna della sicurezza e del controllo, diventerà così parte della mia Macchina Industriale… Ho concesso al professore pazzo, Frastel, una possibilità di mostrare ciò che sa fare: i suoi esperimenti potranno contribuire a illuminare alcune dinamiche più oscure della città, benché nessuno debba ancora sapere fino a che punto possano spingersi. L’ho anche sfidato con una missione ardua: costruirmi una trivella con la punta in adamantio (già forgiare la punta sarà una sfida) così che io riesca a estrarre qualsiasi materiale sia caduto dal cielo. Comunque sia, anche le piccole interazioni dei mercanti rivelano rivalità, ambizioni e desideri non espressi. Un carico spostato, un accordo concluso frettolosamente, un pagamento ritardato: tutti segnali che permettono di leggere la direzione in cui la città si muove e le opportunità che si aprono quasi senza che nessuno se ne accorga. La città è viva, e chi sa osservare può anticiparne i movimenti. Io come un predatore in un cespuglio sono pronto a divorarmi la preda. Il Chult non mi fa paura, è solo una bestia da domare, nulla che un collare forgiato a dovere non possa permettermi di fare. Provo pietà per il Guanto d’Arme, così debole da offrirmi accordi diplomatici. Penso che li accetterò, non voglio davvero fare loro del male, posso considerarli alleati finché fa loro comodo, magari vorranno anche lro un Braccio Robotico d’Arme. hahaha alla fine sta iniziando ad andare di moda! Mi è giunta voce di cittadini interessati ad un trapianto... Non sono giocattoli dovrebbero saperlo. Questa mattina ho esaminato alcuni frammenti di scritture che erano giunti a me tramite i mercanti più discreti. In apparenza non erano che pergamene malridotte, con passaggi consumati dal tempo e dall’umidità. Tuttavia, tra le righe ho riconosciuto qualcosa di nuovo, un dettaglio che mi era sfuggito e che, a giudicare dalle lacune lasciate dagli studiosi, non era noto neppure a Finian Stonefoot. Una piccola parte di profezia che accenna alla Fontana della Vita, celata dove il respiro della giungla incontra il battito del commercio. Sono fortunato ad avere rotte commerciali che portano questi tesori dalla Baia di Chessenta, il fiume Giada a volte dona tesori inaspettati! Sono rimasto colpito poi dalla precisione di certi simboli: non si tratta solo di immagini poetiche, ma di riferimenti concreti, tradotti in forme che, a chi non è avvezzo a leggere tra le ombre, parrebbero semplici decorazioni. Io, al contrario, vi intravedo indicazioni geografiche sottili. Ovviamente non posso permettere che queste informazioni cadano nelle mani di quei disgraziati e di quel maledetto e puzzolente halfling. Li conserverò a mio sito non lontano da Porto Nyanzaru, un magazzino costruito ai margini della foresta, utilizzato regolarmente da mercanti che vivono in funzione del movimento delle loro merci. Nessuno di loro sospetta quanto sia singolare il luogo che presidiano con tanta naturalezza.La scoperta mi ha dato un senso di vantaggio raro. Non è la completezza di una rivelazione, ma il sapore di una chiave che si intravede appena tra le dita. Quando si ha accesso a ciò che altri ignorano, anche la più piccola informazione diventa leva capace di spostare il peso delle cose. È questo il valore reale della conoscenza: non l’accumulo sterile, ma l’uso al momento opportuno. Mi domando quanto ancora resterà celato dietro i simboli di quella pergamena. Ogni frase interrotta, ogni tratto sbiadito mi provoca più di quanto non appaghi. Domani tornerò a confrontare questo frammento con gli appunti già raccolti, nella speranza che altri dettagli, invisibili oggi, diventino evidenti con la giusta luce. La mia assistente, quella puzzolente drow, trova necessario trovare un piano per mettermi al sicuro quando sarà giunto il momento. Io non ho paura dei marmocchi ma non posso sporcarmi le mani, ho strumenti importanti da manovrare al magazzino, quindi per ora le darò corda... È molto utile... E carina... Forse meglio di Ulafiel... Spero non sia una tipa gelosa! HAHAHAHAH Chissà magari verrà a farmi visita ;)",
-          "thumb": "ea94a924c14944be8f8fdf32f560fc30_0.pdf.thumb.png"
+          "thumb": null
+        },
+        {
+          "filename": "ea94a924c14944be8f8fdf32f560fc30_pdf1786100744_1.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        },
+        {
+          "filename": "ea94a924c14944be8f8fdf32f560fc30_pdf1786100744_2.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
+        },
+        {
+          "filename": "ea94a924c14944be8f8fdf32f560fc30_pdf1786100744_3.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
         }
       ],
       "visible": true,
@@ -578,7 +620,9 @@
       "session_title": "",
       "found_location": "Cratere di Drex",
       "found_date": "25 giorno di Solealto 1493 DR",
-      "created_at": "2026-07-14T17:38:45.290457+00:00"
+      "created_at": "2026-07-14T17:38:45.290457+00:00",
+      "hard_covers": true,
+      "source_format": "pdf"
     },
     {
       "id": "b96b1231e2004d2d873a8b3bb31de815",
@@ -586,10 +630,16 @@
       "description": "Delle pagine del diario di Valentine. Trovate sulla scrivania in una tenda al cratere.",
       "files": [
         {
-          "filename": "b96b1231e2004d2d873a8b3bb31de815_0.pdf",
-          "reader": "pdf",
+          "filename": "b96b1231e2004d2d873a8b3bb31de815_pdf1786100744_0.png",
+          "reader": "image",
           "description": "Porto Nyanzaru continua a mostrarsi come una fucina inesauribile di traffici, contatti e opportunità. La città sembra respirare al ritmo delle sue navi, eppure sotto questo battito regolare si muove sempre una corrente più profonda, invisibile a chi osserva soltanto la superficie. Oggi,tra le chiacchiere dei mercanti e il vociare delle banchine, è comparsa una figura curiosa: Volothamp Geddarm. È qui per far firmare copie della sua ultima opera, e come sempre raccoglie attorno a sé curiosi e perditempo. Mi diverte pensare che molti dei cittadini gli dedicheranno più attenzione di quanto non riservino alle decisioni che plasmano realmente il futuro della città. Forse è giusto così: il popolo ha bisogno di svaghi, come i bambini necessitano di fiabe prima di addormentarsi. Non posso fare a meno di chiedermi se persino quei quattro sciagurati che accompagnano Finian Stonefoot si lasceranno tentare dall’acquisto di un libro firmato. Forse qualche consiglio di viaggio mal confezionato potrebbe perfino salvar loro la pelle… benché, viste le loro capacità, il rischio che finiscano male resta comunque elevato. Certe pedine servono solo a ricordare quanto sia fragile la differenza tra chi osserva la scacchiera e chi vi si agita sopra senza comprendere le regole. Io, al contrario, continuo a consolidare il mio disegno. Le pattuglie che presto marceranno nelle strade daranno alla città un’impressione di ordine che neanche i Principi hanno saputo imporre. Gli scambi con i mercanti dipendenti dalle mie rotte si stanno intensificando; ognuno di loro pensa di guadagnarci, senza sospettare che ogni passo che muovono è già stato previsto. Persino il professore pazzo, con le sue invenzioni al limite del grottesco, si è dimostrato utile: la sua mente lavora come un ingranaggio instabile, ma un ingranaggio che, finché gira, produce movimento. È curioso osservare come anche i più deboli o i più eccentrici trovino posto in una macchina ben progettata. La città è la mia officina, e ogni elemento, dal mercante più influente al ladruncolo delle strade, può diventare una parte funzionale del processo. Chi non si adatta, inevitabilmente, si consuma. Gli dei sono utili a coloro che non sanno rimboccarsi e sporcarsi le mani... Eppure... Quella voce mi ha dato buoni consigli... Non so se è la mia mente geniale o qualcuno che mi sussurra dalle ombre... Sto tenendo questo diario per ricordarmi che le mie idee mi appartengono. PS. Il libro di Volo l’ho trovato sorprendentemente interessante, alcune delle belve descritte al suo interno, se lubrificate e scolpite per bene, possono diventare ingranaggi della grande macchina!",
-          "thumb": "b96b1231e2004d2d873a8b3bb31de815_0.pdf.thumb.png"
+          "thumb": null
+        },
+        {
+          "filename": "b96b1231e2004d2d873a8b3bb31de815_pdf1786100744_1.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
         }
       ],
       "visible": true,
@@ -606,7 +656,9 @@
       "session_title": "",
       "found_location": "Cratere di Drex",
       "found_date": "25 giorno di Solealto 1493 DR",
-      "created_at": "2026-07-14T17:43:55.451865+00:00"
+      "created_at": "2026-07-14T17:43:55.451865+00:00",
+      "hard_covers": true,
+      "source_format": "pdf"
     },
     {
       "id": "54d1360b49954b448a79977050957f69",
@@ -635,7 +687,9 @@
       "session_title": "",
       "found_location": "Campo Vendetta",
       "found_date": "20 giorno di Solealto 1493 DR",
-      "created_at": "2026-07-14T17:47:49.291979+00:00"
+      "created_at": "2026-07-14T17:47:49.291979+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "bd7b2498feda4355b66d0a284ffdc84b",
@@ -694,7 +748,9 @@
       "session_title": "Un nuovo Compagno",
       "found_location": "Campo Vendetta",
       "found_date": "2 giorno della Dissolvenza 1943 DR",
-      "created_at": "2026-07-14T17:52:24.700793+00:00"
+      "created_at": "2026-07-14T17:52:24.700793+00:00",
+      "hard_covers": true,
+      "source_format": "jpg"
     },
     {
       "id": "5f4e8b2714a94da1a792cb4dac57dbc9",
@@ -702,10 +758,16 @@
       "description": "Una lettera ambigua e particolare ritrovata nella tenda del Comandante del Guanto d'Arme Nill SpaccaOssa. Pronunciando \"Non farò di meno\", la lettera rivela un testo celato magicamente.",
       "files": [
         {
-          "filename": "5f4e8b2714a94da1a792cb4dac57dbc9_0.pdf",
-          "reader": "pdf",
+          "filename": "5f4e8b2714a94da1a792cb4dac57dbc9_pdf1785678044_0.png",
+          "reader": "image",
           "description": "Pagina 1: \"Per il Gran Fornaio Spatolossa dell’Ordine della Cucina Armata, Chult\" - \"I Pasticcioni stanno sperimentando attivamente nuove ricette a base di fragole nella pasticceria di Porto Croccanzaru. Alcuni dei nostri mastri dolciari hanno notato il celebre panettiere Santino Finfiasco accompagnato da un gruppo di promettenti apprendisti che gli fanno da assistenti. Uno dei nostri li ha osservati per parecchie giornate. Non sembrano impacciati, ma Loki, il dio verde, desta qualche preoccupazione: la sua tecnica è discutibile e certi suoi movimenti notturni in cucina sono al quanto insoliti. Stiamo cercando collaborazioni con la Confraternita delle Torte Segrete. Valberti, il famoso fornaio rivale, sta espandendo la sua pasticceria con troppa rapidità, e la sua influenza culinaria e commerciale è ora una minaccia concreta per l’equilibrio gastronomico.\" - \"- al servizio del gusto,\" -  Simbolo di una torta rosso. - Pagina 2: \"Per il Comandante Spacca Ossa dell’Ordine del Guanto D’Arme, Chult\"- \"Stiamo indagando attivamente sulle operazioni di Valentine a PortoNyanzaru. La sua crescente influenza economica e industriale rappresenta una minaccia concreta che non può essere sottovalutata. La sua espansione è rapida e ben orchestrata. Alcuni dei nostri agenti hanno recentemente individuato Finian Stonefoot, accompagnato da un gruppo di avventurieri che sembrano promettenti e che gli fanno da scorta. L'agente incaricato di questa comunicazione li ha seguiti per diverse notti, osservandoli attentamente. Non si direbbero una minaccia diretta, ma ci sono elementi che destano cautela. In particolare: Lopi, la piccola tartarugoide del gruppo, potrebbe nascondere qualcosa di oscuro. La sua storia personale presenta diverse lacune e i suoi ultimi movimenti, uniti a certi comportamenti notturni, non sono affatto incoraggianti. Stiamo iniziando a costruire i primi ponti diplomatici con la Ytepka, la Società dei Triceratopi, nella speranza di rafforzare la cooperazione locale. Ribadiamo che Valentine sta diventando troppo influente, e le sue operazioni meritano la massima attenzione da parte sia nostra che dell'Ordine.\" - \"- in servizio per la verità,\" - Simbolo degli arpisti in blu.",
-          "thumb": "5f4e8b2714a94da1a792cb4dac57dbc9_0.pdf.thumb.png"
+          "thumb": null
+        },
+        {
+          "filename": "5f4e8b2714a94da1a792cb4dac57dbc9_pdf1785678044_1.png",
+          "reader": "image",
+          "description": "",
+          "thumb": null
         }
       ],
       "visible": true,
@@ -723,8 +785,10 @@
       "session_number": 9,
       "session_title": "",
       "found_location": "Campo Vendetta",
-      "found_date": "",
-      "created_at": "2026-07-14T18:13:31.518355+00:00"
+      "found_date": "21 giorno di Solealto 1493 DR",
+      "created_at": "2026-07-14T18:13:31.518355+00:00",
+      "hard_covers": true,
+      "source_format": "pdf"
     },
     {
       "id": "6c101394e9674f9a86b146169c299baf",
@@ -732,10 +796,10 @@
       "description": "Una lettera da Valentine rinvenuta sul cadavere di un incantatore con un braccio robotico e la V di Valentine.",
       "files": [
         {
-          "filename": "6c101394e9674f9a86b146169c299baf_1784053910_0.pdf",
-          "reader": "pdf",
+          "filename": "6c101394e9674f9a86b146169c299baf_pdf1786100744_0.png",
+          "reader": "image",
           "description": "\"Ai Signori del Ponte del Terzo Vento\" - \"Cordiali salutazioni, e che i vostri nuovi bracci siano ben lubrificati.\" - \"14° giorno del Mese di Sole Alto, 1493 DR\" - \"| \"Non ogni pietra regge l’arco del futuro.\" - Io\" - \"Eccoci, miei brillanti relitti del progresso, stavolta non vi mando a caccia di lucertole o di sacerdoti isterici. Vi mando a fare una cosa semplice: camperare un ponte. C'è un gruppo di avventurieri in arrivo - e non preoccupatevi, sembrano usciti da una caricatura di un bardo ubriaco. Sono cinque, semplici punti: - Uno: una druida. Ha tatuaggi verdi e ridicoli, una magia primitiva e debole, probabilmente parla con le locuste... Queste le assomigliano molto… - Due: un orco. Immagino sia lì per sollevare cose e ringhiare. È duro da uccidere, sopratutto finché gli altri sono in piedi. - Tre: una tartaruga. Infantile. Non chiedetemi di spiegarvelo. - Quattro: un vecchio decrepito, utile quanto una fiala d’acqua santa in un’eruzione lavica. Rappresenta però un fastidioso sassolino nella scarpa. - Cinque: il motivo per cui siete lì — Finian Stonefoot. Lo voglio vivo. Sano sarebbe un bonus. Respirante è obbligatorio. Se muore, uno di voi muore al suo posto. Sarà una questione d’equilibrio, chiamiamola così.\" - \"Fate ciò che volete con gli altri. Schiacciateli, sezionateli, studiateli, teneteli per farvi compagnia nelle pause. Sopratutto l’elfa, lei potrebbe essere un interessante bocconcino... Sentitevi liberi di sperimentare con i nuovi bracci - l’ultima versione dovrebbe reagire bene con l’acido. Se l’orco sopravvive abbastanza a lungo da farvi sudare, prendete nota. Potrebbe tornare utile. La tartaruga… fateci qualcosa di creativo. Voglio ridere. Questo non è il fallimentare teatrino di Porto Nyanzaru. Non state rimpiazzando tre mediocri fannulloni con più entusiasmo che competenza. Quei tre non sono nemmeno tornati, peraltro. Non mi piace quando la merce difettosa non torna in fabbrica. C’è da dire che hanno trucchetti interessanti, vediamo come si difendono dalle loro stesse lame... Dite alla vostra maga di non risparmiarli. Li voglio fuori dai piedi. Occhi aperti. Nonostante la loro ridicolaggine apparente, il fatto che i vostri predecessori siano finiti letteralmente nel nulla mi costringe a supporre che questo gruppo abbia più denti di quanto sembri. Fate sembrare il tutto un’incidente… organico. Un agguato di qualche tribù selvatica, magari. Siate creativi ma non fate i poeti. Che la scintilla del futuro vi illumini.\" - \"Valentine, Detentore del Primo Ingranaggio, Ingegnere del Vero Ordine, Portavoce del Meccanismo Invisibile, Sterminatore di Chimere.\"",
-          "thumb": "6c101394e9674f9a86b146169c299baf_1784053910_0.pdf.thumb.png"
+          "thumb": null
         }
       ],
       "visible": true,
@@ -752,7 +816,9 @@
       "session_title": "",
       "found_location": "Foreste di Chult (Ponte del Terzo Vento)",
       "found_date": "17 giorno di Solealto 1493 DR",
-      "created_at": "2026-07-14T18:29:06.394981+00:00"
+      "created_at": "2026-07-14T18:29:06.394981+00:00",
+      "hard_covers": true,
+      "source_format": "pdf"
     },
     {
       "id": "6075d057d7e143bbb21cb6dc0c6c6b11",
@@ -760,10 +826,10 @@
       "description": "Una lettera dall'Enclave di Smeraldo, che è stata consegnata a Kaelen il 17 giorno di Solealto 1493 DR.",
       "files": [
         {
-          "filename": "6075d057d7e143bbb21cb6dc0c6c6b11_0.pdf",
-          "reader": "pdf",
+          "filename": "6075d057d7e143bbb21cb6dc0c6c6b11_pdf1786100744_0.png",
+          "reader": "image",
           "description": "\"All'attenzione di Kaelen Verdecrepuscolo\" - \"Guardia della Soglia Verde\" - \"Profondità nord-occidentali dell'Underdark, regione di Chult\" - \"Dalla mano dell’Enclave di Smeraldo\" - \"14° giorno del Mese di Sole Alto, 1493 DR\" - \"| “Non ogni radice sostiene l’albero che ha piantato.” – Vecchio detto dell’Est.\" - \"Druido Verdecrepuscolo, L'Enclave ha valutato con attenzione la posizione della Soglia Verde e il suo valore strategico per l’equilibrio naturale. Dopo un attento riesame dei nostri doveri più pressanti, è stato stabilito che la regione da te protetta non rientra più nelle priorità attuali del Circolo. Il tuo impegno, per quanto apprezzabile, ha prodotto risultati… sufficienti, ma le tue comunicazioni recenti sono apparse inquinate da interpretazioni personali delle direttive del Circolo. Alcuni tuoi resoconti, mostrano una certa drammatizzazione che non si confà alla compostezza druidica. Siamo certi comprenderai che, per il bene dell’equilibrio globale e per evitare fraintendimenti futuri, ogni supporto al tuo presidio sarà sospeso fino a data da definirsi. Ti invitiamo a non contattare ulteriormente le radici dell’Enclave finché non verrai nuovamente interpellato. Possa la linfa scorrere dove è necessaria.\" - \"- Firmato in nome dell’Enclave di Smeraldo Tholivar delle Fronde Gialle, Segretario Temporaneo del Circolo Occidentale\"",
-          "thumb": "6075d057d7e143bbb21cb6dc0c6c6b11_0.pdf.thumb.png"
+          "thumb": null
         }
       ],
       "visible": true,
@@ -778,7 +844,9 @@
       "session_title": "Il Grande Fungo",
       "found_location": "Foreste di Chult (Ponte del Terzo Vento)",
       "found_date": "20 giorno di Solealto 1493 DR",
-      "created_at": "2026-07-14T18:34:09.500040+00:00"
+      "created_at": "2026-07-14T18:34:09.500040+00:00",
+      "hard_covers": true,
+      "source_format": "pdf"
     },
     {
       "id": "31bcefb3ec394b419d4c28bdac9b5e09",
@@ -802,7 +870,9 @@
       "session_title": "",
       "found_location": "Torre Druidica",
       "found_date": "28 giorno di Solealto 1493 DR",
-      "created_at": "2026-07-14T18:46:01.691893+00:00"
+      "created_at": "2026-07-14T18:46:01.691893+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "aefb588d0f2f4465a1a954798009c473",
@@ -826,7 +896,9 @@
       "session_title": "",
       "found_location": "Torre Druidica",
       "found_date": "28 giorno di Solealto 1493 DR",
-      "created_at": "2026-07-14T18:48:31.176060+00:00"
+      "created_at": "2026-07-14T18:48:31.176060+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "0914c3e313244e98b25315d0a4ddddd1",
@@ -856,8 +928,10 @@
       "session_number": 17,
       "session_title": "Un ultimo saluto",
       "found_location": "Campo Vendetta",
-      "found_date": "1 giorno della Dissolvenza 1943 DR",
-      "created_at": "2026-07-14T18:51:23.189567+00:00"
+      "found_date": "1 giorno della Dissolvenza 1493 DR",
+      "created_at": "2026-07-14T18:51:23.189567+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "d8a1e08a088746c4953c9efb7e8adb8f",
@@ -887,8 +961,10 @@
       "session_number": 17,
       "session_title": "Un ultimo saluto",
       "found_location": "Campo Vendetta",
-      "found_date": "1 giorno della Dissolvenza 1943 DR",
-      "created_at": "2026-07-14T18:53:02.920641+00:00"
+      "found_date": "1 giorno della Dissolvenza 1493 DR",
+      "created_at": "2026-07-14T18:53:02.920641+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "52ac4c7e13934795b1bf557d785752c6",
@@ -918,8 +994,10 @@
       "session_number": 17,
       "session_title": "Un ultimo saluto",
       "found_location": "Campo Vendetta",
-      "found_date": "1 giorno della Dissolvenza 1943 DR",
-      "created_at": "2026-07-14T18:54:44.582854+00:00"
+      "found_date": "1 giorno della Dissolvenza 1493 DR",
+      "created_at": "2026-07-14T18:54:44.582854+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "d7aa2dcf5f014348ac5b6ef170c5782f",
@@ -949,8 +1027,10 @@
       "session_number": 17,
       "session_title": "Un ultimo saluto",
       "found_location": "Campo Vendetta",
-      "found_date": "1 giorno della Dissolvenza 1943 DR",
-      "created_at": "2026-07-14T18:55:47.452388+00:00"
+      "found_date": "1 giorno della Dissolvenza 1493 DR",
+      "created_at": "2026-07-14T18:55:47.452388+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "1c163fd0217f4be5bb7df97418d9d86d",
@@ -979,8 +1059,10 @@
       "session_number": 19,
       "session_title": "Un nuovo compagno",
       "found_location": "Campo Vendetta",
-      "found_date": "2 giorno della Dissolvenza 1943 DR",
-      "created_at": "2026-07-14T19:01:06.245304+00:00"
+      "found_date": "2 giorno della Dissolvenza 1493 DR",
+      "created_at": "2026-07-14T19:01:06.245304+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "0625b4578717417bb0226a9a69dcbc98",
@@ -988,10 +1070,10 @@
       "description": "Una lettera inviata prima dell'arrivo del gruppo e di Finian a Porto Nyanzaru",
       "files": [
         {
-          "filename": "0625b4578717417bb0226a9a69dcbc98_0.pdf",
-          "reader": "pdf",
+          "filename": "0625b4578717417bb0226a9a69dcbc98_pdf1786100745_0.png",
+          "reader": "image",
           "description": "\"Alla Stimatissima Guida, Lopi,\" - \"Oh, che emozione! Che trepidazione! Il gran giorno della nostra mirabolante impresa è alle porte, e io, Finian Stonefoot, umile esploratore e ardito indagatore delle memorie sepolte, fremo come una foglia nella brezza estiva del Chult!\" - \"Or dunque, mia nobile guida, il fato e le correnti ci condurranno prestamente a Porto Nyanzaru, ove la nostra imbarcazione getterà l'ancora nel porto principale. Ahimè, benché le storie da voi narrate siano gesta degne d’un cantico, ignoro quale sembianza vi appartenga! Così vi chiedo di farvi notare al nostro sbarco! Potete sventolare un vessillo? Oppure declamare un verso ispirato? Siate creativa, mia enigmatica salvatrice, ché io, e la mia illustre compagnia - un Umano d’intelletto affilato, un’Orco di vigore prodigioso e un’Elfa d’ineffabile grazia - vi cercheremo con occhi ardenti di speranza!\" - \"Attendendo il fatidico incontro, col cuore palpitante,\" - \"Finian Stonefoot, Scopritore d’Arcani e Cartografo dell’Ignoto\"",
-          "thumb": "0625b4578717417bb0226a9a69dcbc98_0.pdf.thumb.png"
+          "thumb": null
         }
       ],
       "visible": true,
@@ -1008,7 +1090,9 @@
       "session_title": "",
       "found_location": "",
       "found_date": "Solealto 1493 DR circa",
-      "created_at": "2026-07-14T19:11:32.778868+00:00"
+      "created_at": "2026-07-14T19:11:32.778868+00:00",
+      "hard_covers": true,
+      "source_format": "pdf"
     },
     {
       "id": "dc5533959bdc41f8997e73bf573fc70d",
@@ -1037,7 +1121,9 @@
       "session_title": "",
       "found_location": "",
       "found_date": "",
-      "created_at": "2026-07-14T19:17:11.567005+00:00"
+      "created_at": "2026-07-14T19:17:11.567005+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "8fe1436546ba4c97b89497ae0d41fa7f",
@@ -1067,7 +1153,9 @@
       "session_title": "",
       "found_location": "",
       "found_date": "",
-      "created_at": "2026-07-14T19:18:39.353183+00:00"
+      "created_at": "2026-07-14T19:18:39.353183+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "a32b4b9e43c347f288128bc734bf6ab1",
@@ -1098,7 +1186,9 @@
       "session_title": "",
       "found_location": "",
       "found_date": "",
-      "created_at": "2026-07-14T19:19:57.043173+00:00"
+      "created_at": "2026-07-14T19:19:57.043173+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "2b114d48ea884efa94207134254a331a",
@@ -1127,7 +1217,9 @@
       "session_title": "",
       "found_location": "",
       "found_date": "",
-      "created_at": "2026-07-14T19:20:35.107527+00:00"
+      "created_at": "2026-07-14T19:20:35.107527+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "59b6a3e42c5546809d82b698d4f48874",
@@ -1156,7 +1248,9 @@
       "session_title": "",
       "found_location": "",
       "found_date": "",
-      "created_at": "2026-07-14T19:21:17.065085+00:00"
+      "created_at": "2026-07-14T19:21:17.065085+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "568041382f6a4dc29416a0de0d42bc13",
@@ -1186,7 +1280,9 @@
       "session_title": "",
       "found_location": "",
       "found_date": "",
-      "created_at": "2026-07-14T19:22:03.726617+00:00"
+      "created_at": "2026-07-14T19:22:03.726617+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "361ed060cbe6465a8333b351814a3330",
@@ -1215,7 +1311,9 @@
       "session_title": "",
       "found_location": "",
       "found_date": "",
-      "created_at": "2026-07-14T19:22:48.474880+00:00"
+      "created_at": "2026-07-14T19:22:48.474880+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "c793dfadaee04ead97d5774c64c2f394",
@@ -1244,7 +1342,9 @@
       "session_title": "",
       "found_location": "",
       "found_date": "",
-      "created_at": "2026-07-14T19:23:28.144523+00:00"
+      "created_at": "2026-07-14T19:23:28.144523+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "e5ba5ad8c9d54edf8c00be1a12b9771f",
@@ -1273,7 +1373,9 @@
       "session_title": "",
       "found_location": "",
       "found_date": "",
-      "created_at": "2026-07-14T19:24:02.251650+00:00"
+      "created_at": "2026-07-14T19:24:02.251650+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "6813ad0ea6764ef78af7faede961c65d",
@@ -1300,7 +1402,9 @@
       "session_title": "",
       "found_location": "Nephropia",
       "found_date": "3 giorno della Dissolvenza 1943 DR",
-      "created_at": "2026-07-14T19:28:28.442439+00:00"
+      "created_at": "2026-07-14T19:28:28.442439+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "f27e8330b8f245f38e6a4729f1fbba60",
@@ -1328,7 +1432,9 @@
       "session_title": "",
       "found_location": "Porto Nyanzaru",
       "found_date": "7 giorno di Solealto 1493 DR",
-      "created_at": "2026-07-14T19:34:30.763637+00:00"
+      "created_at": "2026-07-14T19:34:30.763637+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     },
     {
       "id": "5139116571c8407ba67ddc4bbf85a98d",
@@ -1356,7 +1462,9 @@
       "session_title": "",
       "found_location": "",
       "found_date": "",
-      "created_at": "2026-07-15T15:50:52.607385+00:00"
+      "created_at": "2026-07-15T15:50:52.607385+00:00",
+      "hard_covers": true,
+      "source_format": "png"
     }
   ],
   "folders": [
@@ -1378,14 +1486,13 @@
     }
   ],
   "settings": {
-    "theme": "tomb-of-annihilation",
+    "theme": "curse-of-strahd",
     "secret_key": "676e1289b202983a3c4d344b37984a3f6ff9f20db5c05ce4524dc6cacf58c509",
     "pop": {
-      "seq": 2,
-      "handout_id": "0914c3e313244e98b25315d0a4ddddd1",
-      "at": "2026-07-15T12:01:51.588668+00:00"
-    },
-    "master_passphrase_hash": "scrypt:32768:8:1$4rIrihyxfZfFIh7V$c7900e81b5542078483b4b3bbcf969cdbea458840c9f51d8d4a581fca3b7b386a9de170df4b2ce490b51d68d4b893f64753a20319f31ab14da7f86a939c2cc65"
+      "seq": 5,
+      "handout_id": "3e79d44c62e849e89c3dd4e2f6f1f3fd",
+      "at": "2026-08-03T20:04:03.500343+00:00"
+    }
   },
   "wiki": [],
   "map_state": {
@@ -1580,7 +1687,6 @@
       "hex-27-5",
       "hex-28-6",
       "hex-27-6",
-      "hex-27-7",
       "hex-28-7",
       "hex-28-8",
       "hex-27-8",
@@ -2675,16 +2781,15 @@
       "hex-31-20",
       "hex-24-6",
       "hex-11-2",
-      "hex-13-13",
-      "hex-25-16"
+      "hex-13-13"
     ],
-    "marker_x": 47.96,
-    "marker_y": 47.13,
+    "marker_x": 48.06,
+    "marker_y": 46.9,
     "marker_visible": true,
     "grid_cols": 51,
     "grid_rows": 42,
     "fog_color": "#dbd7c2",
-    "map_image": "map_1785507379.png",
+    "map_image": "map_1785788892.png",
     "pending": {
       "revealed_hexes": [
         "hex-22-45",
@@ -3971,16 +4076,18 @@
         "hex-31-20",
         "hex-24-6",
         "hex-11-2",
-        "hex-13-13",
-        "hex-25-16"
+        "hex-13-13"
       ],
-      "marker_x": 47.96,
-      "marker_y": 47.13,
+      "marker_x": 48.06,
+      "marker_y": 46.9,
       "marker_visible": true,
+      "marker_scale": 1.25,
+      "marker_icon": "🐢",
+      "marker_color": "#c0533b",
       "grid_cols": 51,
       "grid_rows": 42,
       "fog_color": "#dbd7c2",
-      "map_image": "map_1785507379.png",
+      "map_image": "map_1785788892.png",
       "offset_x": 25.1,
       "offset_y": 29.36,
       "hex_size": 1.793,
@@ -3993,7 +4100,10 @@
           "always_visible": true,
           "icon": "Ⓥ",
           "color": "#ec0914",
-          "scale": 0.75
+          "scale": 1.0,
+          "category": "Valentine",
+          "icon_bg": false,
+          "icon_bg_color": "#241d18"
         },
         {
           "id": "poi-1785507214992-977599",
@@ -4003,7 +4113,10 @@
           "always_visible": true,
           "icon": "Ⓥ",
           "color": "#ec0914",
-          "scale": 0.75
+          "scale": 1.0,
+          "category": "Valentine",
+          "icon_bg": false,
+          "icon_bg_color": "#241d18"
         },
         {
           "id": "poi-1785507275110-691559",
@@ -4013,7 +4126,10 @@
           "always_visible": true,
           "icon": "Ⓥ",
           "color": "#ec0914",
-          "scale": 1.0
+          "scale": 1.0,
+          "category": "Valentine",
+          "icon_bg": false,
+          "icon_bg_color": "#241d18"
         },
         {
           "id": "poi-1785507349399-298569",
@@ -4023,37 +4139,49 @@
           "always_visible": true,
           "icon": "Ⓥ",
           "color": "#ec0914",
-          "scale": 0.8
+          "scale": 1.0,
+          "category": "Valentine",
+          "icon_bg": false,
+          "icon_bg_color": "#241d18"
         },
         {
           "id": "poi-1785507428720-193697",
           "label": "Cratere",
-          "x": 41.26,
-          "y": 32.0,
+          "x": 41.22,
+          "y": 32.32,
           "always_visible": true,
-          "icon": "",
+          "icon": "🌠",
           "color": "#3bd4e8",
-          "scale": 0.8
+          "scale": 1.0,
+          "category": "Cratere",
+          "icon_bg": false,
+          "icon_bg_color": "#241d18"
         },
         {
           "id": "poi-1785507534030-70201",
           "label": "Cratere",
-          "x": 34.52,
-          "y": 34.86,
+          "x": 34.46,
+          "y": 35.32,
           "always_visible": true,
-          "icon": "",
+          "icon": "🌠",
           "color": "#3bd4e8",
-          "scale": 0.8
+          "scale": 1.0,
+          "category": "Cratere",
+          "icon_bg": false,
+          "icon_bg_color": "#241d18"
         },
         {
           "id": "poi-1785507567518-896270",
           "label": "Torre Druidica",
-          "x": 39.9,
-          "y": 32.56,
+          "x": 39.91,
+          "y": 32.88,
           "always_visible": true,
-          "icon": "",
+          "icon": "🗼",
           "color": "#3be86f",
-          "scale": 0.7
+          "scale": 1.0,
+          "category": "",
+          "icon_bg": false,
+          "icon_bg_color": "#241d18"
         },
         {
           "id": "poi-1785507654950-636720",
@@ -4063,7 +4191,10 @@
           "always_visible": true,
           "icon": "",
           "color": "#e8a83a",
-          "scale": 0.8
+          "scale": 0.8,
+          "category": "",
+          "icon_bg": false,
+          "icon_bg_color": "#241d18"
         },
         {
           "id": "poi-1785507693958-740885",
@@ -4073,7 +4204,10 @@
           "always_visible": true,
           "icon": "",
           "color": "#e8a83a",
-          "scale": 0.8
+          "scale": 0.8,
+          "category": "",
+          "icon_bg": false,
+          "icon_bg_color": "#241d18"
         },
         {
           "id": "poi-1785507730446-948371",
@@ -4083,7 +4217,10 @@
           "always_visible": true,
           "icon": "",
           "color": "#e8a83a",
-          "scale": 0.75
+          "scale": 0.75,
+          "category": "",
+          "icon_bg": false,
+          "icon_bg_color": "#241d18"
         },
         {
           "id": "poi-1785507756848-331222",
@@ -4093,22 +4230,27 @@
           "always_visible": true,
           "icon": "Ⓥ",
           "color": "#ec0902",
-          "scale": 1.0
+          "scale": 1.0,
+          "category": "Valentine",
+          "icon_bg": false,
+          "icon_bg_color": "#241d18"
         },
         {
           "id": "poi-1785507804286-99973",
           "label": "Driadi",
-          "x": 57.36,
-          "y": 37.82,
+          "x": 57.32,
+          "y": 38.19,
           "always_visible": true,
           "icon": "✿",
           "color": "#fd81f9",
-          "scale": 0.7
+          "scale": 1.0,
+          "category": "",
+          "icon_bg": false,
+          "icon_bg_color": "#241d18"
         }
-      ],
-      "marker_scale": 0.6
+      ]
     },
-    "confirm_seq": 45,
+    "confirm_seq": 52,
     "offset_x": 25.1,
     "offset_y": 29.36,
     "hex_size": 1.793,
@@ -4121,7 +4263,10 @@
         "always_visible": true,
         "icon": "Ⓥ",
         "color": "#ec0914",
-        "scale": 0.75
+        "scale": 1.0,
+        "category": "Valentine",
+        "icon_bg": false,
+        "icon_bg_color": "#241d18"
       },
       {
         "id": "poi-1785507214992-977599",
@@ -4131,7 +4276,10 @@
         "always_visible": true,
         "icon": "Ⓥ",
         "color": "#ec0914",
-        "scale": 0.75
+        "scale": 1.0,
+        "category": "Valentine",
+        "icon_bg": false,
+        "icon_bg_color": "#241d18"
       },
       {
         "id": "poi-1785507275110-691559",
@@ -4141,7 +4289,10 @@
         "always_visible": true,
         "icon": "Ⓥ",
         "color": "#ec0914",
-        "scale": 1.0
+        "scale": 1.0,
+        "category": "Valentine",
+        "icon_bg": false,
+        "icon_bg_color": "#241d18"
       },
       {
         "id": "poi-1785507349399-298569",
@@ -4151,37 +4302,49 @@
         "always_visible": true,
         "icon": "Ⓥ",
         "color": "#ec0914",
-        "scale": 0.8
+        "scale": 1.0,
+        "category": "Valentine",
+        "icon_bg": false,
+        "icon_bg_color": "#241d18"
       },
       {
         "id": "poi-1785507428720-193697",
         "label": "Cratere",
-        "x": 41.26,
-        "y": 32.0,
+        "x": 41.22,
+        "y": 32.32,
         "always_visible": true,
-        "icon": "",
+        "icon": "🌠",
         "color": "#3bd4e8",
-        "scale": 0.8
+        "scale": 1.0,
+        "category": "Cratere",
+        "icon_bg": false,
+        "icon_bg_color": "#241d18"
       },
       {
         "id": "poi-1785507534030-70201",
         "label": "Cratere",
-        "x": 34.52,
-        "y": 34.86,
+        "x": 34.46,
+        "y": 35.32,
         "always_visible": true,
-        "icon": "",
+        "icon": "🌠",
         "color": "#3bd4e8",
-        "scale": 0.8
+        "scale": 1.0,
+        "category": "Cratere",
+        "icon_bg": false,
+        "icon_bg_color": "#241d18"
       },
       {
         "id": "poi-1785507567518-896270",
         "label": "Torre Druidica",
-        "x": 39.9,
-        "y": 32.56,
+        "x": 39.91,
+        "y": 32.88,
         "always_visible": true,
-        "icon": "",
+        "icon": "🗼",
         "color": "#3be86f",
-        "scale": 0.7
+        "scale": 1.0,
+        "category": "",
+        "icon_bg": false,
+        "icon_bg_color": "#241d18"
       },
       {
         "id": "poi-1785507654950-636720",
@@ -4191,7 +4354,10 @@
         "always_visible": true,
         "icon": "",
         "color": "#e8a83a",
-        "scale": 0.8
+        "scale": 0.8,
+        "category": "",
+        "icon_bg": false,
+        "icon_bg_color": "#241d18"
       },
       {
         "id": "poi-1785507693958-740885",
@@ -4201,7 +4367,10 @@
         "always_visible": true,
         "icon": "",
         "color": "#e8a83a",
-        "scale": 0.8
+        "scale": 0.8,
+        "category": "",
+        "icon_bg": false,
+        "icon_bg_color": "#241d18"
       },
       {
         "id": "poi-1785507730446-948371",
@@ -4211,7 +4380,10 @@
         "always_visible": true,
         "icon": "",
         "color": "#e8a83a",
-        "scale": 0.75
+        "scale": 0.75,
+        "category": "",
+        "icon_bg": false,
+        "icon_bg_color": "#241d18"
       },
       {
         "id": "poi-1785507756848-331222",
@@ -4221,25 +4393,33 @@
         "always_visible": true,
         "icon": "Ⓥ",
         "color": "#ec0902",
-        "scale": 1.0
+        "scale": 1.0,
+        "category": "Valentine",
+        "icon_bg": false,
+        "icon_bg_color": "#241d18"
       },
       {
         "id": "poi-1785507804286-99973",
         "label": "Driadi",
-        "x": 57.36,
-        "y": 37.82,
+        "x": 57.32,
+        "y": 38.19,
         "always_visible": true,
         "icon": "✿",
         "color": "#fd81f9",
-        "scale": 0.7
+        "scale": 1.0,
+        "category": "",
+        "icon_bg": false,
+        "icon_bg_color": "#241d18"
       }
     ],
     "focus": {
-      "seq": 7,
-      "x": 80.78,
-      "y": 88.98,
-      "scale": 0.717
+      "seq": 8,
+      "x": 47.35,
+      "y": 48.58,
+      "scale": 1.0
     },
-    "marker_scale": 0.6
+    "marker_scale": 1.25,
+    "marker_icon": "🐢",
+    "marker_color": "#c0533b"
   }
 }

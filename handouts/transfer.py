@@ -194,6 +194,8 @@ def _content_signature(h):
         'tags': sorted(h.get('tags', [])),
         'folders': sorted(h.get('folders', [])),
         'view_type': h.get('view_type', ''),
+        'hard_covers': h.get('hard_covers', True),
+        'source_format': h.get('source_format', ''),
         'session_number': h.get('session_number'),
         'session_title': h.get('session_title', ''),
         'found_location': h.get('found_location', ''),

@@ -116,6 +116,107 @@ def reader_for(ext):
 
 
 # --------------------------------------------------------------------------
+# File format (for the master's "Group by Format" view)
+#
+# `source_format` records the ORIGINAL kind of a handout -- 'pdf', 'png',
+# 'jpg', ... -- chosen from the first file the Master uploaded, BEFORE any
+# conversion. It matters because a PDF is now rendered to PNG pages at upload:
+# grouping by what sits on disk would file every PDF under "PNG", so we keep
+# the original format as its own field instead. It is a label for sorting only;
+# nothing about how the handout is viewed depends on it.
+# --------------------------------------------------------------------------
+
+# jpg/jpeg are the same format to a human sorting a shelf, so they fold together
+# under the shorter, more familiar 'jpg'.
+_FORMAT_ALIASES = {'jpeg': 'jpg'}
+# Shown for a handout whose format can't be determined (no files, hand-edited
+# record). Kept distinct from a real extension so it sorts into its own group.
+FORMAT_UNKNOWN = ''
+# Substring that pdfs.explode_to_pages bakes into every page it renders from a
+# PDF ('<id>_pdf<stamp>_<n>.png'). It is the one durable trace that a now-PNG
+# page began life as a PDF, so a handout converted BEFORE source_format was
+# recorded can still be grouped under 'pdf' instead of 'png'. Must stay in sync
+# with pdfs.PDF_PAGE_MARKER (kept as a literal here to avoid importing pdfs,
+# which imports this module).
+_PDF_PAGE_MARKER = '_pdf'
+
+
+def ext_of(filename):
+    """Lowercase extension of a filename without the dot, or '' if none."""
+    name = filename or ''
+    return name.rsplit('.', 1)[1].lower() if '.' in name else ''
+
+
+def normalize_format(ext):
+    """Fold an extension into its canonical format label (jpeg -> jpg, ...)."""
+    ext = (ext or '').strip().lower().lstrip('.')
+    return _FORMAT_ALIASES.get(ext, ext)
+
+
+def _looks_like_converted_pdf(h):
+    """True if this handout's pages look like they were rendered from a PDF.
+
+    A PDF is exploded into PNG pages whose names carry the '_pdf' marker (see
+    _PDF_PAGE_MARKER). A handout saved before source_format existed therefore
+    still betrays its PDF origin through those filenames. We require the COVER
+    (files[0]) to carry the marker: that is the page the format label is meant
+    to describe, and it avoids mislabelling an image handout that happens to
+    include one converted page.
+    """
+    files = h.get('files') or []
+    if not files:
+        return False
+    cover_name = files[0].get('filename', '') or ''
+    return _PDF_PAGE_MARKER in cover_name
+
+
+def format_of_handout(h):
+    """The handout's original format label for grouping.
+
+    Resolution order:
+      1. An explicit `source_format` recorded at upload -- always authoritative.
+      2. The '_pdf' filename marker on the cover: recovers handouts that were
+         converted from PDF to PNG BEFORE source_format was recorded, so those
+         still group under 'pdf' rather than 'png'.
+      3. The cover file's extension -- correct for plain image handouts.
+    Returns FORMAT_UNKNOWN when nothing can be determined.
+    """
+    fmt = normalize_format(h.get('source_format'))
+    if fmt:
+        return fmt
+    if _looks_like_converted_pdf(h):
+        return 'pdf'
+    files = h.get('files') or []
+    if files:
+        return normalize_format(ext_of(files[0].get('filename', '')))
+    return FORMAT_UNKNOWN
+
+
+def source_format_from_uploads(file_storages):
+    """Pick the original format label from a list of just-uploaded files.
+
+    Uses the FIRST file (the cover), mirroring how the rest of the app treats
+    files[0] as the handout's face. Called at upload time, before any PDF is
+    rendered to images, so a PDF handout is recorded as 'pdf' even though its
+    stored pages end up as PNG.
+    """
+    for f in file_storages:
+        if f and getattr(f, 'filename', ''):
+            return normalize_format(ext_of(f.filename))
+    return FORMAT_UNKNOWN
+
+
+def all_formats(db):
+    """Every distinct source format across handouts, sorted alphabetically."""
+    formats = set()
+    for h in db.get('handouts', []):
+        fmt = format_of_handout(h)
+        if fmt:
+            formats.add(fmt)
+    return sorted(formats)
+
+
+# --------------------------------------------------------------------------
 # Database load / save / normalize
 # --------------------------------------------------------------------------
 
@@ -293,6 +394,29 @@ def _normalize(data):
         h.setdefault('folders', [])
         # How players view this handout's files (carousel/book).
         h['view_type'] = clean_view_type(h.get('view_type'))
+        # Book viewer only: whether the first page (cover) and the back cover
+        # are drawn as RIGID "hard" pages -- the stiff card of a real binding --
+        # or flip like any inner leaf. Default True keeps every existing book
+        # exactly as it was; a Master can clear it to make the covers turn soft.
+        h.setdefault('hard_covers', True)
+        h['hard_covers'] = bool(h.get('hard_covers'))
+        # Original upload format ('pdf', 'png', ...), used only by the master's
+        # "Group by Format" view. Legacy records saved before this field gain a
+        # best-guess value from their cover file's extension, so they still
+        # group sensibly without a migration pass. (A converted PDF can't be
+        # recovered this way -- its cover is a PNG now -- but new PDF uploads
+        # record 'pdf' explicitly at upload time.)
+        if not h.get('source_format'):
+            h['source_format'] = format_of_handout(h)
+        # Optional secret reveal: a password the Master can set on a handout so
+        # that a player who types it into the viewer's info panel opens ANOTHER
+        # handout (a hidden twist, a decoded message, ...). Both are plain
+        # strings by design -- this is table theatre, not security, and the
+        # Master needs to see the password back when editing. Empty password
+        # means "no secret to reveal here".
+        h.setdefault('secret_password', '')
+        h.setdefault('secret_handout_id', None)
+
         # Optional back cover (a single file entry or None). Shown as the very
         # last page in the Book viewer. Ignored by the carousel.
         h.setdefault('back_cover', None)
@@ -344,6 +468,60 @@ def save_db(data):
 
 def find(db, handout_id):
     return next((h for h in db['handouts'] if h['id'] == handout_id), None)
+
+
+def player_payload(handout):
+    """The player-facing view of a handout: exactly what the lightbox opens.
+
+    One shared shape for every path that hands a handout to the client (the POP
+    poll and the secret-reveal endpoint), so the browser never needs a second
+    way to build a viewer. Deliberately omits master-only fields -- notably the
+    secret password itself, which must never travel to a player.
+    """
+    return {
+        'id': handout['id'],
+        'title': handout.get('title', ''),
+        'description': handout.get('description', ''),
+        'found_location': handout.get('found_location', ''),
+        'found_date': handout.get('found_date', ''),
+        'view_type': handout.get('view_type', DEFAULT_VIEW_TYPE),
+        'hard_covers': handout.get('hard_covers', True),
+        'files': handout.get('files', []),
+        'back_cover': handout.get('back_cover'),
+        # True when THIS handout itself carries a further secret reveal, so the
+        # viewer knows to keep showing the password box after a reveal chains
+        # into another handout. The password value is never included.
+        'has_secret': bool((handout.get('secret_password') or '').strip()
+                           and handout.get('secret_handout_id')),
+    }
+
+
+def reveal_secret(db, handout_id, password):
+    """Resolve a password typed on `handout_id` to the hidden handout it unlocks.
+
+    Returns the target handout's player_payload when `password` matches the
+    source handout's secret_password AND the linked target still exists;
+    otherwise None. Matching is exact but whitespace-trimmed on both sides, to
+    match how the Master typed it into the form.
+
+    No timing-safe compare and no hashing: this is a table gimmick guarding a
+    story beat, not a credential (see the module + auth notes). The target is
+    returned even if it is not `visible` -- typing the password IS the reveal,
+    so requiring a separate publish would defeat the feature.
+    """
+    source = find(db, handout_id)
+    if source is None:
+        return None
+    secret = (source.get('secret_password') or '').strip()
+    target_id = source.get('secret_handout_id')
+    if not secret or not target_id:
+        return None
+    if (password or '').strip() != secret:
+        return None
+    target = find(db, target_id)
+    if target is None:
+        return None
+    return player_payload(target)
 
 
 # --------------------------------------------------------------------------

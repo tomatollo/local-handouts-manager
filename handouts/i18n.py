@@ -116,6 +116,9 @@ CATALOG = {
         'No handouts match your search.': 'Nessun documento corrisponde alla ricerca.',
         'Hidden': 'Nascosti',
         'Public': 'Pubblici',
+        # ---- Group by: Format ----
+        'Format': 'Formato',
+        'Other': 'Altro',
         'Nothing hidden. Everything is public.':
             'Niente di nascosto. È tutto pubblico.',
         'Nothing published yet.': 'Ancora nulla di pubblicato.',
@@ -145,6 +148,14 @@ CATALOG = {
         'Description': 'Descrizione',
         'Category': 'Categoria',
         'Viewer': 'Visualizzatore',
+        # ---- Book covers (hard/soft) ----
+        'Book covers': 'Copertine libro',
+        'Hard covers': 'Copertine rigide',
+        'Hard covers (Book viewer)': 'Copertine rigide (visualizzatore Libro)',
+        'First and last page turn like a stiff cover. Uncheck to flip them softly.':
+            'La prima e l\'ultima pagina si girano come una copertina rigida. Deseleziona per sfogliarle come pagine normali.',
+        'When on, the first and last page turn like a stiff book cover. Turn off to flip them like normal pages.':
+            'Se attivo, la prima e l\'ultima pagina si girano come una copertina rigida. Disattiva per sfogliarle come pagine normali.',
         'comma-separated': 'separate da virgola',
         'Session #': 'Sessione n.',
         'Session Title': 'Titolo Sessione',

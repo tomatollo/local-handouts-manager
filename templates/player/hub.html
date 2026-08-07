@@ -126,11 +126,13 @@
                 {% for h in group.handouts %}
                 {% set cover = h.files[0] %}
                 <div class="h-item handout-card" role="button" tabindex="0"
+                     data-id="{{ h.id }}"
                      data-title="{{ h.title }}"
                      data-desc="{{ h.description }}"
                      data-location="{{ h.found_location }}"
                      data-date="{{ h.found_date }}"
                      data-view="{{ h.view_type }}"
+                     data-hard-covers="{{ 'true' if h.hard_covers else 'false' }}"
                      {% if h.back_cover %}data-back='{{ h.back_cover | tojson }}'{% endif %}
                      data-files='{{ h.files | tojson }}'>
                     <div class="h-thumb">
@@ -289,6 +291,8 @@
                     try { data.files = JSON.parse(clone.getAttribute('data-files')); } catch (e) { data.files = []; }
                     try { var b = clone.getAttribute('data-back'); data.back_cover = b ? JSON.parse(b) : null; } catch (e) { data.back_cover = null; }
                     data.view_type = clone.getAttribute('data-view') || 'carousel';
+                    data.hard_covers = clone.getAttribute('data-hard-covers') !== 'false';
+                    data.id = clone.getAttribute('data-id') || null;
                     data.title = clone.getAttribute('data-title') || '';
                     data.description = clone.getAttribute('data-desc') || '';
                     data.found_location = clone.getAttribute('data-location') || '';

@@ -126,17 +126,46 @@ def pop_status():
     age = storage.pop_age_seconds(pop) or 0
     payload['expires_in'] = max(0, int(storage.POP_TTL_SECONDS - age))
 
-    payload['handout'] = {
-        'id': handout['id'],
-        'title': handout.get('title', ''),
-        'description': handout.get('description', ''),
-        'found_location': handout.get('found_location', ''),
-        'found_date': handout.get('found_date', ''),
-        'view_type': handout.get('view_type', storage.DEFAULT_VIEW_TYPE),
-        'files': handout.get('files', []),
-        'back_cover': handout.get('back_cover'),
-    }
+    payload['handout'] = storage.player_payload(handout)
     return jsonify(payload)
+
+
+@bp.route('/api/reveal-secret', methods=['POST'])
+def reveal_secret():
+    """Open a handout hidden behind a password typed into the viewer.
+
+    The player types a password into any open handout's info panel; this checks
+    it against that handout's secret_password and, on a match, returns the
+    linked handout as a ready-to-open payload (the same shape as /api/pop, so
+    the lightbox opens it through exactly one code path).
+
+    Public by necessity -- players are never authenticated -- so the guards
+    live here, server-side:
+
+      * The password is checked against the SOURCE handout only. A wrong or
+        empty password yields the same {handout: null} as a source with no
+        secret at all, so the endpoint never tells a guesser whether a given
+        handout even has a secret to find.
+      * The source handout must itself be visible: a password box is only ever
+        shown on a revealed handout, and honouring it on a hidden one would
+        turn this into a way to probe unpublished handouts.
+      * The TARGET is returned even if hidden -- typing the password IS its
+        reveal (see storage.reveal_secret) -- but only ever reachable through a
+        correct password on a visible source, never enumerable on its own.
+    """
+    db = storage.load_db()
+    payload = request.get_json(silent=True) or {}
+    source_id = payload.get('handout_id')
+    password = payload.get('password')
+
+    source = storage.find(db, source_id)
+    # Fail closed and identically for "no such handout", "hidden handout" and
+    # "wrong password": the response must not distinguish these cases.
+    if source is None or not source.get('visible'):
+        return jsonify({'handout': None})
+
+    revealed = storage.reveal_secret(db, source_id, password)
+    return jsonify({'handout': revealed})
 
 
 @bp.route('/map')

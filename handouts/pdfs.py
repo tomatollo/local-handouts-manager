@@ -27,6 +27,13 @@ PAGE_DPI = 150
 # Thumbnails only need to look right in a card, so they can be much smaller.
 THUMB_DPI = 40
 
+# Marker embedded in the filename of every page rendered from a PDF (see
+# explode_to_pages: '<handout_id>_pdf<stamp>_<n>.png'). It's the one durable
+# trace that a now-PNG page STARTED life as a PDF, which lets the library
+# recover the original format of handouts converted before `source_format`
+# was recorded. Keep this in sync with the name built in explode_to_pages.
+PDF_PAGE_MARKER = '_pdf'
+
 
 def is_pdf(entry):
     """True if a file entry points at a PDF."""
@@ -89,6 +96,9 @@ def explode_to_pages(entry, handout_id):
             for i in range(count):
                 page = doc.load_page(i)
                 png = page.get_pixmap(dpi=PAGE_DPI).tobytes('png')
+                # The PDF_PAGE_MARKER ('_pdf') in this name is load-bearing:
+                # it is how a page that is now a PNG can still be recognised as
+                # having come from a PDF. Keep it if you change the scheme.
                 name = f'{handout_id}_pdf{stamp}_{i}.png'
                 with open(os.path.join(storage.UPLOAD_DIR, name), 'wb') as f:
                     f.write(png)

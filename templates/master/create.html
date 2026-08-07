@@ -53,6 +53,15 @@
                             </select>
                         </div>
 
+                        <div class="field">
+                            <label>{{ 'Book covers' | t }}</label>
+                            <label class="folder-choice">
+                                <input type="checkbox" name="hard_covers" value="1" checked>
+                                {{ 'Hard covers' | t }}
+                            </label>
+                            <p class="subtitle">{{ 'First and last page turn like a stiff cover. Uncheck to flip them softly.' | t }}</p>
+                        </div>
+
                         <div class="field field--wide">
                             <label for="tags">{{ 'Tags' | t }} <span class="hint">{{ 'comma-separated' | t }}</span></label>
                             <input type="text" id="tags" name="tags" list="tag-list"
