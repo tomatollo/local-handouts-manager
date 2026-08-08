@@ -9,7 +9,7 @@
 <body>
     <div class="wrap">
         <p class="subtitle"><a href="{{ url_for('master.dm_panel') }}">&lsaquo; {{ "Back to Master's Screen" | t }}</a></p>
-        <h1>{{ 'Import a Library' | t }}</h1>
+        <h1><a class="home-title" href="{{ url_for('master.dm_panel') }}">{{ 'Import a Library' | t }}</a></h1>
         <p class="subtitle">{{ 'Upload a .zip you exported from another computer. Nothing is changed until you review and confirm.' | t }}</p>
 
         {% if error %}

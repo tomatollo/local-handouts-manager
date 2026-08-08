@@ -41,7 +41,7 @@
     <div class="wrap">
         <div class="hub-top">
             <div>
-                <h1>{{ 'Join by QR' | t }} &#128241;</h1>
+                <h1><a class="home-title" href="{{ url_for('player.home') }}">{{ 'Join by QR' | t }}</a> &#128241;</h1>
                 <p class="subtitle">{{ 'Point a phone camera at the code to open the player page.' | t }}</p>
             </div>
             <button type="button" class="btn" id="browse-btn" aria-controls="drawer" aria-expanded="false">&#9776; {{ 'Browse' | t }}</button>

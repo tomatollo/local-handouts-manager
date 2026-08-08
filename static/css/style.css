@@ -887,6 +887,13 @@ a.tag { text-decoration: none; }
 }
 .hub-top .btn { flex: 0 0 auto; }
 
+/* A page title that doubles as a link home (player hub / master dashboard):
+   keep the heading's look (inherit colour, no underline) and only warm to the
+   accent on hover/focus. Applied on every page's <h1> via .home-title. */
+.home-title { color: inherit; text-decoration: none; }
+.home-title:hover,
+.home-title:focus-visible { color: var(--accent, #e8a83a); }
+
 .hub-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -1212,6 +1219,37 @@ a.tag { text-decoration: none; }
 }
 .lightbox__info { margin-top: 8px; }
 .lightbox__info[hidden] { display: none; }
+
+/* ---- Secret reveal: password box under the info panel ---- */
+.lightbox__secret {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+.lightbox__secret-input {
+  flex: 0 1 180px;
+  min-width: 0;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: var(--px) solid var(--border);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+.lightbox__secret-btn {
+  min-height: auto;
+  padding: 8px 12px;
+  font-size: calc(0.55rem * var(--display-scale));
+}
+.lightbox__secret-msg {
+  flex-basis: 100%;
+  color: var(--danger, #b23b3b);
+  font-size: 0.8rem;
+}
+.lightbox__secret-msg:empty { display: none; }
 
 /* ---- DM dashboard: compact lists inside the narrower left column ---- */
 .toolbar-right { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-width: 0; }

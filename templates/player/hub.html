@@ -40,7 +40,7 @@
     <div class="wrap">
         <div class="hub-top">
             <div>
-                <h1>{{ 'Welcome, Adventurers!' | t }}</h1>
+                <h1><a class="home-title" href="{{ url_for('player.home') }}">{{ 'Welcome, Adventurers!' | t }}</a></h1>
                 <p class="subtitle">{{ 'Handouts revealed by your Game Master appear below.' | t }}</p>
             </div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">

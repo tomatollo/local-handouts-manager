@@ -105,6 +105,15 @@ CATALOG = {
         'Show info': 'Mostra info',
         'Hide info': 'Nascondi info',
         'Found at': 'Trovato a',
+        'Zoom': 'Zoom',
+        'Zoom in': 'Ingrandisci',
+        'Zoom out': 'Riduci',
+        'Reset zoom': 'Ripristina zoom',
+        # ---- Player: secret reveal (password box in the viewer) ----
+        'Reveal': 'Rivela',
+        'Wrong password.': 'Password errata.',
+        'Could not check that right now.':
+            'Impossibile verificare al momento.',
 
         # ---- Master: dashboard ----
         'Master Dashboard': 'Pannello del Master',
@@ -161,6 +170,15 @@ CATALOG = {
         'Session Title': 'Titolo Sessione',
         'Place of Discovery': 'Luogo del Ritrovamento',
         'Date of Discovery': 'Data del Ritrovamento',
+        # ---- Secret reveal (master create/edit) ----
+        'Password': 'Password',
+        'A word the players must type':
+            'Una parola che i giocatori devono digitare',
+        'Handout to reveal': 'Documento da rivelare',
+        '— none —': '— nessuno —',
+        'hidden': 'nascosto',
+        "When a player types the password in this handout's info panel, the chosen handout opens in its place.":
+            'Quando un giocatore digita la password nel pannello info di questo documento, il documento scelto si apre al suo posto.',
         'Files': 'File',
         'images or PDF': 'immagini o PDF',
         'Select several images to build a carousel or book.':

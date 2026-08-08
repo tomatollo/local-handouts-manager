@@ -10,7 +10,7 @@
     <div class="wrap">
         <div class="hub-top">
             <div>
-                <h1>{{ 'Create a Handout' | t }} &#128220;</h1>
+                <h1><a class="home-title" href="{{ url_for('master.dm_panel') }}">{{ 'Create a Handout' | t }}</a> &#128220;</h1>
                 <p class="subtitle">{{ 'Upload a scroll, map or tome and file it away.' | t }}</p>
             </div>
             {% with active = 'create' %}{% include 'master/_menu.html' %}{% endwith %}
@@ -104,6 +104,23 @@
                         <div class="field">
                             <label for="found_date">{{ 'Date of Discovery' | t }}</label>
                             <input type="text" id="found_date" name="found_date" placeholder="15 Kythorn, 1492 DR">
+                        </div>
+
+                        <div class="field">
+                            <label for="secret_password">{{ 'Password' | t }} <span class="hint">{{ 'optional' | t }}</span></label>
+                            <input type="text" id="secret_password" name="secret_password"
+                                   placeholder="{{ 'A word the players must type' | t }}">
+                        </div>
+
+                        <div class="field">
+                            <label for="secret_handout_id">{{ 'Handout to reveal' | t }}</label>
+                            <select id="secret_handout_id" name="secret_handout_id">
+                                <option value="">{{ '— none —' | t }}</option>
+                                {% for other in handouts %}
+                                <option value="{{ other.id }}">{{ other.title }}{% if not other.visible %} ({{ 'hidden' | t }}){% endif %}</option>
+                                {% endfor %}
+                            </select>
+                            <p class="subtitle">{{ 'When a player types the password in this handout\'s info panel, the chosen handout opens in its place.' | t }}</p>
                         </div>
 
                         <div class="field field--wide">

@@ -96,7 +96,7 @@
         <div class="hub-top">
             <div>
                 <p class="subtitle"><a href="{{ url_for('player.home') }}">&lsaquo; {{ 'Back to Hub' | t }}</a></p>
-                <h1>{{ 'Map' | t }}</h1>
+                <h1><a class="home-title" href="{{ url_for('player.home') }}">{{ 'Map' | t }}</a></h1>
             </div>
             <button type="button" class="btn" id="browse-btn" aria-controls="drawer" aria-expanded="false">&#9776; {{ 'Browse' | t }}</button>
         </div>

@@ -9,7 +9,7 @@
 <body>
     <div class="wrap">
         <p class="subtitle"><a href="{{ url_for('master.transfer_page') }}">&lsaquo; {{ 'Back to Backup & Transfer' | t }}</a></p>
-        <h1>⚠️ {{ 'Some files are missing' | t }}</h1>
+        <h1>⚠️ <a class="home-title" href="{{ url_for('master.dm_panel') }}">{{ 'Some files are missing' | t }}</a></h1>
 
         <div class="panel">
             <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'The database references these files, but they are not on disk, so they cannot be put in the backup. If you export anyway, they will show as broken images after importing on another device.' | t }}</p>

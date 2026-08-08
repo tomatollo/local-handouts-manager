@@ -10,7 +10,7 @@
     <div class="wrap" style="max-width: 800px; margin: 0 auto; padding: 2rem;">
         <div class="hub-top">
             <div>
-                <h1>📖 {{ 'La Guida Completa' | t }}</h1>
+                <h1>📖 <a class="home-title" href="{% if master_unlocked %}{{ url_for('master.dm_panel') }}{% else %}{{ url_for('player.home') }}{% endif %}">{{ 'La Guida Completa' | t }}</a></h1>
                 <p class="subtitle">{{ 'Tutto quello che devi sapere su Local Handouts Manager' | t }}</p>
             </div>
             {% if master_unlocked %}

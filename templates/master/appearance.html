@@ -15,7 +15,7 @@
         <div class="hub-top">
             <div>
                 <p class="subtitle"><a href="{{ url_for('master.dm_panel') }}">&lsaquo; {{ "Back to Master's Screen" | t }}</a></p>
-                <h1>{{ 'Appearance' | t }}</h1>
+                <h1><a class="home-title" href="{{ url_for('master.dm_panel') }}">{{ 'Appearance' | t }}</a></h1>
             </div>
             {% with active = 'appearance' %}{% include 'master/_menu.html' %}{% endwith %}
         </div>

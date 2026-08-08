@@ -144,6 +144,7 @@ def create_page():
                            categories=storage.all_categories(db),
                            tags=storage.all_tags(db),
                            folders=folders,
+                           handouts=db['handouts'],
                            view_types=storage.VIEW_TYPES,
                            default_view_type=storage.DEFAULT_VIEW_TYPE,
                            passphrase_set=auth.is_configured(db))
@@ -219,6 +220,14 @@ def upload_handout():
     # visible -- and it only does so on an explicit, separately-labelled button.
     pop_now = bool(request.form.get('pop'))
 
+    # Optional secret reveal: a password + the handout it unlocks. The linked
+    # id is validated against the DB so stale form data can't point at nothing;
+    # an empty password disables the feature regardless of the linked id.
+    secret_password = request.form.get('secret_password', '').strip()
+    secret_handout_id = request.form.get('secret_handout_id', '').strip() or None
+    if secret_handout_id and storage.find(db, secret_handout_id) is None:
+        secret_handout_id = None
+
     db['handouts'].append({
         'id': handout_id,
         'title': title,
@@ -232,6 +241,8 @@ def upload_handout():
         'hard_covers': hard_covers,
         'source_format': source_format,
         'back_cover': back_cover,
+        'secret_password': secret_password,
+        'secret_handout_id': secret_handout_id,
         'session_number': storage.parse_session_number(
             request.form.get('session_number')),
         'session_title': request.form.get('session_title', '').strip(),
@@ -261,6 +272,7 @@ def edit_handout(handout_id):
                                categories=storage.all_categories(db),
                                tags=storage.all_tags(db),
                                folders=storage.all_folders(db),
+                               handouts=db['handouts'],
                                view_types=storage.VIEW_TYPES)
 
     # --- POST: metadata ---
@@ -282,6 +294,17 @@ def edit_handout(handout_id):
     handout['found_date'] = request.form.get('found_date', '').strip()
     handout['session_number'] = storage.parse_session_number(
         request.form.get('session_number'))
+
+    # Secret reveal: password + linked handout. The link is validated against
+    # the DB and must not be the handout itself (a self-link would just reopen
+    # the same viewer). An empty password leaves the feature off.
+    handout['secret_password'] = request.form.get('secret_password', '').strip()
+    secret_target = request.form.get('secret_handout_id', '').strip() or None
+    if secret_target == handout_id:
+        secret_target = None
+    if secret_target and storage.find(db, secret_target) is None:
+        secret_target = None
+    handout['secret_handout_id'] = secret_target
 
     # --- Files: removals, per-file descriptions, reordering, additions ---
     remove = set(request.form.getlist('remove'))

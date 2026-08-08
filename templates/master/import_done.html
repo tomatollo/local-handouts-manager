@@ -8,7 +8,7 @@
 </head>
 <body>
     <div class="wrap">
-        <h1>{{ 'Import Complete' | t }}</h1>
+        <h1><a class="home-title" href="{{ url_for('master.dm_panel') }}">{{ 'Import Complete' | t }}</a></h1>
         <div class="panel">
             {# Label + count rather than a sentence, so it translates cleanly. #}
             <div class="h-meta">

@@ -9,7 +9,7 @@
 <body>
     <div class="wrap">
         <p class="subtitle"><a href="{{ url_for('master.import_library') }}">&lsaquo; {{ 'Choose a different file' | t }}</a></p>
-        <h1>{{ 'Review Import' | t }}</h1>
+        <h1><a class="home-title" href="{{ url_for('master.dm_panel') }}">{{ 'Review Import' | t }}</a></h1>
 
         <form action="{{ url_for('master.import_apply') }}" method="post">
             <input type="hidden" name="token" value="{{ token }}">
