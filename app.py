@@ -199,66 +199,43 @@ def create_app():
 
     from flask import render_template
 
+    def _render_error(code):
+        # Pick the wording for the ACTIVE theme (master-chosen, global). Falls
+        # back to the default theme's set inside theming.theme_errors() when a
+        # theme hasn't defined its own copy, so this never blows up.
+        theme = storage.get_theme(storage.load_db())
+        icon, title, msg, type_en = theming.theme_errors(theme, code)
+        return render_template('error.html',
+            error_code=code,
+            error_type_en=type_en,
+            error_icon=icon,
+            error_title=title,
+            error_msg=msg,
+        ), code
+
     @app.errorhandler(400)
     def bad_request(e):
-        return render_template('error.html', 
-            error_code=400,
-            error_type_en="Bad Request",
-            error_icon="💥",
-            error_title="Wild Magic Surge",
-            error_msg="You mixed up the spell components. Your request fizzled out in a shower of harmless sparks."
-        ), 400
+        return _render_error(400)
 
     @app.errorhandler(401)
     def unauthorized(e):
-        return render_template('error.html', 
-            error_code=401,
-            error_type_en="Unauthorized",
-            error_icon="🛑",
-            error_title="Failed Stealth Check",
-            error_msg="'Halt! Who goes there?' The guards caught you trying to sneak in without the proper passphrase."
-        ), 401
+        return _render_error(401)
 
     @app.errorhandler(403)
     def forbidden(e):
-        return render_template('error.html', 
-            error_code=403,
-            error_type_en="Forbidden",
-            error_icon="🛡️",
-            error_title="Magic Circle",
-            error_msg="A powerful barrier blocks your path. You lack the required alignment or level to enter this area."
-        ), 403
+        return _render_error(403)
 
     @app.errorhandler(404)
     def page_not_found(e):
-        return render_template('error.html', 
-            error_code=404,
-            error_type_en="Not Found",
-            error_icon="🎲",
-            error_title="Critical Fail",
-            error_msg="Natural 1 on Perception, you got lost. The room is shrouded in darkness, and the page you are looking for seems to have vanished into the Astral Plane or been devoured by a Mimic."
-        ), 404
+        return _render_error(404)
 
     @app.errorhandler(500)
     def internal_server_error(e):
-        return render_template('error.html', 
-            error_code=500,
-            error_type_en="Internal Server Error",
-            error_icon="⚡",
-            error_title="The Weave is Tearing",
-            error_msg="The Dungeon Master spilled coffee on the campaign notes. The fabric of reality is temporarily unstable."
-        ), 500
+        return _render_error(500)
 
     @app.errorhandler(429)
     def too_many_requests(e):
-        return render_template('error.html',
-            error_code=429,
-            error_type_en="Too Many Requests",
-            error_icon="\U0001F6D1",
-            error_title="Slow Down, Adventurer",
-            error_msg="You are hammering the gates faster than the guards can "
-                     "answer. Wait a moment and try again."
-        ), 429
+        return _render_error(429)
 
     return app
 

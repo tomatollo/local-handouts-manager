@@ -551,6 +551,466 @@ h1::before, h2::before {
 }
 """,
     },
+    'analog-archive': {
+        'name': 'Analog Archive',
+        'blurb': 'Noir case files: manila folders, redacted ink, and a CLASSIFIED stamp.',
+        # Special Elite mimics a smudged typewriter for headings/stamps;
+        # Courier Prime is the clean report/screenplay monospace for body.
+        'fonts': ('Special Elite', 'Courier Prime'),
+        # Both faces sit at a normal width (unlike Press Start 2P), so headings
+        # need a bump to fill the calibrated sizes. Special Elite runs a touch
+        # large already, so a moderate 1.35 keeps stamps from overflowing.
+        'scale': 1.35,
+        'vars': {
+            # This is the one "board" theme: a dark corkboard/leather desk with
+            # LIGHT manila-paper panels sitting on it. So --ink is DARK
+            # (typewriter ink on paper), like Phandelver's inverted logic.
+            '--bg': '#1c1b18',          # shadowed cork/leather desk, near-black
+            '--bg-panel': '#e6ddc5',    # aged manila folder / paper
+            '--ink': '#2b2b2b',         # typewriter ink on the paper
+            '--ink-dim': '#6a6353',     # faded pencil / carbon-copy grey
+            '--accent': '#9e2a2b',      # faded red rubber stamp
+            '--accent-2': '#1c3d5a',    # biro / fountain-pen ink blue
+            '--border': '#3a352c',      # soft brown paper edge (not hard black)
+            '--shadow': 'rgba(0,0,0,0.55)',  # soft desk shadow, not pure black
+            '--good': '#3f6d4e',        # green string / "verified" ink
+        },
+        # The juice: paper on a board. Panels get a rough-paper wash + stacked-
+        # paper shadow and a strip of translucent tape; the h1 reads as a red
+        # CLASSIFIED stamp pressed into the page; buttons redact to a marker-
+        # black bar on hover; count badges become tilted yellow post-its.
+        # Everything with motion sits behind prefers-reduced-motion.
+        'extra_css': """
+/* ==== Analog Archive: noir case-file board ========================= */
+
+/* ---- The board itself ---------------------------------------------
+   A dark desk/corkboard: a faint fibrous noise (layered low-alpha
+   gradients) breaks up the flat --bg so it reads as leather/cork, not
+   a void. Text placed directly on the board (outside a paper panel) is
+   light, since --ink is dark for the paper; we restore that here. */
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 18% 22%, rgba(255,255,255,0.020) 0 2px, transparent 3px),
+    radial-gradient(circle at 63% 71%, rgba(255,255,255,0.018) 0 2px, transparent 3px),
+    radial-gradient(circle at 84% 34%, rgba(0,0,0,0.22) 0 3px, transparent 4px),
+    linear-gradient(135deg, rgba(0,0,0,0.25), rgba(0,0,0,0) 40%);
+  background-size: 140px 140px, 190px 190px, 220px 220px, 100% 100%;
+  background-attachment: fixed;
+  color: #d9d2c2;               /* light "chalk" text when on the bare board */
+}
+/* Body copy sitting on the board (subtitles, muted lines) stays light. */
+.subtitle { color: #b7ae99; }
+
+/* ---- Paper panels: manila stock, rough wash, stacked-paper shadow --
+   A subtle diagonal gradient dirties the flat manila so it feels like
+   rough paper; the layered box-shadow fakes 2-3 sheets stacked under
+   the top one. position:relative anchors the tape pseudo-element.
+   NB: .handout-card is intentionally NOT in this list -- in Cards view
+   it becomes a transparent polaroid, in Rows a folder spine (below). */
+.panel, .wiki-card, .folder-card {
+  position: relative;
+  background-color: var(--bg-panel);
+  background-image:
+    linear-gradient(115deg, rgba(0,0,0,0.05), rgba(0,0,0,0) 45%),
+    radial-gradient(circle at 88% 8%, rgba(120,100,60,0.10), transparent 42%);
+  border: 1px solid var(--border);
+  box-shadow:
+    2px 3px 0 0 rgba(214,203,170,0.85),   /* sheet 2 peeking out */
+    4px 6px 0 0 rgba(198,186,150,0.55),   /* sheet 3 */
+    6px 9px 14px 0 var(--shadow);         /* soft cast shadow onto board */
+}
+
+/* ---- Pinned to the board: one object per element type -------------
+   Anti-"tape everywhere" rule: tape stays ONLY on the big .panel. The
+   wiki-card gets a thumbtack; handout cards get a tack in Cards view
+   (further down); folders get a real tab, not a tack. Post-its are the
+   count badges. All pseudo-elements are non-clickable and sit above the
+   paper. */
+
+/* Tape: only on the big panel, a single strip up top. */
+.panel::before {
+  content: "";
+  position: absolute;
+  top: -11px; left: 50%;
+  width: 96px; height: 24px;
+  transform: translateX(-50%) rotate(-2.5deg);
+  background: linear-gradient(90deg,
+      rgba(228,222,200,0.12),
+      rgba(228,222,200,0.32) 22%,
+      rgba(228,222,200,0.20) 80%,
+      rgba(228,222,200,0.12));
+  border-left: 1px solid rgba(255,255,255,0.16);
+  border-right: 1px solid rgba(255,255,255,0.16);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.22);
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Thumbtack: on the wiki-card. A glossy red disc with a centre hole,
+   drawn purely with radial-gradients. No tape here. */
+.wiki-card::before {
+  content: "";
+  position: absolute;
+  top: -7px; left: 50%;
+  width: 16px; height: 16px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 32%, #ffffff 0 2px, transparent 3px),   /* highlight */
+    radial-gradient(circle at 50% 60%, rgba(0,0,0,0.35) 0 2px, transparent 3px), /* hole */
+    radial-gradient(circle at 50% 45%, #c0392f 0 55%, #8a1f20 100%);       /* head */
+  box-shadow: 0 2px 3px rgba(0,0,0,0.4);
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* ---- The CLASSIFIED stamp: the main h1 ----------------------------
+   A tilted red box with a thick red rubber border stamped onto a scrap
+   of manila paper. The background is opaque paper (not a grey wash) so
+   on the dark board it reads as a stamped card, not a floating grey box.
+   The home-title link inherits the stamp colour. */
+h1 {
+  display: inline-block;
+  color: #8a1f20;                       /* darker stamp red = more contrast */
+  background: #e6ddc5;                  /* opaque manila scrap under the stamp */
+  border: 3px solid #8a1f20;
+  border-radius: 2px;
+  padding: 4px 14px;
+  transform: rotate(-2deg);
+  mix-blend-mode: normal;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5);   /* lift ink off the paper */
+  box-shadow: inset 0 0 0 1px rgba(138,31,32,0.35),
+              2px 3px 6px rgba(0,0,0,0.4);       /* the scrap casts a shadow */
+  letter-spacing: 1px;
+}
+h1 a, h1 .home-title { color: inherit; text-decoration: none; }
+/* h2/h3 are section headers sitting on the dark board, so they need a
+   LIGHT ink, not the dark biro-blue (which vanished on the board). A soft
+   blue-tinted parchment reads as chalk-on-corkboard. */
+h2, h3 { color: #b9c4d4; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+/* When a heading sits INSIDE a paper panel, dark biro-blue is right. */
+.panel h2, .panel h3, .wiki-card h2, .wiki-card h3 {
+  color: var(--accent-2);
+  text-shadow: none;
+}
+
+/* ---- Buttons -------------------------------------------------------
+   Every button is a manila field with a typed ink label and an ink
+   border -- legible on both paper panels and the dark board. */
+.btn {
+  background: #e6ddc5;                   /* manila, like the panels */
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 0 var(--shadow);
+  transition: background 0.12s steps(2, end), color 0.12s steps(2, end),
+              border-color 0.12s steps(2, end);
+}
+
+/* Redaction hover: ONLY plain action buttons get the marker-black
+   "censored" bar. Navigation buttons (mode/view/drawer) and ghost
+   buttons are excluded, because hiding their label breaks wayfinding.
+   A thin light strike-through hints at redaction without erasing text. */
+@media (hover: hover) {
+  .btn:not(.hub-mode__btn):not(.view-btn):not(.drawer__link):not(.btn--ghost):not(.btn--pop):not(.hub-mode__btn--active):not(.view-btn--active):hover {
+    background: #141414;                 /* marker black */
+    color: #cfc8b8;                      /* still readable, like ghosted ink */
+    border-color: #141414;
+    text-decoration: line-through;
+    text-decoration-color: rgba(255,255,255,0.5);
+  }
+}
+
+/* Navigation & ghost buttons: a quiet paper hover, NEVER black. */
+@media (hover: hover) {
+  .hub-mode__btn:hover,
+  .view-btn:hover,
+  .btn--ghost:hover,
+  .drawer__link:hover {
+    background: #f0e9d2;                 /* paper lifts a shade */
+    color: var(--ink);
+    border-color: var(--accent);
+  }
+}
+
+/* Active / selected navigation = a red rubber stamp, light ink, so the
+   current tab is obvious and readable (base CSS made text --border, too
+   dark on red). */
+.hub-mode__btn--active,
+.view-btn--active,
+.drawer__link--active {
+  background: var(--accent) !important;
+  color: #f3e7d0 !important;
+  border-color: #7f2122 !important;
+}
+.hub-mode__btn--active:hover,
+.view-btn--active:hover,
+.drawer__link--active:hover {
+  background: #7f2122 !important;        /* deeper red, still light text */
+  color: #f3e7d0 !important;
+}
+
+/* Ghost buttons (mode chips in the drawer, view switches) sit on the
+   dark board or paper; give them an explicit manila base so they never
+   inherit the dark --bg-panel-as-board confusion. */
+.btn--ghost {
+  background: #ded3b6;
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+/* The POP call-to-action is a red stamp button, deepening on hover. */
+.btn--pop {
+  background: var(--accent);
+  color: #f3e7d0;
+  border-color: #7f2122;
+}
+@media (hover: hover) {
+  .btn--pop:hover { background: #7f2122; color: #f3e7d0; border-color: #7f2122; }
+}
+
+/* Drawer navigation links: the base gives them background:var(--bg) (the
+   dark board) which is invisible inside the light drawer panel. Put them
+   on paper with ink text. */
+.drawer__link {
+  background: #ded3b6;
+  color: var(--ink);
+  border-color: var(--border);
+}
+
+/* ---- Editable fields: light card, dark ink ------------------------
+   The base CSS gives inputs `color: --ink; background: --bg`. Here --bg
+   is the dark board, so dark ink vanished on it. Force them onto a light
+   card. The <select> has appearance:none in the base, so its <option>
+   list also needs an explicit light background + dark text or it renders
+   on the OS dark theme and looks broken. !important beats the base rule. */
+input, select, textarea {
+  color: #2b2b2b !important;             /* ink, beats the base --ink */
+  background-color: #f4eeda !important;  /* yellowed index card */
+  border: 2px solid var(--border);
+  box-shadow: inset 1px 1px 0 0 rgba(0,0,0,0.10);
+  -webkit-text-fill-color: #2b2b2b;      /* Safari: force text colour */
+}
+input::placeholder, textarea::placeholder { color: #8a8065; }
+/* Redraw the select arrow dark (the base draws it with light --ink-dim,
+   invisible on the card). */
+select {
+  background-image:
+    linear-gradient(45deg, transparent 50%, #2b2b2b 50%),
+    linear-gradient(135deg, #2b2b2b 50%, transparent 50%) !important;
+}
+select option { color: #2b2b2b; background-color: #f4eeda; }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); outline: none; }
+
+/* ---- Tags & PDF placeholders: paper labels, not black holes -------
+   These used `background: var(--bg)` (black) + --accent text. Turn them
+   into little paper labels with red stamp text on the manila panel. */
+.tag,
+.h-thumb--pdf,
+.handout-card__pdf {
+  background: #ded3b6;                    /* manila a touch darker */
+  color: var(--accent);
+  border-color: var(--border);
+}
+.tag--session { color: var(--ink-dim); }
+
+/* The lightbox panel stays dark by design, so its caption must be LIGHT
+   (here --ink is dark). */
+.lightbox__caption { color: #f3e7d0; }
+
+/* ---- Count badges: little yellow post-its -------------------------
+   Square sticky note, tilted, its own soft shadow, biro-blue number.
+   Overflow on the parent thumb is allowed so tilt/shadow aren't clipped. */
+.count-badge {
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: var(--accent-2);
+  background: #f2e06a;
+  background-image: linear-gradient(180deg, #f7e884, #ecd44e);
+  border: none;
+  border-radius: 1px;
+  padding: 5px 7px;
+  transform: rotate(-6deg);
+  box-shadow: 1px 2px 3px rgba(0,0,0,0.35);
+}
+.h-thumb { overflow: visible; }
+
+/* ================= HANDOUTS: CARDS view = pinned polaroids ========= */
+/* The card itself all but disappears (no filled rectangle); the PHOTO
+   is the object -- a slightly-crooked polaroid tacked to the board. The
+   title becomes a typed caption underneath. */
+.view--cards .handout-card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 6px 4px 12px;
+  position: relative;
+  transform: rotate(-1.2deg);
+  transition: transform 0.12s ease;
+}
+.view--cards .handout-card:nth-child(even) { transform: rotate(1.4deg); }
+.view--cards .handout-card:nth-child(3n)   { transform: rotate(-0.6deg); }
+@media (hover: hover) {
+  .view--cards .handout-card:hover { transform: rotate(0deg) scale(1.03); }
+}
+/* The photo carries the polaroid frame, not the card. */
+.view--cards .handout-card .h-thumb {
+  background: #f6f1e2;
+  padding: 6px 6px 8px;
+  border: 1px solid rgba(0,0,0,0.15);
+  box-shadow: 2px 3px 7px rgba(0,0,0,0.45);
+}
+.view--cards .handout-card img,
+.view--cards .handout-card .h-thumb--pdf { border: none; height: 130px; }
+.view--cards .handout-card .h-title {
+  font-family: var(--font-display);      /* Special Elite = typewriter */
+  /* The polaroid caption sits on the dark board, so it needs LIGHT ink,
+     not the dark paper --ink (which was invisible). */
+  color: #ece3cf;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  margin-top: 8px;
+}
+.view--cards .handout-card .h-desc {
+  color: #c3bba6;                        /* dimmer light for the description */
+  font-style: italic;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+/* A single thumbtack at the top of each polaroid (Cards view only). */
+.view--cards .handout-card::before {
+  content: "";
+  position: absolute;
+  top: -3px; left: 50%;
+  width: 16px; height: 16px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 32%, #ffffff 0 2px, transparent 3px),
+    radial-gradient(circle at 50% 60%, rgba(0,0,0,0.35) 0 2px, transparent 3px),
+    radial-gradient(circle at 50% 45%, #c0392f 0 55%, #8a1f20 100%);
+  box-shadow: 0 2px 3px rgba(0,0,0,0.4);
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* ================= HANDOUTS: ROWS view = folder spines ============= */
+/* Not photos but the "spines" of case files: a horizontal manila strip
+   with a coloured tab on the left and a typed title, stacked like files
+   in a drawer with a slight overlap. */
+.view--rows .handout-card {
+  background:
+    linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0) 12%),
+    var(--bg-panel);
+  border: 1px solid var(--border);
+  border-left: 8px solid var(--accent-2);   /* the folder's coloured tab */
+  border-radius: 0 3px 3px 0;
+  box-shadow: 1px 2px 4px rgba(0,0,0,0.35);
+  padding: 8px 12px;
+  margin-bottom: -2px;                        /* slight overlap = a stack */
+  transform: none;
+}
+.view--rows .handout-card::before { display: none; }   /* no tack here */
+/* Tab colour cycles like coloured file dividers. */
+.view--rows .handout-card:nth-child(3n+1) { border-left-color: var(--accent); }
+.view--rows .handout-card:nth-child(3n+2) { border-left-color: var(--accent-2); }
+.view--rows .handout-card:nth-child(3n)   { border-left-color: var(--good); }
+/* Thumbnail shrinks to a little photo clipped to the file. */
+.view--rows .handout-card .h-thumb {
+  background: #f6f1e2;
+  padding: 2px;
+  border: 1px solid rgba(0,0,0,0.15);
+  box-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+.view--rows .handout-card img,
+.view--rows .handout-card .h-thumb--pdf { height: 56px; border: none; }
+.view--rows .handout-card .h-title {
+  font-family: var(--font-display);
+  color: var(--ink);
+  text-shadow: none;
+  text-align: left;
+  letter-spacing: 0.5px;
+}
+@media (hover: hover) {
+  .view--rows .handout-card:hover { border-left-width: 12px; }  /* pull the file out */
+}
+
+/* ================= TREE view = index-card outline ================= */
+/* The terminal tree sits directly on the dark board, so its leaves need
+   LIGHT ink (the base gives .tree-leaf color:--ink = dark, invisible).
+   Nodes (session headers) stay stamp-red; leaves are typed light text. */
+.handout-tree { color: #b7ae99; }                 /* connector lines */
+.handout-tree .tree-node { color: var(--accent); }   /* red section heads */
+.handout-tree .tree-leaf { color: #ded5c0; }         /* light typed titles */
+.handout-tree .tree-leaf:hover,
+.handout-tree .tree-leaf--active { color: var(--accent); }
+/* The detail panel's hint + border read on the board. */
+.tree-detail { border-left-color: var(--border); }
+.tree-detail__hint { color: #b7ae99; }
+
+/* ================= FOLDERS = manila file folders ================== */
+/* The folder-card becomes an actual folder: a manila body with a tab up
+   top-left (a pseudo-element that sticks out above the border) and the
+   cover mosaic reading as documents peeking out of the pocket. */
+.folder-card {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.05), rgba(0,0,0,0) 20%),
+    #dcd0ac;                              /* manila, a touch warmer */
+  border: 1px solid var(--border);
+  border-radius: 0 6px 6px 6px;           /* squared top-left for the tab */
+  outline: none;                          /* drop the base double pixel border */
+  box-shadow: 2px 4px 8px rgba(0,0,0,0.4);
+  overflow: visible;
+  margin-top: 14px;                       /* room for the protruding tab */
+}
+/* The folder tab: sticks up above the body, top-left. This REPLACES the
+   old blue tack on .folder-card::before. */
+.folder-card::before {
+  content: "";
+  position: absolute;
+  top: -13px; left: -1px;
+  width: 96px; height: 16px;
+  background: #dcd0ac;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 6px 10px 0 0;
+  box-shadow: 0 -1px 2px rgba(0,0,0,0.15);
+  z-index: 1;
+}
+/* The mosaic: documents in the pocket. Paper edge, not a black grid. */
+.folder-card__mosaic {
+  background: #b8ab86;
+  border-bottom: none;
+  margin: 8px 8px 0;
+  border: 1px solid rgba(0,0,0,0.2);
+}
+.folder-card__cell { background: #efe8d2; }   /* the light "sheets" inside */
+.folder-card__pdf { color: var(--ink-dim); }
+.folder-card__foot { padding: 8px 12px 10px; }
+.folder-card__name {
+  font-family: var(--font-display);
+  color: var(--ink);
+  text-shadow: none;
+}
+@media (hover: hover) {
+  .folder-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+}
+
+/* ---- "Visible/public" items get green case-string --------------- */
+.h-item--public { box-shadow: 2px 2px 0 0 var(--good); }
+
+/* ---- Motion: only a small settle on load, and only when the user
+        hasn't asked for reduced motion. --------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  .panel, .wiki-card {
+    animation: aa-settle 0.5s ease-out both;
+  }
+  @keyframes aa-settle {
+    from { transform: translateY(-3px) rotate(-0.3deg); opacity: 0.6; }
+    to   { transform: none; opacity: 1; }
+  }
+}
+""",
+    },
 }
 
 DEFAULT_THEME = 'dungeon-torch'
@@ -566,7 +1026,6 @@ DEFAULT_THEME = 'dungeon-torch'
 # its own group.
 THEME_GROUPS = (
     ('Dungeons & Dragons', (
-        'dungeon-torch',
         'phandelver',
         'tiamat',
         'out-of-the-abyss',
@@ -577,11 +1036,328 @@ THEME_GROUPS = (
         'tashas-cauldron',
         'xanathars-guide',
     )),
+    # Dungeon Torch lives here (not D&D-specific -- it's the generic pixel
+    # default). It is still DEFAULT_THEME, and theme_groups() floats the
+    # default to the front of whichever group holds it, so it shows first
+    # inside Other Universes.
     ('Other Universes', (
+        'dungeon-torch',
         'vintage-arcade',
         'military-terminal',
+        'analog-archive',
     )),
 )
+
+# Per-theme error pages. Each theme maps HTTP status -> (icon, title, msg).
+# The error handlers in app.py read the ACTIVE theme and pull its set, so a
+# 404 under Curse of Strahd reads "Phantom Village" while the same 404 under
+# Vintage Arcade reads "Missing ROM". Titles/messages are English strings run
+# through the `|t` filter in error.html, exactly like the old hardcoded ones.
+#
+# `error_type_en` (the "Bad Request" label) is NOT stored here: it is fixed per
+# status code and supplied by app.py, so it never needs translating per theme.
+#
+# Any theme absent from this table -- or any status a theme omits -- falls back
+# to DEFAULT_THEME's set via theme_errors(), so a new theme still renders sane
+# error pages before its own copy is written. Dungeon Torch is that fallback and
+# carries the original generic D&D wording the app shipped with.
+THEME_ERRORS = {
+    'dungeon-torch': {
+        400: ('\U0001F4A5', 'Wild Magic Surge',
+              'You mixed up the spell components. Your request fizzled out in '
+              'a shower of harmless sparks.'),
+        401: ('\U0001F6D1', 'Failed Stealth Check',
+              "'Halt! Who goes there?' The guards caught you trying to sneak "
+              'in without the proper passphrase.'),
+        403: ('\U0001F6E1\uFE0F', 'Magic Circle',
+              'A powerful barrier blocks your path. You lack the required '
+              'alignment or level to enter this area.'),
+        404: ('\U0001F3B2', 'Critical Fail',
+              'Natural 1 on Perception, you got lost. The room is shrouded in '
+              'darkness, and the page you are looking for seems to have '
+              'vanished into the Astral Plane or been devoured by a Mimic.'),
+        429: ('\U0001F6D1', 'Slow Down, Adventurer',
+              'You are hammering the gates faster than the guards can answer. '
+              'Wait a moment and try again.'),
+        500: ('\u26A1', 'The Weave is Tearing',
+              'The Dungeon Master spilled coffee on the campaign notes. The '
+              'fabric of reality is temporarily unstable.'),
+    },
+    'phandelver': {
+        400: ('\U0001F4DC', 'Illegible Map',
+              "Gundren's map seems stained with ale. We couldn't read your "
+              'request parameters.'),
+        401: ('\U0001F6E1\uFE0F', 'Neverwinter Guard',
+              '"Halt, traveler!" You don\'t have the proper identification '
+              'papers to enter this district.'),
+        403: ('\U0001F6AA', 'Sealed Vault',
+              'The doors to the Tresendar vaults are locked tight. Only the '
+              'guild master holds the key.'),
+        404: ('\U0001F573\uFE0F', 'Empty Mine',
+              'You dug too deep in the wrong spot. This tunnel leads to a dead '
+              'end.'),
+        429: ('\U0001F3F9', 'Goblin Swarm',
+              'Too many arrows flying at once! Take cover and wait a moment '
+              'before charging again.'),
+        500: ('\U0001F30B', 'Cave-In!',
+              'The ceiling of the mine just collapsed! Our goblin engineers '
+              'are digging the server out of the rubble.'),
+    },
+    'tiamat': {
+        400: ('\U0001FA99', 'Fake Tribute',
+              'You tried to offer counterfeit gold to the hoard. The cult '
+              'rejects your malformed request.'),
+        401: ('\U0001F5DD\uFE0F', "Wyrmspeaker's Seal",
+              'You lack the proper cult passphrase. The guards are drawing '
+              'their scimitars.'),
+        403: ('\U0001F534', 'Chromatic Barrier',
+              "Tiamat's magic seals this domain. Mortals without a "
+              "Wyrmspeaker's blessing are strictly forbidden."),
+        404: ('\U0001F48E', 'Plundered Hoard',
+              'The treasure you seek is gone. Adventurers probably looted this '
+              'page yesterday.'),
+        429: ('\U0001F6D1', 'Hold the Line',
+              "You're sending troops to the frontline too quickly. Let the "
+              'vanguard breathe!'),
+        500: ('\u2694\uFE0F', 'Council Uproar',
+              'The factions of Waterdeep are fighting again. Our backend '
+              'diplomacy has completely broken down.'),
+    },
+    'out-of-the-abyss': {
+        400: ('\U0001F578\uFE0F', 'Tangled Web',
+              "Your request got caught in Lolth's webs. The syntax is "
+              'completely tangled.'),
+        401: ('\u26D3\uFE0F', 'Velkynvelve Prisoner',
+              "Escaped slaves don't have access rights here. The Drow "
+              'priestesses demand your surrender.'),
+        403: ('\U0001F9E0', 'Illithid Enclave',
+              'The Elder Brain rejects your mind. Your psionic clearance level '
+              'is insufficient.'),
+        404: ('\U0001F573\uFE0F', 'Swallowed by the Dark',
+              'The page you seek has been consumed by the endless abyss of the '
+              'Underdark.'),
+        429: ('\U0001F300', 'Descending Madness',
+              'The madness of the Abyss is compounding too quickly. Take a '
+              'long rest.'),
+        500: ('\U0001F9E0', 'Mind Flayer Blast',
+              'An Illithid psychic blast just stunned our backend processes. '
+              'Rebooting...'),
+    },
+    'tomb-of-annihilation': {
+        400: ('\U0001F9ED', 'Broken Compass',
+              'Your magnetic compass is spinning wildly in the jungle. Your '
+              'navigation parameters are invalid.'),
+        401: ('\U0001F525', 'Flaming Fist Toll',
+              "You haven't paid for your charter of exploration. The Flaming "
+              'Fist denies you passage.'),
+        403: ('\U0001F9FF', "Soulmonger's Ward",
+              'Acererak has sealed this chamber. Your soul is not strong '
+              'enough to pierce the barrier.'),
+        404: ('\U0001F5FA\uFE0F', "Syndra's Missing Map",
+              "The hex grid for this area is blank. You haven't explored this "
+              'part of Chult yet.'),
+        429: ('\U0001F99F', 'Jungle Fever',
+              "You're marching through the sweltering jungle too quickly. Take "
+              'a sip of water and slow down.'),
+        500: ('\U0001F9D9\u200D\u2642\uFE0F', "Acererak's Laugh",
+              'The archlich just cast Meteor Swarm on the server! We are '
+              'trying to cast Mending.'),
+    },
+    'curse-of-strahd': {
+        400: ('\U0001F0CF', 'Misread Tarokka',
+              'Madame Eva shakes her head. You misinterpreted the cards, and '
+              'your request is malformed.'),
+        401: ('\u2709\uFE0F', 'No Invitation',
+              'The gates of Castle Ravenloft remain closed. You have not been '
+              'invited by the master of the domain.'),
+        403: ('\U0001F9DB', "Strahd's Command",
+              '"I am the Ancient. I am the Land." The vampire lord strictly '
+              'forbids your presence here.'),
+        404: ('\U0001F3DA\uFE0F', 'Phantom Village',
+              'You arrived at the coordinates, but found only an abandoned, '
+              'rotting husk of a page.'),
+        429: ('\U0001F6AA', 'Frantic Knocking',
+              "Pounding on the village doors won't make them open faster. The "
+              'locals are terrified, wait a minute.'),
+        500: ('\U0001F311', 'Dark Powers Intervene',
+              'The mysterious entities of the shadowfell have corrupted the '
+              "server's soul."),
+    },
+    'icewind-dale': {
+        400: ('\U0001F976', 'Frostbitten Fingers',
+              'Your hands were shaking too much from the cold to type the URL '
+              'correctly.'),
+        401: ('\U0001F989', "Auril's Test",
+              'The Frostmaiden requires a sacrifice of warmth before she '
+              'grants you passage.'),
+        403: ('\U0001F3F0', 'Ythryn Quarantine',
+              'The ancient Netherese city is on magical lockdown to prevent '
+              'the spread of arcane blight.'),
+        404: ('\U0001F328\uFE0F', 'Whiteout Condition',
+              'The blizzard is too thick! The page you are looking for is '
+              'completely buried in snow.'),
+        429: ('\U0001F32C\uFE0F', 'Biting Winds',
+              "You're pushing into the blizzard too fast. Stop and build a "
+              'fire before you freeze to death.'),
+        500: ('\u2744\uFE0F', 'Everlasting Rime',
+              "Auril's spell just froze the entire backend infrastructure "
+              'solid.'),
+    },
+    'vecna-eve-of-ruin': {
+        400: ('\U0001F92B', 'Mispronounced Secret',
+              'You whispered the wrong dark secret into the void. The cosmos '
+              'rejects your request.'),
+        401: ('\U0001F977', 'Cult Interception',
+              'The cultists of the Whispered One demand the hidden password.'),
+        403: ('\U0001F5DD\uFE0F', 'Sigil Denied',
+              'The Lady of Pain has barred the doors to this portal. Do not '
+              'push your luck.'),
+        404: ('\U0001F300', 'Lost in the Astral Sea',
+              'Your connection drifted off the silver cord and vanished into '
+              'the void.'),
+        429: ('\u23F3', 'Time Paradox',
+              'You are sending requests faster than time flows. Please wait '
+              'for causality to catch up.'),
+        500: ('\U0001F30C', 'Reality Unraveling',
+              "The Weave of magic is tearing apart! Vecna's ritual is crashing "
+              'the entire multiverse.'),
+    },
+    'tashas-cauldron': {
+        400: ('\U0001F9EA', 'Potion Explosion',
+              'You mixed the wrong ingredients in the cauldron. The request '
+              'blew up in your face.'),
+        401: ('\U0001FA9E', 'Mirror of Identification',
+              "The magic mirror doesn't recognize your reflection. Please log "
+              'in.'),
+        403: ('\U0001F4D3', "Tasha's Diary",
+              "These are Iggwilv's private notes! A potent warding glyph "
+              'prevents you from reading them.'),
+        404: ('\U0001F3A9', 'Rabbit Gone',
+              "You reached into the magic hat, but there's absolutely nothing "
+              'in there.'),
+        429: ('\U0001F4DC', 'Scroll Burnout',
+              'Reading that many scrolls at once is frying your retinas. Take '
+              'a short rest.'),
+        500: ('\u2728', 'Wild Magic Cascade',
+              'We rolled a 1 on the wild magic surge table. We are currently '
+              'all potted plants.'),
+    },
+    'xanathars-guide': {
+        400: ('\U0001F3B2', 'Loaded Dice',
+              'We detected an invalid roll in your request parameters. No '
+              'cheating in the tavern!'),
+        401: ('\U0001F5E3\uFE0F', "Thieves' Cant Failed",
+              "You don't know the secret slang. The rogue at the door won't "
+              'let you in.'),
+        403: ('\U0001F6AB', 'Blacklisted',
+              "You've been marked by the Zhentarim. You are permanently "
+              'forbidden from this endpoint.'),
+        404: ('\U0001F4A5', 'Disintegrated',
+              'A disintegration ray just vaporized the page you were looking '
+              "for. There's only a pile of dust left."),
+        429: ('\U0001F4B0', 'Coin Jam',
+              "You're throwing bribes at the guards too quickly. Let them "
+              'count the gold first!'),
+        500: ('\U0001F4A4', 'Beholder Dream',
+              'Xanathar fell asleep and dreamed of a rogue server process, '
+              'spawning a catastrophic anomaly!'),
+    },
+    'vintage-arcade': {
+        400: ('\U0001F579\uFE0F', 'Button Mash Error',
+              'You hit A, B, X, Y, and Start all at once. The console didn\'t '
+              'understand that combo.'),
+        401: ('\U0001FA99', 'Insert Coin',
+              'CREDITS: 0. You must insert a token to continue to this '
+              'screen.'),
+        403: ('\U0001F451', 'High Score Board Only',
+              'You must beat the top score of "AAA" to view this secret '
+              'level.'),
+        404: ('\U0001F4C1', 'Missing ROM',
+              '404_FILE_MISSING. The floppy disk containing this data seems to '
+              'be corrupted.'),
+        429: ('\U0001F6D1', 'Chill Out, Player 1',
+              'The CPU is overheating from your frantic inputs. Pause the game '
+              'for a second.'),
+        500: ('\U0001F50C', 'Someone Tripped on the Cord',
+              'The power cable got yanked out of the wall. Everything is '
+              'gone.'),
+    },
+    'military-terminal': {
+        400: ('\u274C', 'INVALID_PROTOCOL',
+              'You used a civilian handshake for a military endpoint. Request '
+              'rejected.'),
+        401: ('\U0001F6E1\uFE0F', 'Authentication Timeout',
+              'Your session in the war room has expired. Log in again, '
+              'soldier.'),
+        403: ('\U0001F512', 'Executive Lockout',
+              'The commander has sealed this terminal. Only a Five-Star '
+              'General can bypass this block.'),
+        404: ('\u2B1B', 'DATA_EXPUNGED',
+              'The file you are looking for has been heavily redacted and '
+              'removed from the archives. That operation never existed. And if '
+              'you keep asking about it, neither will you.'),
+        429: ('\U0001F4E1', 'DDoS Detected',
+              'Incoming traffic exceeds radar capabilities. Initiating '
+              'packet-dropping countermeasures.'),
+        500: ('\U0001F6F0\uFE0F', 'Satellite Uplink Lost',
+              'A solar flare just destroyed our orbital relay. The internal '
+              'network is totally dark.'),
+    },
+    'analog-archive': {
+        400: ('\U0001F4DD', 'Illegible Handwriting',
+              'We tried to process your file, but your cursive is unreadable. '
+              'Please fill out a new form in block letters.'),
+        401: ('\U0001FAAA', 'Show Your Badge',
+              'The clerk refuses to take your folder. You need to show a valid '
+              'company ID to the front desk first.'),
+        403: ('\U0001F5C4\uFE0F', 'Locked Cabinet',
+              'You are trying to pry open a locked filing drawer. You do not '
+              'hold the key for this specific archive.'),
+        404: ('\U0001F5D1\uFE0F', 'Shredded Paper',
+              'The file you are looking for has been sent to the industrial '
+              'shredder. There are only thin paper ribbons left.'),
+        429: ('\U0001F975', 'Overworked Clerk',
+              'The archivist can only stamp documents so fast! Give them a '
+              'moment to catch up with your massive stack of requests.'),
+        500: ('\U0001F525', 'Archive Fire',
+              'Someone left a cigarette burning on a stack of old reports. The '
+              'back office is currently dealing with a chaotic emergency.'),
+    },
+}
+
+# The English "type" label per HTTP status, shown as `<label> / <code>` in
+# error.html. Fixed per code (never per theme), so it lives here once.
+ERROR_TYPE_EN = {
+    400: 'Bad Request',
+    401: 'Unauthorized',
+    403: 'Forbidden',
+    404: 'Not Found',
+    429: 'Too Many Requests',
+    500: 'Internal Server Error',
+}
+
+
+def theme_errors(theme_id, code):
+    """Return (icon, title, msg, type_en) for one theme + HTTP status code.
+
+    Looks up the active theme's set in THEME_ERRORS, falling back to
+    DEFAULT_THEME for any theme (or any individual status) that hasn't defined
+    its own copy, so every page renders a sensible error even before a new
+    theme's wording is written. `type_en` comes from ERROR_TYPE_EN, which is
+    keyed by status alone. A completely unknown status falls back to 500's set.
+    """
+    code = int(code)
+    theme = clean_theme(theme_id)
+    table = THEME_ERRORS.get(theme, THEME_ERRORS[DEFAULT_THEME])
+    entry = table.get(code)
+    if entry is None:
+        # This theme doesn't define this code: try the default theme, then 500.
+        entry = (THEME_ERRORS[DEFAULT_THEME].get(code)
+                 or THEME_ERRORS[DEFAULT_THEME][500])
+    icon, title, msg = entry
+    type_en = ERROR_TYPE_EN.get(code, ERROR_TYPE_EN[500])
+    return icon, title, msg, type_en
+
 
 # Faces needing more than a plain family name in the Google Fonts URL.
 #
@@ -630,6 +1406,11 @@ _FONT_QUERY = {
     # Military Terminal theme. Share Tech Mono is a single-style monospace;
     # its body face VT323 is already listed just above.
     'Share Tech Mono': 'family=Share+Tech+Mono',
+    # Analog Archive theme. Special Elite (typewriter display) and Courier
+    # Prime (report/screenplay body) are both single-family faces; Courier
+    # Prime carries an ital+wght tuple so bold/italic report text renders.
+    'Special Elite': 'family=Special+Elite',
+    'Courier Prime': 'family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700',
 }
 
 
