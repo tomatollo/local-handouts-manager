@@ -408,13 +408,40 @@ def _normalize(data):
         # record 'pdf' explicitly at upload time.)
         if not h.get('source_format'):
             h['source_format'] = format_of_handout(h)
-        # Optional secret reveal: a password the Master can set on a handout so
-        # that a player who types it into the viewer's info panel opens ANOTHER
-        # handout (a hidden twist, a decoded message, ...). Both are plain
-        # strings by design -- this is table theatre, not security, and the
-        # Master needs to see the password back when editing. Empty password
+        # Optional secret reveal: one or more passwords the Master can set on a
+        # handout so that a player who types any of them into the viewer's info
+        # panel opens ANOTHER handout (a hidden twist, a decoded message, ...).
+        # These are plain strings by design -- this is table theatre, not
+        # security, and the Master needs to see the words back when editing.
+        #
+        # secret_passwords is the source of truth: a list of accepted words
+        # (any one unlocks the target). secret_ignore_case, when true, matches
+        # them without regard to letter case, so "Xanathar" also accepts
+        # "xanathar" / "XANATHAR". Legacy records carried a single
+        # secret_password string; migrate it into the list once, and keep
+        # secret_password mirrored to the first entry so any old reader (and the
+        # export/import round-trip) still sees a sensible value. An empty list
         # means "no secret to reveal here".
-        h.setdefault('secret_password', '')
+        legacy_pw = (h.get('secret_password') or '').strip()
+        if 'secret_passwords' not in h:
+            h['secret_passwords'] = [legacy_pw] if legacy_pw else []
+        else:
+            # Clean whatever is stored: strip, drop blanks, de-duplicate while
+            # keeping order (case-sensitively here; the match step applies the
+            # ignore-case flag, so we don't silently merge distinct entries).
+            seen = set()
+            cleaned = []
+            for p in h['secret_passwords']:
+                p = (p or '').strip()
+                if p and p not in seen:
+                    seen.add(p)
+                    cleaned.append(p)
+            h['secret_passwords'] = cleaned
+        h.setdefault('secret_ignore_case', False)
+        h['secret_ignore_case'] = bool(h.get('secret_ignore_case'))
+        # Mirror the first password back into the legacy scalar so nothing that
+        # still reads secret_password breaks.
+        h['secret_password'] = h['secret_passwords'][0] if h['secret_passwords'] else ''
         h.setdefault('secret_handout_id', None)
 
         # Optional back cover (a single file entry or None). Shown as the very
@@ -490,8 +517,8 @@ def player_payload(handout):
         'back_cover': handout.get('back_cover'),
         # True when THIS handout itself carries a further secret reveal, so the
         # viewer knows to keep showing the password box after a reveal chains
-        # into another handout. The password value is never included.
-        'has_secret': bool((handout.get('secret_password') or '').strip()
+        # into another handout. The password values are never included.
+        'has_secret': bool(handout.get('secret_passwords')
                            and handout.get('secret_handout_id')),
     }
 
@@ -499,10 +526,11 @@ def player_payload(handout):
 def reveal_secret(db, handout_id, password):
     """Resolve a password typed on `handout_id` to the hidden handout it unlocks.
 
-    Returns the target handout's player_payload when `password` matches the
-    source handout's secret_password AND the linked target still exists;
-    otherwise None. Matching is exact but whitespace-trimmed on both sides, to
-    match how the Master typed it into the form.
+    Returns the target handout's player_payload when `password` matches ANY of
+    the source handout's accepted passwords AND the linked target still exists;
+    otherwise None. Each side is whitespace-trimmed to match how the Master
+    typed the words into the form. When the source has secret_ignore_case set,
+    the comparison is case-insensitive, so "Xanathar" accepts "xanathar" too.
 
     No timing-safe compare and no hashing: this is a table gimmick guarding a
     story beat, not a credential (see the module + auth notes). The target is
@@ -512,11 +540,19 @@ def reveal_secret(db, handout_id, password):
     source = find(db, handout_id)
     if source is None:
         return None
-    secret = (source.get('secret_password') or '').strip()
+    accepted = [p for p in (source.get('secret_passwords') or []) if p.strip()]
     target_id = source.get('secret_handout_id')
-    if not secret or not target_id:
+    if not accepted or not target_id:
         return None
-    if (password or '').strip() != secret:
+    typed = (password or '').strip()
+    if not typed:
+        return None
+    if source.get('secret_ignore_case'):
+        typed_cmp = typed.casefold()
+        matched = any(typed_cmp == p.strip().casefold() for p in accepted)
+    else:
+        matched = any(typed == p.strip() for p in accepted)
+    if not matched:
         return None
     target = find(db, target_id)
     if target is None:
@@ -1003,6 +1039,25 @@ def parse_tags(raw):
         if t and t.lower() not in seen:
             seen.add(t.lower())
             out.append(t)
+    return out
+
+
+def parse_passwords(raw):
+    """Split the secret-reveal textarea into a clean list of accepted words.
+
+    One password per line: passwords may well contain spaces or commas ("open
+    sesame", "3,000 gold"), so a newline is the only safe separator. Blank
+    lines are dropped and exact duplicates removed while keeping first-seen
+    order. Case is preserved here; whether case matters at match time is the
+    separate secret_ignore_case flag's job (see reveal_secret).
+    """
+    seen = set()
+    out = []
+    for line in (raw or '').replace('\r\n', '\n').replace('\r', '\n').split('\n'):
+        p = line.strip()
+        if p and p not in seen:
+            seen.add(p)
+            out.append(p)
     return out
 
 

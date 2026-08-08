@@ -9,6 +9,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ 'Appearance' | t }}</title>
     {% include '_head.html' %}
+    {# Every theme's fonts, loaded once, so each preview box below can render in
+       its own typeface. Only this page pays for the full set; the rest of the
+       app loads just the active theme's two faces. #}
+    <link rel="stylesheet" href="{{ preview_fonts_url }}">
 </head>
 <body>
     <div class="wrap">
@@ -24,26 +28,46 @@
             <h2>{{ 'Theme' | t }}</h2>
             <p class="subtitle">{{ 'Colours and fonts for everyone. Players see this too.' | t }}</p>
             <form action="{{ url_for('master.set_theme') }}" method="post">
-                <div class="theme-picker">
-                    {% for th in themes %}
-                    <label class="theme-choice">
-                        <input type="radio" name="theme" value="{{ th.id }}"
-                               {% if th.id == current_theme %}checked{% endif %}>
-                        <span class="theme-choice__body">
-                            <span class="theme-choice__name">{{ th.name }}</span>
-                            <span class="theme-choice__blurb">{{ th.blurb }}</span>
-                            {# Swatches are inline styles on purpose: the colours
-                               come from the theme table, not from the active theme. #}
-                            <span class="theme-choice__swatches">
-                                {% for key in ['--bg', '--bg-panel', '--accent', '--accent-2'] %}
-                                <span class="theme-choice__swatch"
-                                      style="background: {{ theme_vars[th.id]['vars'][key] }}"></span>
-                                {% endfor %}
+                {# Themes come pre-grouped into families (D&D, Other Universes)
+                   by theming.theme_groups(); each family gets its own heading
+                   and its own auto-fit grid. #}
+                {% for group in theme_groups %}
+                <div class="theme-group">
+                    <h3 class="theme-group__label">{{ group.label | t }}</h3>
+                    <div class="theme-picker">
+                        {% for th in group.themes %}
+                        {# Each box paints itself in its OWN theme: theme_preview()
+                           emits that theme's colour tokens as local custom
+                           properties, so the var(--bg)/var(--ink)/... in the
+                           .theme-choice--preview rules resolve to this theme's
+                           palette instead of the page's. A live mini-preview. #}
+                        <label class="theme-choice theme-choice--preview"
+                               style="{{ theme_preview(th.id) }}">
+                            <input type="radio" name="theme" value="{{ th.id }}"
+                                   {% if th.id == current_theme %}checked{% endif %}>
+                            <span class="theme-choice__body">
+                                <span class="theme-choice__name">{{ th.name }}</span>
+                                <span class="theme-choice__blurb">{{ th.blurb }}</span>
+                                {# A tiny mock row of UI so the preview shows the
+                                   panel + accent colours doing their job, not
+                                   just a flat background. #}
+                                <span class="theme-choice__demo">
+                                    <span class="theme-choice__demo-btn">POP</span>
+                                    <span class="theme-choice__demo-chip"></span>
+                                </span>
+                                {# Swatches stay as a compact colour signature. #}
+                                <span class="theme-choice__swatches">
+                                    {% for key in ['--bg', '--bg-panel', '--accent', '--accent-2'] %}
+                                    <span class="theme-choice__swatch"
+                                          style="background: {{ theme_vars[th.id]['vars'][key] }}"></span>
+                                    {% endfor %}
+                                </span>
                             </span>
-                        </span>
-                    </label>
-                    {% endfor %}
+                        </label>
+                        {% endfor %}
+                    </div>
                 </div>
+                {% endfor %}
                 <button type="submit" class="btn btn--block">{{ 'Apply theme' | t }}</button>
             </form>
         </div>

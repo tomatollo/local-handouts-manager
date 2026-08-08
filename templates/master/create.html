@@ -107,9 +107,13 @@
                         </div>
 
                         <div class="field">
-                            <label for="secret_password">{{ 'Password' | t }} <span class="hint">{{ 'optional' | t }}</span></label>
-                            <input type="text" id="secret_password" name="secret_password"
-                                   placeholder="{{ 'A word the players must type' | t }}">
+                            <label for="secret_passwords">{{ 'Passwords' | t }} <span class="hint">{{ 'one per line, optional' | t }}</span></label>
+                            <textarea id="secret_passwords" name="secret_passwords" rows="3"
+                                      placeholder="{{ 'One word per line. Any of them unlocks the handout.' | t }}"></textarea>
+                            <label class="folder-choice">
+                                <input type="checkbox" name="secret_ignore_case" value="1">
+                                {{ 'Ignore uppercase / lowercase' | t }}
+                            </label>
                         </div>
 
                         <div class="field">

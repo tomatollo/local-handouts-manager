@@ -82,10 +82,14 @@
                 <label for="found_date">{{ 'Date of Discovery' | t }} <span class="hint">{{ 'optional' | t }}</span></label>
                 <input type="text" id="found_date" name="found_date" value="{{ handout.found_date }}">
 
-                <label for="secret_password">{{ 'Password' | t }} <span class="hint">{{ 'optional' | t }}</span></label>
-                <input type="text" id="secret_password" name="secret_password"
-                       value="{{ handout.secret_password }}"
-                       placeholder="{{ 'A word the players must type' | t }}">
+                <label for="secret_passwords">{{ 'Passwords' | t }} <span class="hint">{{ 'one per line, optional' | t }}</span></label>
+                <textarea id="secret_passwords" name="secret_passwords" rows="3"
+                          placeholder="{{ 'One word per line. Any of them unlocks the handout.' | t }}">{{ handout.secret_passwords | join('\n') }}</textarea>
+                <label class="folder-choice" style="margin-top:6px;">
+                    <input type="checkbox" name="secret_ignore_case" value="1"
+                           {% if handout.secret_ignore_case %}checked{% endif %}>
+                    {{ 'Ignore uppercase / lowercase' | t }}
+                </label>
 
                 <label for="secret_handout_id">{{ 'Handout to reveal' | t }}</label>
                 <select id="secret_handout_id" name="secret_handout_id">

@@ -172,6 +172,11 @@ CATALOG = {
         'Date of Discovery': 'Data del Ritrovamento',
         # ---- Secret reveal (master create/edit) ----
         'Password': 'Password',
+        'Passwords': 'Password',
+        'one per line, optional': 'una per riga, facoltativo',
+        'One word per line. Any of them unlocks the handout.':
+            'Una parola per riga. Una qualsiasi sblocca il documento.',
+        'Ignore uppercase / lowercase': 'Ignora maiuscole / minuscole',
         'A word the players must type':
             'Una parola che i giocatori devono digitare',
         'Handout to reveal': 'Documento da rivelare',
@@ -203,6 +208,10 @@ CATALOG = {
         'Import from a .zip…': 'Importa da uno .zip…',
         'Appearance': 'Aspetto',
         'Theme': 'Tema',
+        # Theme-group headings in the picker. 'Dungeons & Dragons' is left as-is
+        # (it's the game's proper name); the second is the catch-all family.
+        'Dungeons & Dragons': 'Dungeons & Dragons',
+        'Other Universes': 'Altri Universi',
         'Colours and fonts for everyone — players see this too.':
             'Colori e font per tutti — lo vedono anche i giocatori.',
         'Apply theme': 'Applica tema',

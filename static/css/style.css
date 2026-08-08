@@ -1414,6 +1414,22 @@ a.tag { text-decoration: none; }
 .master-aside .lang-switch { margin-top: 8px; flex-wrap: wrap; }
 
 /* ---- Theme picker (master only) -------------------------------- */
+/* Themes are shown in labelled families ("Dungeons & Dragons", "Other
+   Universes"); each family is a .theme-group with a heading above its own
+   grid of choices. The heading uses the pixel display face like the other
+   sub-headings, but small and dim so it groups without shouting. */
+.theme-group + .theme-group { margin-top: 18px; }
+
+.theme-group__label {
+  font-family: var(--font-display);
+  font-size: calc(0.6rem * var(--display-scale));
+  color: var(--ink-dim);
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
 /* The picker lives in the narrow aside, so it must size to its CONTAINER,
    not the viewport: a viewport-width media query gave it two columns inside
    a ~320px column and the choices spilled out. auto-fit + a 190px floor
@@ -1438,18 +1454,56 @@ a.tag { text-decoration: none; }
   min-width: 0;
 }
 
+/* ---- Live per-theme preview -------------------------------------
+   The box carries its OWN theme's colour tokens as inline custom
+   properties (from theming.theme_preview_style), so every var(--bg),
+   var(--ink), var(--accent)... below resolves to THAT theme, not the
+   page's. The result is a little swatch of each theme wearing itself.
+   The radio is pulled out of the coloured flow and pinned to the corner
+   so it stays visible whatever palette sits behind it. */
+.theme-choice--preview {
+  position: relative;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  /* Paint the box in the theme it represents. */
+  background: var(--bg);
+  border-color: var(--border);
+  /* A stepped shadow in the theme's own shadow colour, echoing the 8-bit
+     panel look the real UI uses. */
+  box-shadow: 3px 3px 0 0 var(--shadow);
+  overflow: hidden;
+}
+
 /* The radio must keep its size; the base `input { width: 100% }` rule would
-   otherwise stretch it and shove the label text out of the card. */
+   otherwise stretch it and shove the label text out of the card. On the
+   preview boxes it is pinned top-right and given a plain dark chip behind it
+   so it reads on both light and dark theme backgrounds. */
 .theme-choice > input {
   flex: 0 0 auto;
   width: auto;
   min-height: auto;
   margin: 0;
 }
+.theme-choice--preview > input {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  accent-color: var(--accent);
+}
 
+/* The whole box lights up its border in its own accent when picked. */
 .theme-choice:has(input:checked) {
   border-color: var(--accent);
   background: var(--bg-panel);
+}
+.theme-choice--preview:has(input:checked) {
+  /* Keep the theme's own bg (so the preview stays true) but ring it in the
+     theme's accent so "selected" is unmistakable across every palette. */
+  background: var(--bg);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent), 3px 3px 0 0 var(--shadow);
 }
 
 /* min-width:0 + wrapping: theme names are long ("Lost Mine of Phandelver")
@@ -1469,12 +1523,55 @@ a.tag { text-decoration: none; }
   color: var(--ink);
   overflow-wrap: anywhere;
 }
+/* In a preview box the name takes the theme's accent, like a real heading,
+   AND its own display face + size correction, so it looks like that theme. */
+.theme-choice--preview .theme-choice__name {
+  font-family: var(--preview-font-display, var(--font-display));
+  font-size: calc(0.55rem * var(--preview-scale, 1));
+  color: var(--accent);
+  /* Leave room for the corner radio so a long name doesn't run under it. */
+  padding-right: 24px;
+}
 
 .theme-choice__blurb {
   font-size: 0.85rem;
   font-style: italic;
   color: var(--ink-dim);
   overflow-wrap: anywhere;
+}
+/* The blurb previews the theme's BODY face -- the long-text typeface. */
+.theme-choice--preview .theme-choice__blurb {
+  font-family: var(--preview-font-body, var(--font-body));
+}
+
+/* ---- Mini mock UI inside the preview ----------------------------
+   A one-line row that shows the panel colour, a real-looking button in
+   the accent, and a secondary-accent chip -- so the box demonstrates the
+   palette doing UI work, not just a flat background. */
+.theme-choice__demo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 6px;
+  background: var(--bg-panel);
+  border: 2px solid var(--border);
+}
+.theme-choice__demo-btn {
+  font-family: var(--preview-font-display, var(--font-display));
+  font-size: 0.5rem;
+  line-height: 1;
+  color: var(--border);
+  background: var(--accent);
+  border: 2px solid var(--border);
+  padding: 4px 6px;
+}
+.theme-choice__demo-chip {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 12px;
+  background: var(--accent-2);
+  border: 2px solid var(--border);
 }
 
 /* Live colour preview: the four tokens that carry a theme's identity. */
@@ -1548,6 +1645,13 @@ textarea {
   resize: vertical;
   line-height: 1.6;
   min-height: 220px;
+}
+
+/* The secret-reveal password list is a short, few-lines textarea, not a
+   long-form editor: let its `rows` attribute set the height instead of the
+   wiki's tall floor, so it sits compactly among the other create/edit fields. */
+#secret_passwords {
+  min-height: 0;
 }
 
 /* =====================================================================

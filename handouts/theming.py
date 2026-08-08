@@ -117,7 +117,7 @@ THEMES = {
     'curse-of-strahd': {
         'name': 'Curse of Strahd',
         'blurb': 'Gothic horror: pitch, velvet, and bright blood.',
-        'fonts': ('UnifrakturMaguntia', 'Crimson Text'),
+        'fonts': ('Bokor', 'IM Fell English'),
         # Blackletter is narrow and ornate; it needs the most help to read.
         'scale': 1.9,
         'vars': {
@@ -351,9 +351,237 @@ h1, h2, h3, .pixel {
 }
 """,
     },
+    'vintage-arcade': {
+        'name': 'Vintage Arcade',
+        'blurb': 'CRT phosphor and neon synthwave: insert coin to continue.',
+        # Press Start 2P is the pixel display face the base CSS already
+        # sugars with a stepped "pixel" shadow. VT323 is a monospace CRT
+        # terminal face for the long text.
+        'fonts': ('Press Start 2P', 'VT323'),
+        # Press Start 2P is the calibrated face, so no correction needed.
+        'scale': 1,
+        'vars': {
+            # Deep terminal black with a cold blue cast -- a powered-down CRT.
+            '--bg': '#050510',
+            # Panels lift just enough to read as a glowing screen bezel.
+            '--bg-panel': '#0d0d1f',
+            # Phosphor cyan ink, softened from pure white so it doesn't glare.
+            '--ink': '#a8ddd4',
+            '--ink-dim': '#5f8785',
+            # Neon accents dialled back from full saturation: a dusty synthwave
+            # magenta and a muted CRT green, so they still read as neon on the
+            # dark screen without the eye-searing glare of pure #ff2ec4/#39ff14.
+            '--accent': '#d15fa8',      # softened synthwave magenta
+            '--accent-2': '#5fb85a',    # muted phosphor green
+            '--border': '#02020a',
+            '--shadow': '#000000',
+            '--good': '#5fb85a',        # "visible" = live phosphor green
+        },
+        # The juice: a CRT screen look without the seizure-inducing motion.
+        # Scanlines and a phosphor tint texture the screen, a retro crosshair/
+        # pixel cursor replaces the pointer, buttons fire a mechanical stepped
+        # snap plus a soft neon bloom on hover, panels carry a thin neon bezel,
+        # and headings glow neon in the dark. No flicker, no roll -- the CRT
+        # sits still so it never triggers a headache.
+        'extra_css': """
+/* ==== Vintage Arcade: CRT terminal / 80s cabinet ==================== */
+
+/* ---- CRT scanlines -------------------------------------------------
+   A repeating dark stripe laid over the whole page simulates the gaps
+   between a cathode-ray tube's scan lines. Kept very low-contrast so
+   text stays readable; a faint magenta/green wash sits under it for the
+   "phosphor screen" tint. background-attachment:fixed pins the lines to
+   the viewport, so they read as the glass, not the content. */
+body {
+  background-color: var(--bg);
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.28) 0px,
+      rgba(0, 0, 0, 0.28) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    radial-gradient(80% 60% at 50% 0%, rgba(209, 95, 168, 0.06), transparent 60%),
+    radial-gradient(90% 70% at 50% 120%, rgba(95, 184, 90, 0.05), transparent 60%);
+  background-attachment: fixed;
+  /* Custom retro cursor everywhere: a phosphor-green crosshair. */
+  cursor: crosshair;
+}
+
+/* ---- Custom 8-bit "hand" cursor for anything clickable -------------
+   A tiny base64 pixel-pointer (a chunky white arrow with a black
+   outline, 16x16) replaces the OS hand on buttons and links. Falls
+   back to `pointer` if the data URI is ever stripped. */
+.btn, a, button, [role="button"], summary, label[for] {
+  cursor:
+    url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgc2hhcGUtcmVuZGVyaW5nPSJjcmlzcEVkZ2VzIiB2aWV3Qm94PSIwIDAgMTYgMTYiPjxwYXRoIGZpbGw9IiMwMDAiIGQ9Ik0yIDBoMnYyaC0yem0yIDJoMnYyaC0yem0yIDJoMnYyaC0yem0yIDJoMnYyaC0yem0yIDJoMnYyaC0yek00IDEwaDJ2Mmgtem0wIDJoLTJ2LTJoMnptLTQtMTBoMnYxMGgtMnoiLz48cGF0aCBmaWxsPSIjZmZmIiBkPSJNMiAyaDJ2MTBoLTJ6bTIgMGgydjJoLTJ6bTIgMmgydjJoLTJ6bTIgMmgydjJoLTJ6bTIgMmgydjJoLTJ6bS02IDJoMnYyaC0yeiIvPjwvc3ZnPg==') 2 2,
+    pointer;
+}
+
+/* ---- Neon glow on headings -----------------------------------------
+   Layered text-shadows build a tight magenta core fading to a broad
+   green halo, so titles "burn" into the dark screen. */
+h1, h2, h3, .pixel {
+  color: var(--ink);
+  text-shadow:
+    0 0 2px rgba(168, 221, 212, 0.6),
+    0 0 6px var(--accent),
+    0 0 12px rgba(209, 95, 168, 0.35);
+}
+
+/* ---- Button hover: neon bloom + mechanical snap --------------------
+   steps() makes the transform jump in hard stages instead of easing,
+   for a clunky arcade-relay feel; the box-shadow layers the stepped
+   retro shadow under an intense magenta/green neon bloom. */
+@media (hover: hover) {
+  .btn {
+    transition:
+      box-shadow 0.12s steps(3, end),
+      transform  0.08s steps(2, end),
+      background 0.12s steps(2, end);
+  }
+  .btn:hover {
+    background: var(--accent);
+    color: var(--border);
+    box-shadow:
+      var(--px) var(--px) 0 0 var(--shadow),
+      0 0 6px rgba(209, 95, 168, 0.55),
+      0 0 14px rgba(209, 95, 168, 0.3);
+  }
+  /* The "pop" call-to-action blooms green (Matrix/Pac-Man) instead. */
+  .btn--pop:hover {
+    background: var(--accent-2);
+    color: var(--border);
+    box-shadow:
+      var(--px) var(--px) 0 0 var(--shadow),
+      0 0 6px rgba(95, 184, 90, 0.6),
+      0 0 16px rgba(95, 184, 90, 0.3);
+  }
+}
+
+/* ---- Panels: a thin neon bezel ------------------------------------- */
+.panel {
+  box-shadow:
+    var(--px) var(--px) 0 0 var(--shadow),
+    inset 0 0 0 1px rgba(209, 95, 168, 0.18),
+    inset 0 0 18px rgba(95, 184, 90, 0.04);
+}
+""",
+    },
+    'military-terminal': {
+        'name': 'Military Terminal',
+        'blurb': 'Cold War readout: phosphor green on black, strictly business.',
+        # Share Tech Mono is a clean monospace with a technical, stencilled
+        # feel -- a field terminal, not an arcade. VT323 (already loaded for
+        # Vintage Arcade) carries the body as a matching CRT monospace.
+        'fonts': ('Share Tech Mono', 'VT323'),
+        # Share Tech Mono is a normal-width mono, not the tiny-and-wide Press
+        # Start 2P, so headings need a bump to fill the calibrated sizes.
+        'scale': 1.5,
+        'vars': {
+            # Near-black with the faintest green cast: an unlit phosphor screen.
+            '--bg': '#030602',
+            '--bg-panel': '#0a110a',    # a powered panel, barely lifted
+            '--ink': '#33ff66',         # classic phosphor green, the readout text
+            '--ink-dim': '#4a7a52',     # dimmer green for secondary lines
+            '--accent': '#7dff9a',      # brighter green: active fields, headings
+            '--accent-2': '#e0a53a',    # amber: the one warning/alert colour
+            '--border': '#0e1c0e',      # dark green-black hairline
+            '--shadow': '#000000',
+            '--good': '#33ff66',        # "visible" reuses the phosphor green
+        },
+        # Minimal on purpose: a military terminal is spartan. Just fine, still
+        # scanlines and a phosphor tint (no motion at all), a blinking-free
+        # block prompt feel from squared panels, and amber only where something
+        # needs attention. No glow storms, no animation -- it should read as a
+        # utilitarian readout, the quiet counterpoint to Vintage Arcade.
+        'extra_css': """
+/* ==== Military Terminal: spartan phosphor readout ================== */
+
+/* ---- Faint, static scanlines + a low phosphor wash ---------------
+   Same CRT-glass idea as the arcade theme but dialled right down: the
+   lines are barely there and nothing moves, so it reads as a serious
+   field terminal rather than a games cabinet. Pinned to the viewport. */
+body {
+  background-color: var(--bg);
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.22) 0px,
+      rgba(0, 0, 0, 0.22) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    radial-gradient(100% 80% at 50% 0%, rgba(51, 255, 102, 0.04), transparent 70%);
+  background-attachment: fixed;
+}
+
+/* ---- Squared, hard-edged panels: no soft anything --------------- */
+.panel {
+  box-shadow:
+    var(--px) var(--px) 0 0 var(--shadow),
+    inset 0 0 0 1px rgba(51, 255, 102, 0.14);
+}
+
+/* ---- Headings as terminal labels: a leading prompt glyph and a
+        subtle phosphor glow, nothing more. ------------------------- */
+h1, h2, h3, .pixel {
+  color: var(--accent);
+  text-shadow: 0 0 4px rgba(51, 255, 102, 0.35);
+}
+h1::before, h2::before {
+  content: "> ";
+  color: var(--ink-dim);
+}
+
+/* ---- Buttons: flat, hard, phosphor. Hover just inverts to the
+        green, like selecting a field on a text UI. No bloom. ------- */
+@media (hover: hover) {
+  .btn { transition: background 0.1s linear, color 0.1s linear; }
+  .btn:hover {
+    background: var(--ink);
+    color: var(--bg);
+  }
+  /* The one alert colour: POP is the button that shouts, in amber. */
+  .btn--pop:hover {
+    background: var(--accent-2);
+    color: var(--bg);
+  }
+}
+""",
+    },
 }
 
 DEFAULT_THEME = 'dungeon-torch'
+
+# Themes gathered into labelled families for the picker. The first group holds
+# the official D&D campaign presets; "Other Universes" collects everything that
+# isn't D&D (Vintage Arcade is the first of these). Membership is by explicit
+# id list so a theme's place is stated in one spot; any theme NOT named in a
+# group falls through to the last group automatically, so a future non-D&D
+# preset lands in "Other Universes" without a second edit here. Order of the
+# groups, and of ids within a group, is the order the picker renders them --
+# except the default theme, which theme_groups() always floats to the top of
+# its own group.
+THEME_GROUPS = (
+    ('Dungeons & Dragons', (
+        'dungeon-torch',
+        'phandelver',
+        'tiamat',
+        'out-of-the-abyss',
+        'tomb-of-annihilation',
+        'curse-of-strahd',
+        'icewind-dale',
+        'vecna-eve-of-ruin',
+        'tashas-cauldron',
+        'xanathars-guide',
+    )),
+    ('Other Universes', (
+        'vintage-arcade',
+        'military-terminal',
+    )),
+)
 
 # Faces needing more than a plain family name in the Google Fonts URL.
 #
@@ -396,6 +624,12 @@ _FONT_QUERY = {
     # Xanathar theme. Nova Square is a single-style squared display; Cardo
     # (body) is already listed above.
     'Nova Square': 'family=Nova+Square',
+    # Vintage Arcade theme. VT323 is a single-style CRT-terminal monospace;
+    # its display face Press Start 2P is already listed above.
+    'VT323': 'family=VT323',
+    # Military Terminal theme. Share Tech Mono is a single-style monospace;
+    # its body face VT323 is already listed just above.
+    'Share Tech Mono': 'family=Share+Tech+Mono',
 }
 
 
@@ -411,6 +645,103 @@ def theme_list():
                   key=lambda t: THEMES[t]['name'].lower())
     return [{'id': tid, 'name': THEMES[tid]['name'], 'blurb': THEMES[tid]['blurb']}
             for tid in [DEFAULT_THEME] + rest]
+
+
+def theme_groups():
+    """Themes grouped for the picker: [{label, themes: [{id, name, blurb}]}].
+
+    Reads THEME_GROUPS for the labels and membership, then appends any theme
+    that no group named to the LAST group -- so a newly added non-D&D preset
+    shows up under "Other Universes" without touching this function. Within a
+    group the ids keep THEME_GROUPS order, except DEFAULT_THEME which is floated
+    to the front of whichever group holds it (it is the one the picker should
+    show first). Empty groups are dropped so a label with nothing under it
+    never renders a bare heading.
+    """
+    assigned = {tid for _, ids in THEME_GROUPS for tid in ids}
+    leftover = [tid for tid in THEMES if tid not in assigned]
+
+    groups = []
+    last = len(THEME_GROUPS) - 1
+    for i, (label, ids) in enumerate(THEME_GROUPS):
+        # Keep only ids that really exist in THEMES (guards against a typo or a
+        # removed theme lingering in the group list), preserving their order.
+        members = [tid for tid in ids if tid in THEMES]
+        # Anything no group claimed rides along with the final group.
+        if i == last:
+            members += leftover
+        # Float the default theme to the front of its group.
+        if DEFAULT_THEME in members:
+            members = [DEFAULT_THEME] + [t for t in members if t != DEFAULT_THEME]
+        if not members:
+            continue
+        groups.append({
+            'label': label,
+            'themes': [{'id': tid,
+                        'name': THEMES[tid]['name'],
+                        'blurb': THEMES[tid]['blurb']}
+                       for tid in members],
+        })
+    return groups
+
+
+# The colour tokens a preview swatch carries verbatim from the theme. The two
+# font faces are handled separately (see theme_preview_style) because they need
+# to become differently-named custom properties, not copied as-is.
+_PREVIEW_KEYS = ('--bg', '--bg-panel', '--ink', '--ink-dim',
+                 '--accent', '--accent-2', '--border')
+
+
+def theme_preview_style(theme_id):
+    """Inline `style` value that dresses one picker box in its own theme.
+
+    Emits the colour custom properties (`--bg: #..; --ink: #..; ...`) plus two
+    preview-only font properties, `--preview-font-display` and
+    `--preview-font-body`, carrying that theme's heading and body faces. The
+    picker CSS reads those two on `.theme-choice--preview` so each box's name
+    and blurb render in the theme's ACTUAL typefaces, not the page's -- a true
+    font+colour preview. (This needs every theme's font loaded on the page;
+    see all_fonts_url, which the Appearance template links for exactly that.)
+
+    Returned as Markup because it is CSS going into an attribute, not HTML; the
+    values are fixed strings from the theme table, never user input.
+    """
+    theme = THEMES.get(clean_theme(theme_id))
+    vars_ = theme['vars']
+    display, body = theme['fonts']
+    parts = [f'{k}: {vars_[k]}' for k in _PREVIEW_KEYS if k in vars_]
+    # Same fallbacks as css_vars, so a box still reads if a face fails to load.
+    parts.append(f"--preview-font-display: '{display}', Georgia, serif")
+    parts.append(f"--preview-font-body: '{body}', Georgia, serif")
+    # The display face's own size correction, so each preview name is sized by
+    # the SAME factor the real UI would use for that theme (Press Start 2P is
+    # tiny, blackletters are huge -- the scale evens them out).
+    parts.append(f"--preview-scale: {theme['scale']}")
+    return Markup('; '.join(parts) + ';')
+
+
+def all_fonts_url():
+    """Google Fonts URL carrying EVERY face used by any theme.
+
+    Only the Appearance page links this: the theme picker previews each box in
+    its own typeface, so it needs them all at once, unlike the rest of the app
+    where fonts_url fetches just the active theme's two faces. Families are
+    de-duplicated and sorted so the css2 API accepts the request (it rejects an
+    unsorted family list) and so two themes sharing a face don't request it
+    twice.
+
+    Returned as Markup: the `&` separators are URL syntax that Jinja's HTML
+    autoescaping would turn into `&amp;` and break.
+    """
+    families = set()
+    for theme in THEMES.values():
+        display, body = theme['fonts']
+        families.add(display)
+        families.add(body)
+    specs = [_FONT_QUERY.get(fam, 'family=' + fam.replace(' ', '+'))
+             for fam in sorted(families)]
+    return Markup('https://fonts.googleapis.com/css2?'
+                  + '&'.join(specs) + '&display=swap')
 
 
 def fonts_url(theme_id):

@@ -12,13 +12,10 @@
             <button class="lightbox__nav lightbox__nav--prev" type="button" aria-label="{{ 'Previous' | t }}">&lsaquo;</button>
             <div class="lightbox__media"><!-- filled by JS --></div>
             <button class="lightbox__nav lightbox__nav--next" type="button" aria-label="{{ 'Next' | t }}">&rsaquo;</button>
-            {# Zoom controller: needed on desktop (no pinch) and handy on touch.
-               Buttons stay live in every viewer; pinch + drag are wired in JS. #}
-            <div class="lightbox__zoom" role="group" aria-label="{{ 'Zoom' | t }}">
-                <button type="button" class="lightbox__zoombtn" data-zoom="out" aria-label="{{ 'Zoom out' | t }}">&minus;</button>
-                <button type="button" class="lightbox__zoombtn lightbox__zoomlevel" data-zoom="reset" aria-label="{{ 'Reset zoom' | t }}">100%</button>
-                <button type="button" class="lightbox__zoombtn" data-zoom="in" aria-label="{{ 'Zoom in' | t }}">&plus;</button>
-            </div>
+            {# No zoom buttons: on desktop the mouse wheel zooms and on touch
+               pinch-to-zoom does, so the on-screen +/-/reset controls were
+               redundant. The zoom mechanics (wheel, pinch, drag-to-pan,
+               double-tap, keyboard +/-/0) all stay wired up in JS below. #}
         </div>
         <div class="lightbox__dots"><!-- filled by JS --></div>
         <div class="lightbox__caption">
@@ -442,15 +439,10 @@
             else if (e.key === '0') resetZoom();
         });
 
-        // ---- Zoom buttons (needed on desktop, where there is no pinch) ----
-        box.querySelectorAll('[data-zoom]').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var kind = btn.getAttribute('data-zoom');
-                if (kind === 'in') zoomBy(ZOOM_STEP);
-                else if (kind === 'out') zoomBy(-ZOOM_STEP);
-                else resetZoom();
-            });
-        });
+        // ---- Zoom mechanics only (no on-screen buttons) ------------------
+        //      Desktop: mouse wheel (below) and keyboard +/-/0. Touch: pinch
+        //      and double-tap. The old +/-/reset buttons were removed as
+        //      redundant, so there is no [data-zoom] handler here anymore.
 
         // ---- Mouse wheel zoom on desktop. The lightbox is a fullscreen modal,
         //      so the wheel has nothing else to scroll here and zooming it is

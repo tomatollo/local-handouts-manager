@@ -147,6 +147,9 @@ def create_app():
         return {
             'lang': g.lang,
             'languages': i18n.LANGUAGES,
+            # The active theme id, exposed so templates can special-case a
+            # specific look (e.g. the footer's Curse of Strahd easter egg).
+            'theme': theme,
             'theme_css': theming.css_vars(theme),
             'theme_fonts_url': theming.fonts_url(theme),
             'is_master': auth.is_master(),

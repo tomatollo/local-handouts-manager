@@ -58,6 +58,40 @@
     #server-status.is-offline .server-dot {
         background-color: #dc3545 !important; 
     }
+
+    /* ---- Curse of Strahd easter egg: the dead crow ----
+       The footer becomes the positioning context so the crow can perch in its
+       corner. It's a decorative flourish: faded, slightly rotated, and it
+       fades in gently on load. Kept out of the way of the footer text and
+       non-interactive (pointer-events:none) so it never blocks a link. */
+    .site-footer { position: relative; }
+    .footer-crow {
+        position: absolute;
+        right: 8px;
+        bottom: 6px;
+        width: 84px;
+        height: auto;
+        opacity: 0.55;
+        transform: rotate(-6deg);
+        pointer-events: none;
+        /* Behind the text in case they ever overlap on a very narrow footer. */
+        z-index: 0;
+        filter: grayscale(0.3) brightness(0.9);
+        animation: footer-crow-in 1.2s ease-out both;
+    }
+    @keyframes footer-crow-in {
+        from { opacity: 0; transform: translateY(8px) rotate(-6deg); }
+        to   { opacity: 0.55; transform: translateY(0) rotate(-6deg); }
+    }
+    /* Respect reduced-motion: show it, but don't animate it in. */
+    @media (prefers-reduced-motion: reduce) {
+        .footer-crow { animation: none; }
+    }
+    /* On small screens shrink it and tuck it further into the corner so it
+       doesn't crowd the wrapping footer links. */
+    @media (max-width: 560px) {
+        .footer-crow { width: 56px; opacity: 0.45; }
+    }
 </style>
 
 <footer class="site-footer{% if footer_full %} site-footer--full{% endif %}">
@@ -104,6 +138,14 @@
             <a href="https://github.com/tomatollo" target="_blank" rel="noopener noreferrer">🐙 github.com/tomatollo</a>
         </p>
     </div>
+    {% endif %}
+
+    {# Easter egg: under Curse of Strahd a dead crow settles into the footer
+       corner. Purely decorative, so it's aria-hidden; it only exists when that
+       theme is active, so no other theme pays for the extra image request. #}
+    {% if theme == 'curse-of-strahd' %}
+    <img class="footer-crow" aria-hidden="true" alt=""
+         src="{{ url_for('static', filename='css/whiteCrow.svg') }}">
     {% endif %}
     
 </footer>

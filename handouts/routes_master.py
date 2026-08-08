@@ -220,10 +220,13 @@ def upload_handout():
     # visible -- and it only does so on an explicit, separately-labelled button.
     pop_now = bool(request.form.get('pop'))
 
-    # Optional secret reveal: a password + the handout it unlocks. The linked
-    # id is validated against the DB so stale form data can't point at nothing;
-    # an empty password disables the feature regardless of the linked id.
-    secret_password = request.form.get('secret_password', '').strip()
+    # Optional secret reveal: one or more passwords (one per line) + the
+    # handout they unlock, plus a flag to match them case-insensitively. The
+    # linked id is validated against the DB so stale form data can't point at
+    # nothing; an empty password list disables the feature regardless of the id.
+    secret_passwords = storage.parse_passwords(
+        request.form.get('secret_passwords', ''))
+    secret_ignore_case = bool(request.form.get('secret_ignore_case'))
     secret_handout_id = request.form.get('secret_handout_id', '').strip() or None
     if secret_handout_id and storage.find(db, secret_handout_id) is None:
         secret_handout_id = None
@@ -241,7 +244,8 @@ def upload_handout():
         'hard_covers': hard_covers,
         'source_format': source_format,
         'back_cover': back_cover,
-        'secret_password': secret_password,
+        'secret_passwords': secret_passwords,
+        'secret_ignore_case': secret_ignore_case,
         'secret_handout_id': secret_handout_id,
         'session_number': storage.parse_session_number(
             request.form.get('session_number')),
@@ -295,10 +299,13 @@ def edit_handout(handout_id):
     handout['session_number'] = storage.parse_session_number(
         request.form.get('session_number'))
 
-    # Secret reveal: password + linked handout. The link is validated against
-    # the DB and must not be the handout itself (a self-link would just reopen
-    # the same viewer). An empty password leaves the feature off.
-    handout['secret_password'] = request.form.get('secret_password', '').strip()
+    # Secret reveal: passwords (one per line) + linked handout + ignore-case
+    # flag. The link is validated against the DB and must not be the handout
+    # itself (a self-link would just reopen the same viewer). An empty password
+    # list leaves the feature off.
+    handout['secret_passwords'] = storage.parse_passwords(
+        request.form.get('secret_passwords', ''))
+    handout['secret_ignore_case'] = bool(request.form.get('secret_ignore_case'))
     secret_target = request.form.get('secret_handout_id', '').strip() or None
     if secret_target == handout_id:
         secret_target = None
@@ -663,8 +670,10 @@ def appearance():
     """Theme + interface language, moved off the dashboard."""
     db = storage.load_db()
     return render_template('master/appearance.html',
-                           themes=theming.theme_list(),
+                           theme_groups=theming.theme_groups(),
                            theme_vars=theming.THEMES,
+                           theme_preview=theming.theme_preview_style,
+                           preview_fonts_url=theming.all_fonts_url(),
                            current_theme=storage.get_theme(db))
 
 
