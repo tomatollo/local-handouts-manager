@@ -140,6 +140,11 @@ def create_app():
         # than the request. Both are needed by every page's <head>.
         db = storage.load_db()
         theme = storage.get_theme(db)
+        # The player-hub welcome header, resolved to one title + subtitle for
+        # this render (a random line when the Master enabled random and gave a
+        # list, else the first / their single text; None where they left it
+        # default, which the hub template turns into the translatable default).
+        welcome = storage.pick_welcome(db)
         # `is_master` drives which nav entries a page offers. It is a UI hint
         # ONLY: every master route enforces the same check server-side via
         # auth.master_required, so a template that forgot the condition would
@@ -152,6 +157,9 @@ def create_app():
             'theme': theme,
             'theme_css': theming.css_vars(theme),
             'theme_fonts_url': theming.fonts_url(theme),
+            # Resolved welcome header (see above). A dict {title, subtitle};
+            # either may be None, meaning "use the template's default".
+            'welcome': welcome,
             'is_master': auth.is_master(),
             # Stricter than is_master: true only after a real passphrase
             # unlock, never during first-run fall-open. Used by pages that
@@ -172,7 +180,12 @@ def create_app():
             # the hub and folder pages keep passing their already-filtered
             # lists and nothing changes for them.
             'folders': storage.all_folders(db),
-            'tags': storage.all_tags(db),
+            # Tags for the shared browse drawer. Players must only ever see
+            # tags that belong to a VISIBLE handout -- a tag living solely on a
+            # hidden handout would leak that unrevealed material exists. The
+            # master sees every tag so they can still organise drafts. A route
+            # that passes its own already-filtered `tags` still overrides this.
+            'tags': storage.all_tags(db, only_visible=not auth.is_master()),
         }
 
     app.register_blueprint(player_bp)

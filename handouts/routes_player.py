@@ -69,7 +69,7 @@ def home():
                            mode=mode,
                            query=query,
                            folders=folders,
-                           tags=storage.all_tags(db),
+                           tags=storage.all_tags(db, only_visible=True),
                            total=len(visible),
                            shown=len(matched))
 
@@ -253,4 +253,4 @@ def folder(folder_id):
                            folder=folder,
                            handouts=items,
                            folders=folders,
-                           tags=storage.all_tags(db))
+                           tags=storage.all_tags(db, only_visible=True))

@@ -667,14 +667,15 @@ def map_focus():
 @bp.route('/dm-panel/appearance')
 @auth.master_required
 def appearance():
-    """Theme + interface language, moved off the dashboard."""
+    """Theme + welcome header + interface language, moved off the dashboard."""
     db = storage.load_db()
     return render_template('master/appearance.html',
                            theme_groups=theming.theme_groups(),
                            theme_vars=theming.THEMES,
                            theme_preview=theming.theme_preview_style,
                            preview_fonts_url=theming.all_fonts_url(),
-                           current_theme=storage.get_theme(db))
+                           current_theme=storage.get_theme(db),
+                           welcome_config=storage.get_welcome_config(db))
 
 
 @bp.route('/dm-panel/transfer')
@@ -710,6 +711,26 @@ def set_theme():
     storage.save_db(db)
     # Back to the appearance page, which is where the form now lives, so the
     # Master can see the new theme applied without navigating.
+    return redirect(url_for('master.appearance'))
+
+
+@bp.route('/settings/welcome', methods=['POST'])
+@auth.master_required
+def set_welcome():
+    """Set the player-hub welcome title(s) + subtitle(s) and random flag.
+
+    The two textareas are one line per alternative; an empty textarea clears
+    that field back to the app default. `welcome_random` (a checkbox) turns on
+    picking a random line per page load; off means always the first line.
+    """
+    db = storage.load_db()
+    storage.set_welcome(
+        db,
+        request.form.get('welcome_titles', ''),
+        request.form.get('welcome_subtitles', ''),
+        bool(request.form.get('welcome_random')),
+    )
+    storage.save_db(db)
     return redirect(url_for('master.appearance'))
 
 

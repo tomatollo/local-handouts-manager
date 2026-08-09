@@ -351,6 +351,126 @@ h1, h2, h3, .pixel {
 }
 """,
     },
+    'shattered-obelisk': {
+        'name': 'Phandelver and Below: The Shattered Obelisk',
+        'blurb': 'The mine goes wrong: shattered stone, aberrant violet, and dread.',
+        # Metamorphous -- a heavy stone-carved display -- gives the sequel its
+        # own grim, aberrant weight rather than reusing Phandelver's
+        # MedievalSharp. Merriweather keeps the body readable.
+        'fonts': ('Metamorphous', 'Merriweather'),
+        # Metamorphous is the same face Out of the Abyss uses at 1.5.
+        'scale': 1.5,
+        'vars': {
+            '--bg': '#141019',          # cracked-stone dark with a violet cast
+            '--bg-panel': '#1e1826',    # obelisk basalt
+            '--ink': '#e8e0d0',         # weathered parchment
+            '--ink-dim': '#9a8fa0',
+            '--accent': '#a06fd0',      # aberrant obelisk violet
+            '--accent-2': '#c98a3e',    # the old Phandelver gold, tarnished
+            '--border': '#0a0710',
+            '--shadow': '#000000',
+            '--good': '#5a8c72',
+        },
+    },
+    'dragon-heist': {
+        'name': 'Waterdeep: Dragon Heist',
+        'blurb': 'City of splendors: harbour blue, gold coin, and intrigue.',
+        # Cormorant Unicase -- an elegant high-contrast unicase display -- gives
+        # the grand, moneyed Waterdhavian nameplate its own look (not another
+        # Cinzel). Lora keeps the body a readable serif for a city adventure.
+        'fonts': ('Cormorant Unicase', 'Lora'),
+        'scale': 1.5,
+        'vars': {
+            '--bg': '#0e1622',          # Waterdeep harbour at night
+            '--bg-panel': '#172433',    # deep sea-blue stone
+            '--ink': '#eef2f7',
+            '--ink-dim': '#93a5ba',
+            '--accent': '#e6b422',      # dragon (gold coin) yellow
+            '--accent-2': '#3f8fb0',    # harbour teal
+            '--border': '#070b11',
+            '--shadow': '#000000',
+            '--good': '#4e9c8a',
+        },
+    },
+    'mad-mage': {
+        'name': 'Waterdeep: Dungeon of the Mad Mage',
+        'blurb': 'Undermountain: torch-lit depths, mad-wizard green, and stone.',
+        # Uncial Antiqua -- a rounded manuscript uncial -- reads like a mad
+        # wizard's grimoire, setting Halaster's megadungeon apart from the
+        # city above. Lora keeps the long text legible.
+        'fonts': ('Uncial Antiqua', 'Lora'),
+        # Uncial Antiqua sits large and wide, so it needs less of a bump.
+        'scale': 1.35,
+        'vars': {
+            '--bg': '#0c0e0d',          # black Undermountain rock
+            '--bg-panel': '#161a17',    # wet dungeon stone
+            '--ink': '#e4e6df',
+            '--ink-dim': '#8b938a',
+            '--accent': '#8fbf3f',      # Halaster's mad arcane green
+            '--accent-2': '#c06a2e',    # torch ember
+            '--border': '#060706',
+            '--shadow': '#000000',
+            '--good': '#6a9c4f',
+        },
+    },
+    'witchlight': {
+        'name': 'The Wild Beyond the Witchlight',
+        'blurb': 'A feywild carnival: candy pinks, dream teal, and fairy lights.',
+        # A whimsical fey carnival, so it takes an ornate, storybook display
+        # (Cinzel Decorative) with a soft Cormorant Garamond body.
+        'fonts': ('Cinzel Decorative', 'Cormorant Garamond'),
+        'scale': 1.45,
+        'vars': {
+            '--bg': '#14101e',          # twilight feywild sky
+            '--bg-panel': '#221a30',    # dusky carnival violet
+            '--ink': '#f4e9f2',         # moonlit cream
+            '--ink-dim': '#b79cc0',
+            '--accent': '#f06eaa',      # witchlight carnival pink
+            '--accent-2': '#48c9c0',    # fey dream teal
+            '--border': '#0b0713',
+            '--shadow': '#000000',
+            '--good': '#5fc0a0',
+        },
+    },
+    'candlekeep': {
+        'name': 'Candlekeep Mysteries',
+        'blurb': 'The great library: candle-warm parchment, ink, and old leather.',
+        # A library of mysteries, so it leans scholarly: EB Garamond as an
+        # old-book display with a matching serif body.
+        'fonts': ('EB Garamond', 'Lora'),
+        'scale': 1.55,
+        'vars': {
+            '--bg': '#15110a',          # dim library, candle shadow
+            '--bg-panel': '#201a10',    # old leather binding
+            '--ink': '#efe6cf',         # candle-lit page
+            '--ink-dim': '#a99a7a',
+            '--accent': '#e0a53a',      # candle flame amber
+            '--accent-2': '#8a6f3a',    # aged gilt
+            '--border': '#0b0805',
+            '--shadow': '#000000',
+            '--good': '#6a8c52',
+        },
+    },
+    'theros': {
+        'name': 'Mythic Odysseys of Theros',
+        'blurb': 'Greek myth: sun-bleached marble, olive bronze, and Nyx starlight.',
+        # Marcellus SC -- calligraphic Roman small-caps -- reads like letters
+        # carved into a temple frieze, distinct from Tiamat's Cinzel. Playfair
+        # Display keeps the body a high-contrast classical serif.
+        'fonts': ('Marcellus SC', 'Playfair Display'),
+        'scale': 1.5,
+        'vars': {
+            '--bg': '#0d1016',          # Nyx night sky
+            '--bg-panel': '#181c24',    # dark marble
+            '--ink': '#f2ede2',         # sun-bleached stone
+            '--ink-dim': '#9aa0ac',
+            '--accent': '#d9a441',      # temple bronze / olive gold
+            '--accent-2': '#5b8fd0',    # Nyx starfield blue
+            '--border': '#070a0f',
+            '--shadow': '#000000',
+            '--good': '#5a9c86',
+        },
+    },
     'vintage-arcade': {
         'name': 'Vintage Arcade',
         'blurb': 'CRT phosphor and neon synthwave: insert coin to continue.',
@@ -802,6 +922,35 @@ select {
 select option { color: #2b2b2b; background-color: #f4eeda; }
 input:focus, select:focus, textarea:focus { border-color: var(--accent); outline: none; }
 
+/* ---- Checkbox rows: .folder-choice -------------------------------
+   Every labelled checkbox in the forms (Hard covers, the folder picker
+   chips, Ignore-case, Remove ticks) is a .folder-choice, which the base
+   CSS paints background:var(--bg) (the dark board) + color:--ink (dark)
+   -- a black chip with black text. Put them on a paper card with ink
+   text, and tint the tick itself with the stamp red so it reads as a
+   filled-in form box. */
+.folder-choice {
+  background: #ded3b6;                    /* manila chip */
+  color: var(--ink);
+  border-color: var(--border);
+}
+.folder-choice input[type="checkbox"],
+.folder-choice input[type="radio"] {
+  accent-color: var(--accent);           /* red rubber-stamp tick */
+}
+@media (hover: hover) {
+  .folder-choice:hover { border-color: var(--accent); background: #e6dcc2; }
+}
+/* A checked chip reads as a stamped/approved box: subtle red wash. */
+.folder-choice:has(input:checked) {
+  background: #ecd9c4;
+  border-color: var(--accent);
+}
+/* The edit page's remove-tick and per-file description labels live on the
+   dark board too; keep their text light there, ink on the paper chip. */
+.edit-file__remove { color: #d9d2c2; }
+.edit-file__desc span { color: #d9d2c2; }
+
 /* ---- Tags & PDF placeholders: paper labels, not black holes -------
    These used `background: var(--bg)` (black) + --accent text. Turn them
    into little paper labels with red stamp text on the manila panel. */
@@ -1011,6 +1160,183 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); outline
 }
 """,
     },
+    'holo-hud': {
+        'name': 'Holo HUD',
+        'blurb': 'Sci-fi interface: black glass, amber telemetry, and cut-corner frames.',
+        # Orbitron is THE spaceship-UI display face -- geometric, angular, neon.
+        # Share Tech Mono (already loaded for Military Terminal) is the clean
+        # terminal/data monospace for the body, exactly the dashboard look.
+        'fonts': ('Orbitron', 'Share Tech Mono'),
+        # Orbitron is a normal-width display face, so headings need a bump to
+        # fill the calibrated sizes (it runs a little wide, so a moderate one).
+        'scale': 1.3,
+        'vars': {
+            # Pure black glass panel with the faintest blue lift, like the
+            # dashboard screens in the references.
+            '--bg': '#05060a',
+            '--bg-panel': '#0b0e14',    # a powered readout panel, barely lifted
+            '--ink': '#d8e0ea',         # cool white telemetry text
+            '--ink-dim': '#6f7d90',     # dimmed labels / secondary readouts
+            '--accent': '#f5a524',      # amber: the dominant HUD accent
+            '--accent-2': '#31d2f2',    # cyan: the secondary data highlight
+            '--border': '#1c2430',      # dark blue-grey hairline
+            '--shadow': '#000000',
+            '--good': '#31d2f2',        # "visible" reuses the cyan data glow
+        },
+        # The juice: a heads-up display. Cut-corner frames (clip-path) on the
+        # panels with amber corner brackets, a faint dot-grid + scanline wash on
+        # the board, monospace data glow on headings, and hover states that snap
+        # like a targeting reticle. Motion is minimal and behind
+        # prefers-reduced-motion; the HUD mostly sits still and precise.
+        'extra_css': """
+/* ==== Holo HUD: sci-fi heads-up display =========================== */
+
+/* ---- The board: black glass, dot-grid + faint scanlines ----------
+   A technical dot grid and very low-contrast scanlines texture the
+   black so it reads as a screen, plus a soft amber/cyan glow bleeding
+   from the corners like a powered console. Pinned to the viewport. */
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05) 0.5px, transparent 0.5px),
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.30) 0 1px, transparent 1px 3px),
+    radial-gradient(70% 50% at 0% 0%, rgba(245,165,36,0.06), transparent 60%),
+    radial-gradient(70% 50% at 100% 100%, rgba(49,210,242,0.06), transparent 60%);
+  background-size: 22px 22px, 100% 100%, 100% 100%, 100% 100%;
+  background-attachment: fixed;
+  color: var(--ink);
+}
+.subtitle { color: var(--ink-dim); }
+
+/* ---- Panels: cut-corner HUD frames -------------------------------
+   clip-path bevels the top-left and bottom-right corners so a panel
+   reads as an angular HUD plate, not a rounded card. A thin cyan inner
+   line + amber corner brackets (::before/::after) complete the frame.
+   All bracket pseudo-elements are non-interactive. */
+.panel, .wiki-card, .handout-card, .folder-card {
+  position: relative;
+  background:
+    linear-gradient(160deg, rgba(49,210,242,0.03), rgba(0,0,0,0) 45%),
+    var(--bg-panel);
+  border: 1px solid var(--border);
+  clip-path: polygon(
+    14px 0, 100% 0, 100% calc(100% - 14px),
+    calc(100% - 14px) 100%, 0 100%, 0 14px);
+  box-shadow: inset 0 0 0 1px rgba(49,210,242,0.10),
+              inset 0 0 24px rgba(0,0,0,0.5);
+}
+/* Amber corner bracket, top-left. */
+.panel::before {
+  content: "";
+  position: absolute;
+  top: 6px; left: 6px;
+  width: 16px; height: 16px;
+  border-top: 2px solid var(--accent);
+  border-left: 2px solid var(--accent);
+  pointer-events: none;
+  opacity: 0.85;
+}
+/* Amber corner bracket, bottom-right. */
+.panel::after {
+  content: "";
+  position: absolute;
+  bottom: 6px; right: 6px;
+  width: 16px; height: 16px;
+  border-bottom: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+/* ---- Headings: telemetry readouts with a soft amber glow --------- */
+h1, h2, h3, .pixel {
+  color: var(--accent);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 0 6px rgba(245,165,36,0.4);
+}
+/* A leading bracket glyph on the top titles, like a HUD label. */
+h1::before { content: "[ "; color: var(--accent-2); }
+h1::after  { content: " ]"; color: var(--accent-2); }
+/* Section heads use the cyan data colour to separate them from the amber. */
+h2, h3 { color: var(--accent-2); text-shadow: 0 0 5px rgba(49,210,242,0.35); }
+
+/* ---- Buttons: reticle-snap on hover ------------------------------
+   A flat dark plate with a cut corner and an amber label. Hover fills
+   with amber and snaps the text to black, like selecting a system on a
+   targeting readout. */
+.btn {
+  background: #0e1219;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px),
+                     calc(100% - 8px) 100%, 0 100%, 0 8px);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: background 0.1s steps(2, end), color 0.1s steps(2, end),
+              box-shadow 0.15s ease;
+}
+@media (hover: hover) {
+  .btn:hover {
+    background: var(--accent);
+    color: #05060a;
+    box-shadow: 0 0 10px rgba(245,165,36,0.6);
+  }
+  /* Ghost / nav buttons stay outline-only until hovered, so a toolbar of
+     them reads as a HUD strip rather than a wall of filled chips. */
+  .btn--ghost {
+    background: transparent;
+    color: var(--ink-dim);
+    border-color: var(--border);
+  }
+  .btn--ghost:hover {
+    background: rgba(49,210,242,0.12);
+    color: var(--accent-2);
+    border-color: var(--accent-2);
+    box-shadow: 0 0 8px rgba(49,210,242,0.4);
+  }
+  /* POP is the priority alert: cyan glow instead of amber. */
+  .btn--pop:hover {
+    background: var(--accent-2);
+    color: #05060a;
+    box-shadow: 0 0 12px rgba(49,210,242,0.7);
+  }
+}
+/* Active nav = a lit amber system. */
+.hub-mode__btn--active,
+.view-btn--active,
+.drawer__link--active {
+  background: var(--accent);
+  color: #05060a;
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(245,165,36,0.5);
+}
+
+/* ---- Count badges: hex-ish data chips ---------------------------- */
+.count-badge {
+  background: rgba(49,210,242,0.15);
+  color: var(--accent-2);
+  border: 1px solid var(--accent-2);
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px),
+                     calc(100% - 4px) 100%, 0 100%, 0 4px);
+}
+
+/* ---- Tags: bracketed labels -------------------------------------- */
+.tag {
+  background: rgba(245,165,36,0.10);
+  color: var(--accent);
+  border: 1px solid rgba(245,165,36,0.4);
+}
+.tag--session { color: var(--accent-2); border-color: rgba(49,210,242,0.4); }
+
+/* ---- Tree view: terminal readout, cyan connectors ---------------- */
+.handout-tree { color: rgba(49,210,242,0.5); }
+.handout-tree .tree-node { color: var(--accent); }
+.handout-tree .tree-leaf { color: var(--ink); }
+.handout-tree .tree-leaf:hover,
+.handout-tree .tree-leaf--active { color: var(--accent-2); }
+""",
+    },
 }
 
 DEFAULT_THEME = 'dungeon-torch'
@@ -1027,14 +1353,20 @@ DEFAULT_THEME = 'dungeon-torch'
 THEME_GROUPS = (
     ('Dungeons & Dragons', (
         'phandelver',
+        'shattered-obelisk',
+        'curse-of-strahd',
+        'tomb-of-annihilation',
+        'dragon-heist',
+        'mad-mage',
         'tiamat',
         'out-of-the-abyss',
-        'tomb-of-annihilation',
-        'curse-of-strahd',
         'icewind-dale',
-        'vecna-eve-of-ruin',
+        'witchlight',
+        'candlekeep',
         'tashas-cauldron',
         'xanathars-guide',
+        'vecna-eve-of-ruin',
+        'theros',
     )),
     # Dungeon Torch lives here (not D&D-specific -- it's the generic pixel
     # default). It is still DEFAULT_THEME, and theme_groups() floats the
@@ -1045,6 +1377,7 @@ THEME_GROUPS = (
         'vintage-arcade',
         'military-terminal',
         'analog-archive',
+        'holo-hud',
     )),
 )
 
@@ -1262,6 +1595,126 @@ THEME_ERRORS = {
               'Xanathar fell asleep and dreamed of a rogue server process, '
               'spawning a catastrophic anomaly!'),
     },
+    'shattered-obelisk': {
+        400: ('\U0001FAA8', 'Cracked Rune',
+              'The rune you inscribed is fractured. Your malformed request '
+              'crumbled before it could resolve.'),
+        401: ('\U0001F6E1\uFE0F', 'Redbrand Checkpoint',
+              'The Redbrands bar your way. You lack the token that lets you '
+              'pass into Tresendar.'),
+        403: ('\U0001F52E', 'Aberrant Ward',
+              'The shattered obelisk pulses and rejects you. This chamber is '
+              'sealed against the unworthy.'),
+        404: ('\U0001F573\uFE0F', 'Collapsed Shaft',
+              'The tunnel caved in ahead. Whatever you sought is buried '
+              'somewhere beyond the rubble.'),
+        429: ('\U0001F300', 'Warping Presence',
+              'Reality is bending too fast around you. Step back from the '
+              'obelisk and let it settle.'),
+        500: ('\U0001F311', 'Obelisk Backlash',
+              'The obelisk discharged raw aberrant power through the server. '
+              'Containment routines are re-forming reality.'),
+    },
+    'dragon-heist': {
+        400: ('\U0001F4DC', 'Forged Deed',
+              'The property deed you presented is a forgery. The clerk at the '
+              'Palace rejects your paperwork.'),
+        401: ('\U0001F5DD\uFE0F', 'No Guild Token',
+              'You have no writ from the guilds. The Waterdhavian watch will '
+              'not let you through.'),
+        403: ('\U0001F409', "Dragon's Vault",
+              'The half-million gold is not for you. This vault is sealed to '
+              'all but the holder of the Stone.'),
+        404: ('\U0001FA99', 'Trail Gone Cold',
+              'The coin led nowhere. The lead you were chasing has vanished '
+              'into the city crowds.'),
+        429: ('\U0001F3C3', 'Too Many Factions',
+              "You're chasing every faction at once. Slow down before the "
+              'whole city is on your tail.'),
+        500: ('\u2694\uFE0F', 'Guild War',
+              'The factions came to blows in the streets. The city is in '
+              'chaos while order is restored.'),
+    },
+    'mad-mage': {
+        400: ('\U0001F5FA\uFE0F', 'Lost on the Level',
+              'Undermountain twisted your map. Your request wandered into the '
+              'wrong corridor and never returned.'),
+        401: ('\U0001F6AA', 'Warded Door',
+              'A sigil-locked door blocks the way. You lack the phrase Halaster '
+              'set upon it.'),
+        403: ('\U0001F9D9', "Halaster's Whim",
+              'The Mad Mage has decided you may not pass. His dungeon rearranges '
+              'itself to keep you out.'),
+        404: ('\U0001F573\uFE0F', 'Empty Level',
+              'This level of Undermountain is bare stone. Nothing you sought is '
+              'here -- or it moved when you blinked.'),
+        429: ('\U0001F300', 'Teleport Trap',
+              'You keep tripping the same teleport glyph. Pause before the '
+              'dungeon flings you somewhere worse.'),
+        500: ('\U0001F52E', 'Arcane Meltdown',
+              "Halaster's experiments overloaded the weave. The dungeon is "
+              'reshaping itself while it recovers.'),
+    },
+    'witchlight': {
+        400: ('\U0001F3A0', 'Muddled Wish',
+              'You phrased your wish carelessly and the carnival misheard it. '
+              'Try asking again, more sweetly.'),
+        401: ('\U0001F39F\uFE0F', 'No Carnival Ticket',
+              'You have no ticket to the Witchlight. The barkers turn you away '
+              'from the gates.'),
+        403: ('\U0001F344', 'Hourglass Coven',
+              'The Hourglass has forbidden this path. Its hags do not care to '
+              'let you wander here.'),
+        404: ('\U0001F98B', 'Lost in the Feywild',
+              'The path folded away like a dream. What you sought drifted off '
+              'into the endless carnival.'),
+        429: ('\U0001F36D', 'Too Much Wonder',
+              'You are rushing the marvels too fast. The Feywild spins -- take '
+              'a breath and wander slower.'),
+        500: ('\U0001F387', 'Carnival Collapse',
+              'The whole carnival winked out at once. The fey are stitching '
+              'the dream back together.'),
+    },
+    'candlekeep': {
+        400: ('\U0001FAB6', 'Smudged Ink',
+              'Your query blotted across the page. The scribes cannot read a '
+              'request written so carelessly.'),
+        401: ('\U0001F4D6', 'No Gift of Knowledge',
+              'Candlekeep admits only those who bring a book it lacks. You '
+              'have brought nothing new.'),
+        403: ('\U0001F5DD\uFE0F', 'Restricted Stacks',
+              'These shelves are sealed to visitors. Only the Avowed may walk '
+              'the inner archives.'),
+        404: ('\U0001F4DA', 'Misfiled Tome',
+              'The book you seek is not on its shelf. Somewhere in a million '
+              'volumes, it has been misplaced.'),
+        429: ('\U0001F56F\uFE0F', 'Reading Too Fast',
+              'You are pulling tomes faster than the Avowed can reshelve them. '
+              'Slow down and let the dust settle.'),
+        500: ('\U0001F525', 'Archive Ablaze',
+              'A candle tipped onto the manuscripts. The Avowed are fighting '
+              'the flames while the archive recovers.'),
+    },
+    'theros': {
+        400: ('\U0001F3FA', 'Rejected Offering',
+              'Your offering displeased the gods. The malformed rite was cast '
+              'back down from Nyx.'),
+        401: ('\u26A1', "Without the Gods' Favour",
+              'No deity vouches for you. The temple guardians will not grant '
+              'passage to the unfavoured.'),
+        403: ('\U0001F3DB\uFE0F', 'Sealed Temple',
+              'This sanctum is closed to mortals. Only a hero of legend may '
+              'cross its marble threshold.'),
+        404: ('\U0001F30C', 'Lost to Nyx',
+              'The path dissolved into the starfield. What you sought has '
+              'drifted into the night sky of Nyx.'),
+        429: ('\U0001F3C3', 'Hubris',
+              'You demand too much, too fast -- the gods call it hubris. '
+              'Temper your pride before they notice.'),
+        500: ('\u26A1', 'Wrath of the Gods',
+              'A god took offence and hurled a thunderbolt through the server. '
+              'The oracles are restoring the mortal realm.'),
+    },
     'vintage-arcade': {
         400: ('\U0001F579\uFE0F', 'Button Mash Error',
               'You hit A, B, X, Y, and Start all at once. The console didn\'t '
@@ -1322,6 +1775,26 @@ THEME_ERRORS = {
         500: ('\U0001F525', 'Archive Fire',
               'Someone left a cigarette burning on a stack of old reports. The '
               'back office is currently dealing with a chaotic emergency.'),
+    },
+    'holo-hud': {
+        400: ('\u26A0\uFE0F', 'Malformed Packet',
+              'The data stream failed checksum. Your request packet was '
+              'rejected by the input parser.'),
+        401: ('\U0001F510', 'Biometric Mismatch',
+              'Identity not recognised. This terminal requires a valid access '
+              'signature before it will respond.'),
+        403: ('\U0001F6F0\uFE0F', 'Clearance Denied',
+              'Your access level is insufficient for this sector. The system '
+              'has logged the attempt.'),
+        404: ('\U0001F4E1', 'Signal Lost',
+              'No telemetry at these coordinates. The node you are querying is '
+              'offline or was never mapped.'),
+        429: ('\u23F1\uFE0F', 'Bandwidth Exceeded',
+              'Input rate over threshold. Throttling engaged -- wait for the '
+              'buffer to clear before transmitting again.'),
+        500: ('\u26A1', 'Core Fault',
+              'A critical exception cascaded through the main core. Automatic '
+              'recovery routines are re-initialising the system.'),
     },
 }
 
@@ -1411,6 +1884,18 @@ _FONT_QUERY = {
     # Prime carries an ital+wght tuple so bold/italic report text renders.
     'Special Elite': 'family=Special+Elite',
     'Courier Prime': 'family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700',
+    # Holo HUD theme. Orbitron (geometric sci-fi display) is a variable font on
+    # the wght axis; its body face Share Tech Mono is already listed above.
+    'Orbitron': 'family=Orbitron:wght@400;500;600;700;800;900',
+    # Campaign themes with more distinctive display faces (see THEMES):
+    #   Dragon Heist -> Cormorant Unicase (elegant unicase, has weight axis),
+    #   Mad Mage     -> Uncial Antiqua (single-style manuscript uncial),
+    #   Theros       -> Marcellus SC (single-style Roman small-caps).
+    # Their body faces (Lora, Playfair Display) are already listed above, and
+    # Shattered Obelisk's new display (Metamorphous) is already listed too.
+    'Cormorant Unicase': 'family=Cormorant+Unicase:wght@300;400;500;600;700',
+    'Uncial Antiqua': 'family=Uncial+Antiqua',
+    'Marcellus SC': 'family=Marcellus+SC',
 }
 
 

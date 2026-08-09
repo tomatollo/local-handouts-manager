@@ -125,8 +125,12 @@ h3 { font-size: calc(0.8rem * var(--display-scale)); }
 
 /* hover effects only where a real pointer exists (not touch) */
 @media (hover: hover) {
-  .btn:hover { background: #f2bd5a; }
-  .btn--danger:hover { background: #d76a41; }
+  /* Lighten the theme's OWN accent instead of a hardcoded gold, so every
+     theme's button hover stays in its palette (Strahd reddens, Icewind cools,
+     etc.). color-mix is widely supported; the plain --accent is the fallback
+     for the few engines without it -- no hover tint, but never the wrong one. */
+  .btn:hover { background: var(--accent); background: color-mix(in srgb, var(--accent) 82%, #fff); }
+  .btn--danger:hover { background: var(--accent-2); background: color-mix(in srgb, var(--accent-2) 82%, #fff); }
 }
 
 /* pressed-in effect: shove the button into its own shadow */
@@ -647,7 +651,7 @@ select {
 }
 .lightbox__zoombtn:active { transform: translate(2px, 2px); }
 @media (hover: hover) {
-  .lightbox__zoombtn:hover { background: #f2bd5a; }
+  .lightbox__zoombtn:hover { background: var(--accent); background: color-mix(in srgb, var(--accent) 82%, #fff); }
 }
 /* The middle button shows the current level (e.g. "150%") and resets on tap;
    it's wider than the +/- squares to fit the text. */
@@ -672,7 +676,7 @@ select {
   touch-action: manipulation;
 }
 @media (hover: hover) {
-  .lightbox__nav:hover { background: #f2bd5a; }
+  .lightbox__nav:hover { background: var(--accent); background: color-mix(in srgb, var(--accent) 82%, #fff); }
 }
 
 .lightbox__dots {
@@ -1776,7 +1780,7 @@ textarea {
   color: var(--ink);
 }
 @media (hover: hover) {
-  .btn--pop:hover { background: #d76a41; }
+  .btn--pop:hover { background: var(--accent-2); background: color-mix(in srgb, var(--accent-2) 82%, #fff); }
 }
 
 /* ---- Player: "a POP arrived" banner ----------------------------- */

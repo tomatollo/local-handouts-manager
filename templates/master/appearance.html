@@ -73,6 +73,29 @@
         </div>
 
         <div class="panel">
+            <h2>{{ 'Welcome message' | t }}</h2>
+            <p class="subtitle">{{ 'The big title and subtitle on the player hub. Leave a box empty to use the default. Put one line per alternative and turn on random to show a different one each visit.' | t }}</p>
+            <form action="{{ url_for('master.set_welcome') }}" method="post">
+                <label for="welcome_titles">{{ 'Title(s)' | t }} <span class="hint">{{ 'one per line' | t }}</span></label>
+                <textarea id="welcome_titles" name="welcome_titles" rows="3"
+                          placeholder="{{ 'Welcome, Adventurers!' | t }}">{{ welcome_config.titles | join('\n') }}</textarea>
+
+                <label for="welcome_subtitles">{{ 'Subtitle(s)' | t }} <span class="hint">{{ 'one per line' | t }}</span></label>
+                <textarea id="welcome_subtitles" name="welcome_subtitles" rows="3"
+                          placeholder="{{ 'Handouts revealed by your Game Master appear below.' | t }}">{{ welcome_config.subtitles | join('\n') }}</textarea>
+
+                <label class="folder-choice" style="margin-top:10px;">
+                    <input type="checkbox" name="welcome_random" value="1"
+                           {% if welcome_config.random %}checked{% endif %}>
+                    {{ 'Pick a random line each time the hub loads' | t }}
+                </label>
+                <p class="subtitle">{{ 'With this off, the first line is always shown (handy for keeping spare lines around).' | t }}</p>
+
+                <button type="submit" class="btn btn--block">{{ 'Save welcome message' | t }}</button>
+            </form>
+        </div>
+
+        <div class="panel">
             <h2>{{ 'Interface language' | t }}</h2>
             <p class="subtitle">{{ 'Your own choice. It does not affect the players.' | t }}</p>
             {% include '_lang_switch.html' %}

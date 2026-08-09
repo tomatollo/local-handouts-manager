@@ -40,8 +40,8 @@
     <div class="wrap">
         <div class="hub-top">
             <div>
-                <h1><a class="home-title" href="{{ url_for('player.home') }}">{{ 'Welcome, Adventurers!' | t }}</a></h1>
-                <p class="subtitle">{{ 'Handouts revealed by your Game Master appear below.' | t }}</p>
+                <h1><a class="home-title" href="{{ url_for('player.home') }}">{{ welcome.title if welcome and welcome.title else 'Welcome, Adventurers!' | t }}</a></h1>
+                <p class="subtitle">{{ welcome.subtitle if welcome and welcome.subtitle else 'Handouts revealed by your Game Master appear below.' | t }}</p>
             </div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
                 <button type="button" class="btn" id="browse-btn" aria-controls="drawer" aria-expanded="false">&#9776; {{ 'Browse' | t }}</button>
