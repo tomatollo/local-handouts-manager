@@ -12,19 +12,19 @@ from ..base import Theme
 THEME = Theme(
     id='vecna-eve-of-ruin',
     name='Vecna: Eve of Ruin',
-    blurb='Necromancy: grave-dark, corpse-light green, and rotten violet.',
+    blurb='Necromancy: arcane violet, magenta magic, and lich gold.',
     fonts=('Grenze Gotisch', 'EB Garamond'),
     scale=1.75,
     vars={
-        '--bg': '#0b0f0b',          # grave earth, near-black with a green cast
-        '--bg-panel': '#141a16',    # mausoleum stone
-        '--ink': '#e4e2d0',         # bone / old vellum
-        '--ink-dim': '#8f9c86',     # lichen grey-green
-        '--accent': '#7bc74d',      # necrotic corpse-light green
-        '--accent-2': '#8a4fbf',    # rotten arcane violet (Vecna's magic)
-        '--border': '#050705',
+        '--bg': '#130026',
+        '--bg-panel': '#281140',
+        '--ink': '#f4e09e',
+        '--ink-dim': '#b388b3',
+        '--accent': '#ff4791',
+        '--accent-2': '#d4af37',
+        '--border': '#080012',
         '--shadow': '#000000',
-        '--good': '#5f9e6a',
+        '--good': '#b89645',
     },
     home_label='Escape the Ritual (Home)',
     errors={

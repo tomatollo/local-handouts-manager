@@ -126,23 +126,42 @@ For a session that runs for hours, prefer the launcher or a production server
 
 ## Themes
 
-The theme is table-wide: the Master picks it and everyone sees it. Each preset
-overrides the same design tokens, so switching can never leave a half-painted
-UI. Two of them (Tasha and Xanathar) go further than colour and type, adding
-their own animated textures - all motion respects `prefers-reduced-motion`.
+The theme is table-wide: the Master picks it and everyone sees it. Each preset overrides the same design tokens, so switching can never leave a half-painted UI. Two of them (Tasha and Xanathar) go further than colour and type, adding their own animated textures - all motion respects `prefers-reduced-motion`. 
+
+Themes don't just change colours; they alter the whole vibe, right down to smaller details like custom error codes! As shown in `apperance.png`, there is a vast selection of themes available, spanning from classic modules to entirely different universes.
+
+### Dungeons & Dragons
 
 | Theme | Mood |
 | --- | --- |
-| **Dungeon Torch** *(default)* | Soot, torchlight and pixels |
-| **Lost Mine of Phandelver** | Forest, parchment, goblin country |
-| **The Rise of Tiamat** | Scale-grey, crimson and gold hoards |
-| **Out of the Abyss** | Obsidian dark, drow violet, fungal neon |
-| **Tomb of Annihilation** | Jungle moss, limestone and Acererak gold |
-| **Curse of Strahd** | Pitch, velvet and bright blood |
-| **Icewind Dale** | Endless night, frost and one cold star |
-| **Vecna: Eve of Ruin** | Grave-dark, corpse-light green and rotten violet |
-| **Tasha's Cauldron of Everything** | A bubbling violet brew, copper and malachite |
-| **Xanathar's Guide to Everything** | The watching beholder: acid green, magenta, a staring eye |
+| **Lost Mine of Phandelver** | Classic fantasy: forest, parchment, goblin country. |
+| **Phandelver and Below: The Shattered Obelisk** | The mine goes wrong: shattered stone, aberrant violet, and dread. |
+| **Curse of Strahd** | Gothic horror: pitch, velvet, and bright blood. |
+| **Tomb of Annihilation** | Jungle survival: moss, limestone, and Acererak gold. |
+| **Waterdeep: Dragon Heist** | City of splendors: harbour blue, gold coin, and intrigue. |
+| **Waterdeep: Dungeon of the Mad Mage** *(Book Edition)* | Red depths, arcane crimson, and high-contrast white. |
+| **The Rise of Tiamat** | Draconic majesty: scale-grey, crimson, and gold hoards. |
+| **Out of the Abyss** | Underdark: obsidian dark, drow violet, fungal neon. |
+| **Icewind Dale** | Endless night, frost, and one cold star. |
+| **The Wild Beyond the Witchlight** | A feywild carnival: candy pinks, dream teal, and fairy lights. |
+| **Candlekeep Mysteries** | The great library: candle-warm parchment, ink, and old leather. |
+| **Tasha's Cauldron of Everything** | Chaotic arcana: bubbling violet brew, copper, and malachite. |
+| **Xanathar's Guide to Everything** | The beholder watches: acid green, magenta, and a staring eye. |
+| **Vecna: Eve of Ruin** | Necromancy: arcane violet, magenta magic, and lich gold. |
+| **Mythic Odysseys of Theros** | Greek myth: sun-bleached marble, olive bronze, and Nyx starlight. |
+
+### Other Universes
+
+| Theme | Mood |
+| --- | --- |
+| **Dungeon Torch** *(default)* | The default: soot, torchlight, and pixels. |
+| **Vintage Arcade** | CRT phosphor and neon synthwave: insert coin to continue. |
+| **Military Terminal** | Cold War readout: phosphor green on black, strictly business. |
+| **Analog Archive** | Noir case files: manila folders, redacted ink, and a CLASSIFIED stamp. |
+| **Holo HUD** | Sci-fi interface: black glass, amber telemetry, and cut-corner frames. |
+
+### Build Your Own
+Can't find exactly what you're looking for? You can create your own custom theme by following the instructions found in the `THEMES.md` file located in the `/docs` folder.
 
 ![Apperance Page](docs/screenshots/apperance.png)
 

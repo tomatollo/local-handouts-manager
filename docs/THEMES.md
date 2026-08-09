@@ -1,36 +1,26 @@
-# Creare un tema
+# Creating a Theme
 
-Un tema è un preset di aspetto: una palette di colori, due font, una scala per
-i titoli, un eventuale blocco di CSS extra e le pagine d'errore a tema. Il tema
-è **globale**: lo sceglie il Master dalla pagina *Appearance* e lo vedono anche
-i giocatori, così tutto il tavolo condivide lo stesso look. Vive nel database
-sotto `settings`.
+A theme is an appearance preset: a color palette, two fonts, a scale for headings, an optional extra CSS block, and themed error pages. The theme is **global**: the Master chooses it from the *Appearance* page, and the players see it too, ensuring the entire table shares the same look. It lives in the database under `settings`.
 
-Il punto chiave da capire prima di tutto: **un tema non ridisegna il layout**.
-Il file `static/css/style.css` resta l'unica fonte di verità per la struttura
-(ed è mobile-first). Un tema si limita a **ridipingere** le CSS custom
-properties che `style.css` dichiara su `:root` — colori e font — iniettandole
-in un piccolo blocco `<style>`. Il look "8-bit" (bordi netti, ombre a gradini)
-sopravvive a un cambio di font perché vive nei bordi e nelle ombre, non nel
-carattere.
+The key point to understand first and foremost: **a theme does not redesign the layout**. The `static/css/style.css` file remains the single source of truth for the structure (and it is mobile-first). A theme simply **repaints** the custom CSS properties that `style.css` declares on `:root` - colors and fonts - by injecting them into a small `<style>` block. The "8-bit" look (sharp borders, stepped shadows) survives a font change because it lives in the borders and shadows, not in the typeface.
 
-Ogni tema è un file Python dentro `handouts/theming/themes/`, un tema per file.
+Each theme is a Python file inside `handouts/theming/themes/`, one theme per file.
 
 ---
 
-## Anatomia di un tema
+## Anatomy of a Theme
 
-Il file più semplice possibile (`handouts/theming/themes/mio_tema.py`):
+The simplest possible file (`handouts/theming/themes/my_theme.py`):
 
 ```python
-"""Il Mio Tema -- una riga che descrive il mood."""
+"""My Theme -- a one-liner describing the mood."""
 
 from ..base import Theme
 
 THEME = Theme(
-    id='mio-tema',
-    name='Il Mio Tema',
-    blurb='Una frase breve, mostrata sotto il nome nel picker.',
+    id='my-theme',
+    name='My Theme',
+    blurb='A short sentence, shown under the name in the picker.',
     fonts=('Cinzel', 'Lora'),
     scale=1.5,
     vars={
@@ -45,79 +35,62 @@ THEME = Theme(
         '--good':      '#5a9c86',
     },
 )
+
 ```
 
-Il modulo **deve** esporre una variabile a livello di modulo chiamata `THEME`,
-istanza di `Theme`. È tutto ciò che il registro cerca.
+The module **must** expose a module-level variable called `THEME`, which is an instance of `Theme`. This is all the registry looks for.
 
 ---
 
-## I campi di `Theme`
+## The `Theme` Fields
 
-| Campo | Obbligatorio | Cos'è |
-|-------|:---:|-------|
-| `id` | sì | Lo slug usato nell'URL e salvato nel DB, es. `'curse-of-strahd'`. Deve essere **unico**. È il valore che il picker invia. |
-| `name` | sì | L'etichetta leggibile mostrata nel picker (`'Curse of Strahd'`). |
-| `blurb` | sì | Una riga sotto il nome nel picker. |
-| `fonts` | sì | Tupla `(display, body)`: il font dei titoli e quello del testo lungo. Entrambi nomi di famiglie Google Fonts. Vedi *Font* sotto. |
-| `scale` | sì | Moltiplica la dimensione di ogni titolo. Vedi *La scala* sotto. |
-| `vars` | sì | Il dizionario delle CSS custom property da sovrascrivere. Vedi *I token* sotto. |
-| `extra_css` | no | CSS grezzo aggiunto **dopo** il blocco `:root`, solo quando il tema è attivo. Per texture, animazioni, ritocchi ai componenti. Vedi *CSS extra* sotto. Default: stringa vuota. |
-| `errors` | no | Le pagine d'errore a tema, `{codice_http: (icona, titolo, messaggio)}`. Vedi *Pagine d'errore* sotto. Default: `{}` (eredita dal tema di default). |
-
----
-
-## I token (`vars`)
-
-Sono le nove CSS custom property che `style.css` dichiara su `:root`. Un tema
-le ridipinge. Definiscile **tutte e nove** — così un cambio di tema non lascia
-mai la UI mezza dipinta.
-
-| Token | Cos'è |
-|-------|-------|
-| `--bg` | Sfondo della pagina. |
-| `--bg-panel` | Sfondo dei pannelli/carte, un gradino sopra `--bg`. |
-| `--ink` | Colore del testo principale. |
-| `--ink-dim` | Testo secondario/attenuato. |
-| `--accent` | Il colore dominante: bottoni, titoli, evidenziazioni. |
-| `--accent-2` | Il colore secondario. |
-| `--border` | Il bordo netto (di solito nero). |
-| `--shadow` | Il colore dell'ombra a gradini (di solito nero). |
-| `--good` | Il verde "visibile/pubblico" (handout rivelati). |
-
-### Temi chiari vs scuri
-
-La maggior parte dei temi è **scura**: `--ink` chiaro su `--bg-panel` scuro.
-Ma niente è cablato: *Phandelver* è un tema chiaro (inchiostro scuro su
-pergamena chiara), e *Analog Archive* è un tema "board" (scrivania scura con
-pannelli di carta manila chiara, quindi `--ink` è scuro). Tutto legge da questi
-token, quindi entrambe le direzioni funzionano senza casi speciali — basta
-scegliere i valori coerenti tra loro.
+| Field | Required | What it is |
+| --- | --- | --- |
+| `id` | yes | The slug used in the URL and saved in the DB, e.g., `'curse-of-strahd'`. It must be **unique**. This is the value the picker sends. |
+| `name` | yes | The readable label shown in the picker (`'Curse of Strahd'`). |
+| `blurb` | yes | A one-liner under the name in the picker. |
+| `fonts` | yes | Tuple `(display, body)`: the font for headings and the one for long text. Both are Google Fonts family names. See *Fonts* below. |
+| `scale` | yes | Multiplies the size of every heading. See *The Scale* below. |
+| `vars` | yes | The dictionary of custom CSS properties to override. See *The Tokens* below. |
+| `extra_css` | no | Raw CSS added **after** the `:root` block, only when the theme is active. For textures, animations, component tweaks. See *Extra CSS* below. Default: empty string. |
+| `errors` | no | The themed error pages, `{http_code: (icon, title, message)}`. See *Error Pages* below. Default: `{}` (inherits from the default theme). |
 
 ---
 
-## I font
+## The Tokens (`vars`)
 
-`fonts=(display, body)`. Le famiglie vengono scaricate da Google Fonts.
+These are the nine custom CSS properties that `style.css` declares on `:root`. A theme repaints them. Define **all nine of them** - so a theme change never leaves the UI half-painted.
 
-Se una famiglia ha assi variabili (peso, corsivo) senza una posizione di
-default, l'API `css2` di Google **rifiuta** la richiesta se passata come nudo
-`family=Nome` — e, peggio, fa fallire l'**intera** richiesta, trascinando giù
-anche l'altro font e facendo ripiegare la pagina su Georgia. Per questo le
-famiglie con assi vanno registrate con la loro stringa `family=` completa in
-`handouts/theming/fonts.py`, dentro il dizionario `FONT_QUERY`.
+| Token | What it is |
+| --- | --- |
+| `--bg` | Page background. |
+| `--bg-panel` | Background of panels/cards, one step above `--bg`. |
+| `--ink` | Primary text color. |
+| `--ink-dim` | Secondary/dimmed text. |
+| `--accent` | The dominant color: buttons, headings, highlights. |
+| `--accent-2` | The secondary color. |
+| `--border` | The sharp border (usually black). |
+| `--shadow` | The color of the stepped shadow (usually black). |
+| `--good` | The "visible/public" green (revealed handouts). |
 
-Regola pratica:
+### Light vs. Dark Themes
 
-- **Font a stile singolo** (es. `Press Start 2P`, `VT323`, `Uncial Antiqua`):
-  non serve fare nulla. Vengono richiesti come `family=Nome+Con+Più` in
-  automatico.
-- **Font con pesi/corsivo** (es. `Merriweather`, `Lora`, `Orbitron`,
-  `EB Garamond`): aggiungi una riga in `FONT_QUERY` con gli assi enumerati.
-  Gli assi vanno in ordine alfabetico (`ital` prima di `wght`) e le tuple
-  ordinate — l'API lo richiede.
+Most themes are **dark**: light `--ink` on dark `--bg-panel`. But nothing is hardcoded: *Phandelver* is a light theme (dark ink on light parchment), and *Analog Archive* is a "board" theme (dark desk with light manila paper panels, so `--ink` is dark). Everything reads from these tokens, so both directions work without special cases - you just need to choose mutually consistent values.
 
-Esempio da `fonts.py`:
+---
+
+## Fonts
+
+`fonts=(display, body)`. The families are downloaded from Google Fonts.
+
+If a family has variable axes (weight, italics) without a default position, Google's `css2` API **rejects** the request if passed as a bare `family=Name` - and, worse, makes the **entire** request fail, dragging down the other font too and causing the page to fallback to Georgia. This is why families with axes must be registered with their full `family=` string in `handouts/theming/fonts.py`, inside the `FONT_QUERY` dictionary.
+
+Rule of thumb:
+
+* **Single-style fonts** (e.g., `Press Start 2P`, `VT323`, `Uncial Antiqua`): nothing needs to be done. They are automatically requested as `family=Name+With+More`.
+* **Fonts with weights/italics** (e.g., `Merriweather`, `Lora`, `Orbitron`, `EB Garamond`): add a row in `FONT_QUERY` with the enumerated axes. The axes must be in alphabetical order (`ital` before `wght`) and the tuples sorted - the API requires this.
+
+Example from `fonts.py`:
 
 ```python
 FONT_QUERY = {
@@ -126,57 +99,42 @@ FONT_QUERY = {
                    '1,400;1,500;1,600;1,700',
     # ...
 }
+
 ```
 
-Se un font non appare quando provi il tema, quasi sempre è questo: manca la sua
-riga in `FONT_QUERY`, o gli assi non sono ordinati come vuole l'API.
+If a font does not appear when testing the theme, this is almost always the reason: its row is missing from `FONT_QUERY`, or the axes are not ordered as the API demands.
 
-Ogni tema scarica **solo** i suoi due font. La pagina *Appearance* è l'unica che
-li scarica tutti insieme (`all_fonts_url`), perché il picker mostra ogni riquadro
-nel suo carattere.
+Each theme downloads **only** its own two fonts. The *Appearance* page is the only one that downloads all of them together (`all_fonts_url`), because the picker displays each box in its respective typeface.
 
 ---
 
-## La scala
+## The Scale
 
-`scale` moltiplica la dimensione di ogni titolo. Serve perché il CSS di base è
-calibrato su **Press Start 2P**, un font pixel largo e basso per il suo corpo.
-Un font normale alla stessa dimensione sembra minuscolo, quindi ogni tema
-dichiara la propria correzione.
+`scale` multiplies the size of every heading. This is needed because the base CSS is calibrated on **Press Start 2P**, a pixel font that is wide and short for its body size. A normal font at the same size looks tiny, so every theme declares its own correction.
 
-Valori tipici:
+Typical values:
 
-- `1` — solo per temi che usano Press Start 2P (Dungeon Torch, Vintage Arcade).
-- `1.3–1.6` — la maggior parte dei serif/display normali (Cinzel, Lora, Orbitron).
-- `1.75–1.9` — i blackletter, stretti e ornati, che hanno bisogno del bump più
-  forte per restare leggibili (Curse of Strahd 1.9, Vecna 1.75).
+* `1` - only for themes using Press Start 2P (Dungeon Torch, Vintage Arcade).
+* `1.3–1.6` - most normal serif/display fonts (Cinzel, Lora, Orbitron).
+* `1.75–1.9` - blackletters, which are narrow and ornate, needing the strongest bump to remain readable (Curse of Strahd 1.9, Vecna 1.75).
 
-Regola pratica: prova il tema, e se i titoli sembrano piccoli alza la scala; se
-un titolo lungo trabocca (specie un blackletter), abbassala un filo.
+Rule of thumb: test the theme, and if the headings look small, raise the scale; if a long heading overflows (especially a blackletter), lower it slightly.
 
-C'è anche un automatismo collegato: l'ombra a gradini dietro i titoli
-(`--display-shadow`) ha senso solo sotto un font pixel. Per ogni tema il cui
-font display **non** è `Press Start 2P`, il sistema la spegne da solo — non devi
-fare nulla.
+There is also an associated automatic feature: the stepped shadow behind headings (`--display-shadow`) only makes sense under a pixel font. For every theme where the display font is **not** `Press Start 2P`, the system turns it off on its own - you don't need to do anything.
 
 ---
 
-## CSS extra (`extra_css`)
+## Extra CSS (`extra_css`)
 
-Serve quando un tema vuole fare di più che ridipingere i token: texture,
-animazioni, ritocchi a componenti specifici. Il CSS extra sta **dentro il file
-del tema**, come stringa, e viene aggiunto dopo il blocco `:root` **solo quando
-quel tema è attivo** — quindi non serve nessun guard tipo `[data-theme=...]` e
-gli altri temi non lo pagano mai.
+This is used when a theme wants to do more than repaint tokens: textures, animations, or tweaks to specific components. The extra CSS lives **inside the theme file**, as a string, and is added after the `:root` block **only when that theme is active** - so no guard like `[data-theme=...]` is needed, and the other themes never pay the performance cost.
 
-Convenzione: definisci il CSS come costante a livello di modulo e passalo al
-campo `extra_css`, così il `Theme(...)` resta leggibile:
+Convention: define the CSS as a module-level constant and pass it to the `extra_css` field, keeping the `Theme(...)` call readable:
 
 ```python
 from ..base import Theme
 
 _EXTRA_CSS = """
-/* ---- Il Mio Tema: descrizione dell'effetto ---- */
+/* ---- My Theme: description of the effect ---- */
 .panel {
   box-shadow: var(--px) var(--px) 0 0 var(--shadow),
               inset 0 0 0 1px rgba(224,165,58,0.2);
@@ -187,105 +145,91 @@ h1, h2, h3, .pixel {
 """
 
 THEME = Theme(
-    id='mio-tema',
-    # ... gli altri campi ...
+    id='my-theme',
+    # ... the other fields ...
     extra_css=_EXTRA_CSS,
 )
+
 ```
 
-### Regole per scrivere `extra_css`
+### Rules for Writing `extra_css`
 
-1. **Usa selettori reali.** Aggancia classi che esistono davvero nella UI:
-   `.panel`, `.btn`, `.btn--pop`, `.handout-card`, `.folder-card`, `.wiki-card`,
-   `.count-badge`, `.tag`, `.lightbox__*`, `body`, `body::before`, ecc. Guarda
-   `style.css` per l'elenco.
-2. **Riusa i token, non hard-coddare i colori** dove puoi: `var(--accent)`,
-   `var(--shadow)`, `var(--px)` (l'unità pixel di base). Così se un domani ritocchi
-   la palette, il CSS extra segue.
-3. **Ogni animazione va dietro `prefers-reduced-motion`.** Chi ha chiesto meno
-   movimento non deve vederne:
-   ```css
-   @media (prefers-reduced-motion: no-preference) {
-     body { animation: mio-effetto 20s ease-in-out infinite alternate; }
-     @keyframes mio-effetto { /* ... */ }
-   }
-   ```
-4. **Gli effetti hover solo dove c'è un puntatore vero**, per non incastrarli su
-   touch:
-   ```css
-   @media (hover: hover) {
-     .btn:hover { /* ... */ }
-   }
-   ```
-5. **I pseudo-elementi decorativi non devono intercettare i click:** aggiungi
-   `pointer-events: none;` a ogni `::before`/`::after` ornamentale.
+1. **Use real selectors.** Hook into classes that actually exist in the UI: `.panel`, `.btn`, `.btn--pop`, `.handout-card`, `.folder-card`, `.wiki-card`, `.count-badge`, `.tag`, `.lightbox__*`, `body`, `body::before`, etc. Check `style.css` for the list.
+2. **Reuse tokens, do not hardcode colors** where possible: `var(--accent)`, `var(--shadow)`, `var(--px)` (the base pixel unit). This way, if you tweak the palette later, the extra CSS follows along.
+3. **Put every animation behind `prefers-reduced-motion`.** Those who requested less motion should not see them:
+```css
+@media (prefers-reduced-motion: no-preference) {
+  body { animation: my-effect 20s ease-in-out infinite alternate; }
+  @keyframes my-effect { /* ... */ }
+}
 
-Esempi completi e commentati: apri `tashas_cauldron.py` (animazione di sfondo +
-gradiente sui titoli), `analog_archive.py` (il più ricco: carta su lavagna,
-polaroid, timbro CLASSIFIED) o `holo_hud.py` (cornici tagliate con `clip-path`).
+```
+
+
+4. **Hover effects only where there is a real pointer**, so they don't get stuck on touch devices:
+```css
+@media (hover: hover) {
+  .btn:hover { /* ... */ }
+}
+
+```
+
+
+5. **Decorative pseudo-elements must not intercept clicks:** add `pointer-events: none;` to every ornamental `::before`/`::after`.
+
+Full and commented examples: open `tashas_cauldron.py` (background animation + gradient on headings), `analog_archive.py` (the richest one: paper on chalkboard, polaroids, CLASSIFIED stamp), or `holo_hud.py` (frames cut with `clip-path`).
 
 ---
 
-## Pagine d'errore (`errors`)
+## Error Pages (`errors`)
 
-Ogni tema può avere le sue pagine d'errore a tema: un 404 sotto *Curse of
-Strahd* recita "Phantom Village", lo stesso 404 sotto *Vintage Arcade* recita
-"Missing ROM". Il campo è un dizionario `{codice: (icona, titolo, messaggio)}`:
+Every theme can have its themed error pages: a 404 under *Curse of Strahd* reads "Phantom Village", while the same 404 under *Vintage Arcade* reads "Missing ROM". The field is a dictionary `{code: (icon, title, message)}`:
 
 ```python
     errors={
-        400: ('\U0001F4A5', 'Titolo', 'Messaggio più lungo che spiega.'),
-        401: ('\U0001F6D1', 'Titolo', 'Messaggio.'),
+        400: ('\U0001F4A5', 'Title', 'Longer message explaining.'),
+        401: ('\U0001F6D1', 'Title', 'Message.'),
         403: ('...', '...', '...'),
         404: ('...', '...', '...'),
         429: ('...', '...', '...'),
         500: ('...', '...', '...'),
     },
+
 ```
 
-- L'**icona** è un'emoji (comoda come escape `\U0001F4A5`, ma va bene anche
-  l'emoji letterale).
-- **Titolo** e **messaggio** sono stringhe inglesi: passano dal filtro `|t` in
-  `error.html`, quindi se hai una traduzione italiana nel catalogo i18n verrà
-  applicata, altrimenti si vede l'inglese.
-- I codici gestiti sono **400, 401, 403, 404, 429, 500**.
+* The **icon** is an emoji (convenient as an escape `\U0001F4A5`, but the literal emoji works too).
+* **Title** and **message** are English strings: they pass through the `|t` filter in `error.html`, so if you have an Italian translation in the i18n catalog it will be applied; otherwise, English is shown.
+* The handled codes are **400, 401, 403, 404, 429, 500**.
 
-Il campo è **opzionale** e anche parziale: qualunque codice tu ometta (o l'intero
-`errors={}`) ripiega sul testo del tema di default (Dungeon Torch). Così un tema
-nuovo mostra pagine d'errore sensate ancora prima che tu ne scriva le tue.
+The field is **optional** and also partial: any code you omit (or the entire `errors={}`) falls back to the text of the default theme (Dungeon Torch). Thus, a new theme shows sensible error pages even before you write your own.
 
-Nota: l'etichetta tipo ("Bad Request", "Not Found") **non** si mette qui — è
-fissa per codice e vive una volta sola in `base.py` (`ERROR_TYPE_EN`).
+Note: the type label (like "Bad Request", "Not Found") is **not** placed here - it is fixed per code and lives only once in `base.py` (`ERROR_TYPE_EN`).
 
 ---
 
-## Registrare il tema
+## Registering the Theme
 
-Creato il file, il tema va dichiarato in due punti (nessun altro file va toccato):
+Once the file is created, the theme must be declared in two places (no other file should be touched):
 
-### 1. L'ordine — `handouts/theming/themes/__init__.py`
+### 1. The Order - `handouts/theming/themes/__init__.py`
 
-Aggiungi il **nome del modulo** (senza `.py`) alla tupla `_ORDER`, nella
-posizione in cui vuoi che appaia:
+Add the **module name** (without `.py`) to the `_ORDER` tuple, in the position where you want it to appear:
 
 ```python
 _ORDER = (
     'dungeon_torch',
     'phandelver',
     # ...
-    'mio_tema',          # <-- qui
+    'my_theme',          # <-- here
 )
+
 ```
 
-`_ORDER` è la fonte di verità unica di quali temi esistono e in che ordine. Un
-modulo che esiste ma **non** è in `_ORDER` semplicemente non viene mostrato —
-comodo per parcheggiare un tema work-in-progress senza cancellarlo.
+`_ORDER` is the single source of truth for which themes exist and in what order. A module that exists but is **not** in `_ORDER` simply won't be shown - handy for parking a work-in-progress theme without deleting it.
 
-### 2. La famiglia nel picker — `handouts/theming/groups.py`
+### 2. The Family in the Picker - `handouts/theming/groups.py`
 
-Il picker raggruppa i temi in famiglie ("Dungeons & Dragons", "Other
-Universes"). Aggiungi l'`id` del tema alla tupla della famiglia giusta in
-`THEME_GROUPS`:
+The picker groups themes into families ("Dungeons & Dragons", "Other Universes"). Add the theme's `id` to the correct family's tuple in `THEME_GROUPS`:
 
 ```python
 THEME_GROUPS = (
@@ -295,50 +239,44 @@ THEME_GROUPS = (
     )),
     ('Other Universes', (
         'dungeon-torch',
-        'mio-tema',       # <-- qui, se non è D&D
+        'my-theme',       # <-- here, if it is not D&D
     )),
 )
+
 ```
 
-Se **dimentichi** questo passo non è un dramma: un tema che nessuna famiglia
-nomina finisce automaticamente nell'**ultima** famiglia ("Other Universes").
-Ma metterlo esplicitamente rende chiaro dove vive.
+If you **forget** this step, it's not a drama: a theme that no family names automatically ends up in the **last** family ("Other Universes"). But putting it explicitly makes it clear where it belongs.
 
 ---
 
-## Checklist finale
+## Final Checklist
 
-- [ ] File in `handouts/theming/themes/<nome>.py` con una variabile `THEME`.
-- [ ] Tutti e nove i token in `vars`.
-- [ ] I font con assi variabili aggiunti a `FONT_QUERY` in `fonts.py`.
-- [ ] `scale` provata a occhio (titoli né minuscoli né traboccanti).
-- [ ] Eventuale `extra_css`: selettori reali, `prefers-reduced-motion` sulle
-      animazioni, `@media (hover: hover)` sugli hover, `pointer-events: none`
-      sui decori.
-- [ ] Modulo aggiunto a `_ORDER` in `themes/__init__.py`.
-- [ ] `id` aggiunto a una famiglia in `groups.py`.
-- [ ] Riavvia l'app e controlla: il tema appare nel picker, si applica, le
-      pagine d'errore funzionano.
+* File in `handouts/theming/themes/<name>.py` with a `THEME` variable.
+* All nine tokens in `vars`.
+* Fonts with variable axes added to `FONT_QUERY` in `fonts.py`.
+* `scale` tested visually (headings neither tiny nor overflowing).
+* Any `extra_css`: real selectors, `prefers-reduced-motion` on animations, `@media (hover: hover)` on hovers, `pointer-events: none` on decorations.
+* Module added to `_ORDER` in `themes/__init__.py`.
+* `id` added to a family in `groups.py`.
+* Restart the app and check: the theme appears in the picker, applies correctly, and error pages work.
 
 ---
 
-## Architettura del package (per riferimento)
+## Package Architecture (for reference)
 
-```
+```text
 handouts/theming/
-├── __init__.py       # ri-esporta l'API pubblica (css_vars, fonts_url, ...)
-├── base.py           # la dataclass Theme + ERROR_TYPE_EN
-├── registry.py       # la logica: clean_theme, theme_list, theme_groups,
+├── __init__.py       # re-exports the public API (css_vars, fonts_url, ...)
+├── base.py           # the Theme dataclass + ERROR_TYPE_EN
+├── registry.py       # the logic: clean_theme, theme_list, theme_groups,
 │                     #   css_vars, theme_errors, theme_preview_style,
-│                     #   e i wrapper id-based fonts_url / all_fonts_url
-├── fonts.py          # FONT_QUERY + costruzione degli URL Google Fonts
-├── groups.py         # THEME_GROUPS (le famiglie del picker)
+│                     #   and the id-based wrappers fonts_url / all_fonts_url
+├── fonts.py          # FONT_QUERY + Google Fonts URL construction
+├── groups.py         # THEME_GROUPS (the picker families)
 └── themes/
-    ├── __init__.py   # _ORDER -> raccoglie i temi in THEMES
-    └── <un file per tema>.py
+    ├── __init__.py   # _ORDER -> gathers themes into THEMES
+    └── <one file per theme>.py
+
 ```
 
-L'API pubblica che il resto dell'app usa (`theming.css_vars`,
-`theming.fonts_url`, `theming.theme_errors`, ecc.) è esportata da `__init__.py`
-e non cambia mai quando aggiungi un tema — tocchi solo `themes/` e i due file di
-registrazione.
+The public API that the rest of the app uses (`theming.css_vars`, `theming.fonts_url`, `theming.theme_errors`, etc.) is exported by `__init__.py` and never changes when you add a theme - you only touch `themes/` and the two registration files.

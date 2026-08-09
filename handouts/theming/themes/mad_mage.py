@@ -11,19 +11,19 @@ from ..base import Theme
 THEME = Theme(
     id='mad-mage',
     name='Waterdeep: Dungeon of the Mad Mage',
-    blurb='Undermountain: torch-lit depths, mad-wizard green, and stone.',
+    blurb='Red depths, arcane crimson, and high-contrast white.',
     fonts=('Uncial Antiqua', 'Lora'),
     scale=1.35,
     vars={
-        '--bg': '#0c0e0d',          # black Undermountain rock
-        '--bg-panel': '#161a17',    # wet dungeon stone
-        '--ink': '#e4e6df',
-        '--ink-dim': '#8b938a',
-        '--accent': '#8fbf3f',      # Halaster's mad arcane green
-        '--accent-2': '#c06a2e',    # torch ember
-        '--border': '#060706',
+        '--bg': '#1e0202',         
+        '--bg-panel': '#2d0909',  
+        '--ink': '#ffffff',       
+        '--ink-dim': '#f2dcdc',    
+        '--accent': '#ff2222',      
+        '--accent-2': '#d96e21',     
+        '--border': '#080012',    
         '--shadow': '#000000',
-        '--good': '#6a9c4f',
+        '--good': '#77aa66',
     },
     home_label='Ascend to the City (Home)',
     errors={
