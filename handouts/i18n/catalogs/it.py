@@ -1,27 +1,22 @@
-"""UI translations.
+"""Italian (it) UI translations.
 
-Plain-dict catalogue, no external dependency and no build step: a key is the
-English string itself, so an untranslated string still renders sensibly.
+Pure data: a flat dict of English-source-string -> Italian-string. Keys are the
+exact English text that appears in the templates (via the `|t` filter), so an
+untranslated string still renders sensibly in English.
 
-Language is per-user, not global: each player picks their own, the Master picks
-their own. The choice rides in a cookie, and `?lang=` sets it (so a link can
-carry a language). Resolution happens once per request in `resolve()`.
+This is one language file among (potentially) several under i18n/catalogs/. To
+add another language, copy this file to e.g. `es.py`, translate the values, and
+register it in i18n/catalogs/__init__.py. The resolver, the cookie parameters
+and the supported-language list live in i18n/resolver.py and i18n/config.py;
+nothing here imports Flask.
+
+The catalogue is grouped by area with comments (player hub, master dashboard,
+themed error pages, the App Guide, ...). Order is cosmetic -- lookups are by
+key -- so new strings can be appended to the right section.
 """
 
-# Supported languages: code -> the name shown in the switcher (in that language).
-LANGUAGES = {
-    'en': 'English',
-    'it': 'Italiano',
-}
-DEFAULT_LANG = 'en'
-COOKIE_NAME = 'lang'
-# Roughly a year; the choice is a preference, not a session detail.
-COOKIE_MAX_AGE = 60 * 60 * 24 * 365
-
-# Only non-English needs entries. Keys are the exact English source strings.
-CATALOG = {
-    'it': {
-        # ---- Player: hub + folder ----
+TRANSLATIONS = {
+    # ---- Player: hub + folder ----
         'Player Hub': 'Area Giocatori',
         'Welcome, Adventurers!': 'Benvenuti, Avventurieri!',
         'Handouts revealed by your Game Master appear below.':
@@ -827,29 +822,4 @@ CATALOG = {
         'Real-time Reveals:': 'Rivelazioni in Tempo Reale:',
         'Keep your tab open! If the Master triggers a POP broadcast, the handout will appear automatically.': 
             'Tieni la scheda aperta! Se il Master avvia una trasmissione POP, il documento apparirà automaticamente.',
-    },
 }
-
-
-def clean_lang(raw):
-    """Return a supported language code, falling back to the default."""
-    raw = (raw or '').strip().lower()
-    return raw if raw in LANGUAGES else DEFAULT_LANG
-
-
-def translate(text, lang):
-    """Look the string up in the catalogue; unknown keys pass through as-is."""
-    if lang == DEFAULT_LANG:
-        return text
-    return CATALOG.get(lang, {}).get(text, text)
-
-
-def resolve(request):
-    """Work out the language for this request.
-
-    `?lang=` wins (it's an explicit click) and is then persisted to a cookie by
-    the after_request hook; otherwise the existing cookie decides.
-    """
-    if 'lang' in request.args:
-        return clean_lang(request.args.get('lang')), True
-    return clean_lang(request.cookies.get(COOKIE_NAME)), False
