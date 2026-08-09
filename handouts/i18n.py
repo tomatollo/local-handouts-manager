@@ -778,6 +778,31 @@ CATALOG = {
         'A critical exception cascaded through the main core. Automatic recovery routines are re-initialising the system.':
             'Un\'eccezione critica si è propagata nel nucleo principale. Le routine di ripristino automatico stanno reinizializzando il sistema.',
 
+        # ---- Themed 'back home' button on the error page (home_label) ----
+        # One per theme; the default theme's is the fallback for any theme that
+        # leaves home_label blank. English source strings, keyed like the rest.
+        # (Dungeon Torch's 'Flee the Dungeon (Home)' is already translated in
+        # the Error Pages section above, so it is not repeated here.)
+        'Back to the Mine Road (Home)': 'Torna alla Strada della Miniera (Home)',
+        'Retreat to the Council (Home)': 'Ritirati al Consiglio (Home)',
+        'Escape the Underdark (Home)': 'Fuggi dal Sottosuolo (Home)',
+        'Back to Camp (Home)': 'Torna all\'Accampamento (Home)',
+        'Flee the Mists (Home)': 'Fuggi dalle Nebbie (Home)',
+        'Back to the Fire (Home)': 'Torna al Fuoco (Home)',
+        'Escape the Ritual (Home)': 'Fuggi dal Rituale (Home)',
+        'Back to the Cauldron (Home)': 'Torna al Calderone (Home)',
+        'Slip Past the Eye (Home)': 'Sfuggi all\'Occhio (Home)',
+        'Back to the Surface (Home)': 'Torna in Superficie (Home)',
+        'Back to the Tavern (Home)': 'Torna alla Taverna (Home)',
+        'Ascend to the City (Home)': 'Risali alla Città (Home)',
+        'Follow the Lights Home': 'Segui le Luci verso Casa',
+        'Return to the Stacks (Home)': 'Torna agli Scaffali (Home)',
+        'Return to the Temple (Home)': 'Torna al Tempio (Home)',
+        'Insert Coin to Continue (Home)': 'Inserisci Gettone per Continuare (Home)',
+        'Return to Base (Home)': 'Rientra alla Base (Home)',
+        'Refile the Case (Home)': 'Riarchivia il Caso (Home)',
+        'Reset Navigation (Home)': 'Reimposta la Navigazione (Home)',
+
         # ---- App Guide ----
         'App Guide': 'Guida all\'App',
         'Help': 'Aiuto',

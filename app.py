@@ -224,6 +224,9 @@ def create_app():
             error_icon=icon,
             error_title=title,
             error_msg=msg,
+            # The theme's in-character "back home" button label (falls back to
+            # the default theme's when a theme leaves it blank).
+            error_home_label=theming.theme_home_label(theme),
         ), code
 
     @app.errorhandler(400)
