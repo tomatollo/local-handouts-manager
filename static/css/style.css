@@ -502,6 +502,7 @@ select {
   background: var(--accent);
   border: 2px solid var(--border);
   padding: 3px 6px;
+  text-shadow: none;
 }
 
 .h-thumb { position: relative; }
