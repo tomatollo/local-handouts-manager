@@ -40,7 +40,7 @@
             <a class="drawer__link {% if active is defined and active == 'create' %}drawer__link--active{% endif %}"
                href="{{ url_for('master.create_page') }}">&#10133; {{ 'Create a Handout' | t }}</a>
             <a class="drawer__link {% if active is defined and active == 'map' %}drawer__link--active{% endif %}"
-               href="{{ url_for('master.map_control') }}">🗺️ {{ 'Interactive Map' | t }}</a>
+               href="{{ url_for('master.map_list') }}">🗺️ {{ 'Interactive Map' | t }}</a>
             <a class="drawer__link" href="{{ url_for('player.home') }}">{{ 'Player Hub' | t }}</a>
             <a class="drawer__link {% if active is defined and active == 'qr' %}drawer__link--active{% endif %}"
                href="{{ url_for('qr_page') }}">&#128241; {{ 'Join by QR' | t }}</a>

@@ -67,8 +67,15 @@ def create_app():
         # DB and the dev server/waitress serve them cheaply. See security.py.
         if request.endpoint == 'static':
             return
-        poll_paths = ('/api/pop', '/api/map/state', '/api/map/reveal.png')
-        policy = 'poll' if request.path in poll_paths else 'default'
+        # The map poll paths now carry a <map_id> segment (/api/map/<id>/state,
+        # /api/map/<id>/reveal.png), so match by shape rather than exact path.
+        # The POP poll stays a fixed path.
+        path = request.path
+        is_poll = (path == '/api/pop'
+                   or (path.startswith('/api/map/')
+                       and (path.endswith('/state')
+                            or path.endswith('/reveal.png'))))
+        policy = 'poll' if is_poll else 'default'
         security.enforce(policy)
 
     @app.before_request
@@ -179,7 +186,23 @@ def create_app():
             # explicit template args win over context-processor values -- so
             # the hub and folder pages keep passing their already-filtered
             # lists and nothing changes for them.
-            'folders': storage.all_folders(db),
+            #
+            # Players only ever see folders that actually hold a VISIBLE
+            # handout: an empty (or drafts-only) folder would be a dead link in
+            # the browse drawer, and a drafts-only one would leak that hidden
+            # material exists -- same reasoning as the tags filter below. The
+            # master still gets every folder (empties included) so they can be
+            # managed; the master pages pass their own all_folders list, which
+            # overrides this value.
+            'folders': (storage.all_folders(db) if auth.is_master()
+                        else storage.non_empty_folders(db, only_visible=True)),
+            # Whether the player-facing "Maps" nav entry should appear at all.
+            # Players may browse every map, including ones with no background
+            # image yet (they show the fog placeholder), so the button appears
+            # as soon as ANY map exists and hides only when there are none at
+            # all. The master always manages maps from its own menu, so this
+            # only gates the PLAYER navigation (see _drawer.html / _footer.html).
+            'has_player_maps': bool(storage.all_maps(db)),
             # Tags for the shared browse drawer. Players must only ever see
             # tags that belong to a VISIBLE handout -- a tag living solely on a
             # hidden handout would leak that unrevealed material exists. The

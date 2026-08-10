@@ -513,33 +513,97 @@ def delete_folder(folder_id):
 
 
 # --------------------------------------------------------------------------
-# Interactive map (master side).
+# Interactive maps (master side).
 #
-# The Master's page is the control surface: it reveals hexes and drags the
-# marker. The write endpoint that backs it is the ONLY way map state changes,
-# and it is guarded by master_required exactly like every other mutation here.
-# Players get a read-only view + a read-only polling endpoint, both defined in
+# The table can have several maps; the Master picks one from a list and lands
+# on its control page, which reveals hexes and drags the marker. Every write
+# endpoint carries the map id and is guarded by master_required exactly like
+# the other mutations here. Players get read-only views + polling endpoints in
 # routes_player.py; they can never POST here.
 # --------------------------------------------------------------------------
 
-@bp.route('/dm-panel/map')
+@bp.route('/dm-panel/maps', strict_slashes=False)
 @auth.master_required
-def map_control():
-    """The Master's interactive-map control page.
+def map_list():
+    """The list of maps: the master's chooser + create/rename/delete surface.
+
+    With several maps this is the entry point the menu links to; picking one
+    opens its control page (map_control). Creating, renaming and deleting maps
+    all happen from here.
+
+    This is also where the legacy single-map -> maps[] migration is made
+    permanent: load_db normalizes it in memory on every read, but nothing
+    persists that until a save. Saving here (once) writes the migrated shape to
+    disk so the map's id stops being a normalize-time default and becomes a
+    stored value -- harmless to re-run, since a save of already-migrated data
+    changes nothing.
+    """
+    db = storage.load_db()
+    storage.save_db(db)
+    return render_template('master/maps.html',
+                           maps=storage.all_maps(db))
+
+
+@bp.route('/dm-panel/maps/create', methods=['POST'])
+@auth.master_required
+def map_create():
+    """Create a new, empty map and jump straight to its control page."""
+    db = storage.load_db()
+    m = storage.create_map(db, request.form.get('name', ''))
+    storage.save_db(db)
+    return redirect(url_for('master.map_control', map_id=m['id']))
+
+
+@bp.route('/dm-panel/maps/rename/<map_id>', methods=['POST'])
+@auth.master_required
+def map_rename(map_id):
+    db = storage.load_db()
+    storage.rename_map(db, map_id, request.form.get('name', ''))
+    storage.save_db(db)
+    return redirect(url_for('master.map_list'))
+
+
+@bp.route('/dm-panel/maps/delete/<map_id>', methods=['POST'])
+@auth.master_required
+def map_delete(map_id):
+    """Delete a map and its background image from disk.
+
+    delete_map only touches the DB, so we grab the map first to learn its image
+    name and remove that file ourselves -- otherwise an orphaned background
+    would linger in static/maps forever.
+    """
+    db = storage.load_db()
+    m = storage.find_map(db, map_id)
+    if m is not None:
+        image = m.get('map_image')
+        storage.delete_map(db, map_id)
+        if image:
+            storage.remove_map_image(image)
+        storage.save_db(db)
+    return redirect(url_for('master.map_list'))
+
+
+@bp.route('/dm-panel/map/<map_id>')
+@auth.master_required
+def map_control(map_id):
+    """The Master's interactive-map control page for one map.
 
     Kept under /dm-panel/ so it sits with the other master pages and inherits
     the same guard. The current state is handed to the template for the first
-    paint so the page isn't blank until the first poll returns.
+    paint so the page isn't blank until the first poll returns. A stale/unknown
+    id (a deleted map) is a 404 rather than a silently-spawned blank map.
     """
     db = storage.load_db()
-    return render_template('master/map.html',
-                           map_state=storage.get_map_state(db))
+    m = storage.get_map(db, map_id)
+    if m is None:
+        abort(404, 'Map not found.')
+    return render_template('master/map.html', map_state=m, map_id=map_id)
 
 
-@bp.route('/master/api/map/state', methods=['GET', 'POST'])
+@bp.route('/master/api/map/<map_id>/state', methods=['GET', 'POST'])
 @auth.master_required
-def map_state_api():
-    """Read or write the shared map state (Master only).
+def map_state_api(map_id):
+    """Read or write one map's shared state (Master only).
 
     GET returns the current state; POST merges a partial JSON body and saves.
     Both live behind master_required because this is the write path -- the
@@ -547,50 +611,59 @@ def map_state_api():
     through the public, GET-only mirror in routes_player.py, which never
     accepts a write.
 
-    Note the URL: /master/api/map/state, NOT /api/map/state. The player
-    blueprint owns the bare /api/map/state for its read-only poll, and both
-    blueprints are mounted at the root, so a shared path would collide at
+    Note the URL: /master/api/map/<id>/state, NOT /api/map/<id>/state. The
+    player blueprint owns the bare player paths for its read-only poll, and
+    both blueprints are mounted at the root, so a shared path would collide at
     registration. The /master/ prefix keeps the two rules distinct and makes
     the write path self-documenting.
 
     POST accepts any subset of the state's keys (a marker nudge need not resend
     the revealed hexes); storage.update_map_state does the type-coercion and
-    key-whitelisting, so a malformed or padded body can't corrupt the DB.
+    key-whitelisting, so a malformed or padded body can't corrupt the DB. An
+    unknown id is a 404.
     """
     db = storage.load_db()
 
     if request.method == 'GET':
-        return jsonify(storage.get_map_state(db))
+        m = storage.get_map(db, map_id)
+        if m is None:
+            abort(404, 'Map not found.')
+        return jsonify(m)
 
     # POST. silent=True so a missing/!json body yields None (-> {}), which
     # update_map_state treats as "change nothing" rather than raising.
     payload = request.get_json(silent=True)
-    state = storage.update_map_state(db, payload)
+    state = storage.update_map_state(db, map_id, payload)
+    if state is None:
+        abort(404, 'Map not found.')
     storage.save_db(db)
     return jsonify(state)
 
-@bp.route('/dm-panel/map/upload', methods=['POST'])
+
+@bp.route('/dm-panel/map/<map_id>/upload', methods=['POST'])
 @auth.master_required
-def map_upload():
-    """Upload (or clear) the map background image.
+def map_upload(map_id):
+    """Upload (or clear) one map's background image.
 
     Kept as its own form-POST route rather than folded into the JSON write
     endpoint because it carries a file, not JSON. On success it saves the image
-    to static/maps, points map_state at it, deletes the previous map so old
-    backgrounds don't pile up, and returns to the map page.
+    to static/maps, points the map at it, deletes the previous background so
+    old ones don't pile up, and returns to that map's control page.
 
-    A submit with no file but the `clear` flag set removes the current map and
-    falls back to the placeholder.
+    A submit with no file but the `clear` flag set removes the current map
+    image and falls back to the placeholder.
     """
     db = storage.load_db()
-    state = storage.get_map_state(db)
-    old = state.get('map_image')
+    m = storage.get_map(db, map_id)
+    if m is None:
+        abort(404, 'Map not found.')
+    old = m.get('map_image')
 
     if request.form.get('clear'):
         storage.remove_map_image(old)
-        storage.set_map_image(db, None)
+        storage.set_map_image(db, map_id, None)
         storage.save_db(db)
-        return redirect(url_for('master.map_control'))
+        return redirect(url_for('master.map_control', map_id=map_id))
 
     upload = request.files.get('map_image')
     if not upload or not upload.filename:
@@ -602,59 +675,66 @@ def map_upload():
     if not name:
         abort(400, 'Could not save the map image.')
 
-    storage.set_map_image(db, name)
+    storage.set_map_image(db, map_id, name)
     storage.save_db(db)
     # Remove the previous background only after the new one is safely stored.
     if old and old != name:
         storage.remove_map_image(old)
-    return redirect(url_for('master.map_control'))
+    return redirect(url_for('master.map_control', map_id=map_id))
 
-@bp.route('/master/api/map/confirm', methods=['POST'])
+
+@bp.route('/master/api/map/<map_id>/confirm', methods=['POST'])
 @auth.master_required
-def map_confirm():
-    """Promote the Master's draft to the live state players read.
+def map_confirm(map_id):
+    """Promote one map's draft to the live state players read.
 
-    The map page POSTs its latest draft to /master/api/map/state (which lands
-    in `pending`), then calls this to publish it. Splitting write-draft from
+    The map page POSTs its latest draft to the state endpoint (which lands in
+    `pending`), then calls this to publish it. Splitting write-draft from
     confirm is the whole point: nothing reaches the table until the Master says
     so. Returns the full state so the page can refresh its 'pending vs live'
     indicator from the server's own view.
     """
     db = storage.load_db()
-    state = storage.confirm_map_state(db)
+    state = storage.confirm_map_state(db, map_id)
+    if state is None:
+        abort(404, 'Map not found.')
     storage.save_db(db)
     return jsonify(state)
 
 
-@bp.route('/master/api/map/discard', methods=['POST'])
+@bp.route('/master/api/map/<map_id>/discard', methods=['POST'])
 @auth.master_required
-def map_discard():
-    """Throw the Master's draft away, resetting it to the live state."""
+def map_discard(map_id):
+    """Throw one map's draft away, resetting it to the live state."""
     db = storage.load_db()
-    state = storage.discard_map_state(db)
+    state = storage.discard_map_state(db, map_id)
+    if state is None:
+        abort(404, 'Map not found.')
     storage.save_db(db)
     return jsonify(state)
 
 
-@bp.route('/master/api/map/focus', methods=['POST'])
+@bp.route('/master/api/map/<map_id>/focus', methods=['POST'])
 @auth.master_required
-def map_focus():
-    """Broadcast the Master's current camera to every player screen.
+def map_focus(map_id):
+    """Broadcast the Master's current camera on one map to every player screen.
 
     The Master frames a spot on their own map (a centre point + a zoom level)
-    and fires this; players poll the shared state, see focus.seq change, and
-    animate their view to match. Deliberately NOT staged: a focus is a live
-    "everyone look here" directive, like a POP, not a draft edit that waits for
-    a confirm.
+    and fires this; players polling THAT map see focus.seq change and animate
+    their view to match. Deliberately NOT staged: a focus is a live "everyone
+    look here" directive, like a POP, not a draft edit that waits for a confirm.
 
     Body is JSON: {x, y, scale} where x/y are the focus point as percent of the
     image and scale is the zoom. storage.set_map_focus clamps and bumps the seq;
-    a malformed body falls back to sane centre/zoom rather than raising.
+    a malformed body falls back to sane centre/zoom rather than raising. An
+    unknown id is a 404.
     """
     db = storage.load_db()
     payload = request.get_json(silent=True) or {}
     focus = storage.set_map_focus(
-        db, payload.get('x'), payload.get('y'), payload.get('scale'))
+        db, map_id, payload.get('x'), payload.get('y'), payload.get('scale'))
+    if focus is None:
+        abort(404, 'Map not found.')
     storage.save_db(db)
     return jsonify(focus)
 
@@ -793,7 +873,9 @@ def import_library():
                            identical=report['identical'],
                            conflicts=report['conflicts'],
                            new_wiki=report['new_wiki'],
-                           map_report=report['map'])
+                           new_maps=report['new_maps'],
+                           identical_maps=report['identical_maps'],
+                           map_conflicts=report['map_conflicts'])
 
 
 @bp.route('/import/apply', methods=['POST'])
@@ -813,17 +895,20 @@ def import_apply():
     # Collect per-conflict choices: resolve_<id> = 'local' | 'imported'.
     resolutions = {}
     for key, value in request.form.items():
-        if key.startswith('resolve_'):
+        if key.startswith('resolve_') and not key.startswith('resolve_map_'):
             resolutions[key[len('resolve_'):]] = value
 
-    # The map is a single global object, resolved by one radio: map_action =
-    # 'imported' means replace the local map with the bundle's; anything else
-    # (incl. absent) keeps the local map.
-    import_map = request.form.get('map_action') == 'imported'
+    # Per-map conflict choices: resolve_map_<id> = 'local' | 'imported'. New
+    # maps (no local id) are added regardless; only genuine conflicts carry a
+    # radio, so a map id absent here defaults to keeping the local map.
+    map_resolutions = {}
+    for key, value in request.form.items():
+        if key.startswith('resolve_map_'):
+            map_resolutions[key[len('resolve_map_'):]] = value
 
     try:
         summary = transfer.apply_import(zip_bytes, resolutions,
-                                        import_map=import_map)
+                                        map_resolutions=map_resolutions)
     except ValueError as exc:
         abort(400, str(exc))
     finally:

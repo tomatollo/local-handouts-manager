@@ -1,29 +1,39 @@
-"""Interactive map (global, master-controlled).
+"""Interactive maps (global, master-controlled).
 
-One shared map per table: the Master reveals hexes and moves a marker, and
-every player screen polls this state. Stored at the DB root (see MAP_KEY),
-not under `settings`, because it is live scene state rather than a display
-preference.
+The table can have SEVERAL maps -- a world map, a city, a dungeon level --
+each an independent scene the Master reveals hexes on and moves a marker
+across, and each polled by the player screens. The maps live in a LIST at the
+DB root under MAPS_KEY (see paths.py); every map is a dict with:
 
-Named map_state (not map) so it never shadows the builtin. The confirmed state
-is what players read; the Master edits a `pending` draft and explicitly confirms
-it. See docs/STORAGE.md for the staging model.
+  * `id`   -- stable identifier used in URLs and API calls
+  * `name` -- the Master's label for it (shown in the map list / chooser)
+  * the full scene state: revealed hexes, marker, grid, fog, background image,
+    calibration, POIs, focus, and a `pending` draft layer + `confirm_seq`.
+
+Databases written before multi-map support stored a SINGLE map under the
+legacy MAP_KEY; db._normalize migrates that into `maps[0]` once and drops the
+old key (see there). This module never reads MAP_KEY itself.
+
+Named map_state (historically) so it never shadows the builtin `map`. The
+confirmed state is what players read; the Master edits a map's `pending` draft
+and explicitly confirms it. See docs/STORAGE.md for the staging model.
 """
 
 import re
 import uuid
 
-from .paths import MAP_KEY
+from .paths import MAPS_KEY, MAP_NAME_MAX
 
 
-def get_map_state(db):
-    """Return the current map state dict.
+def _blank_map_state():
+    """A fresh map's confirmed-state fields (no id/name -- the caller adds those).
 
-    Never None: _normalize() guarantees the node and its keys exist, but we
-    still fall back defensively so a caller that hand-built a db without
-    normalizing gets a sane shape rather than a KeyError.
+    The single source of truth for a map's default shape, used when creating a
+    new map, defaulting a lookup, and (via _normalize_map) migrating the legacy
+    single map. `pending` and `confirm_seq` are seeded by _normalize_map so the
+    draft starts equal to the confirmed state.
     """
-    return db.setdefault(MAP_KEY, {
+    return {
         'revealed_hexes': [],
         'marker_x': 0,
         'marker_y': 0,
@@ -33,6 +43,7 @@ def get_map_state(db):
         'marker_color': '#c0533b',
         'grid_cols': 20,
         'grid_rows': 15,
+        'grid_type': 'hex',
         'fog_color': '#0d0b0a',
         'map_image': None,
         'offset_x': 0.0,
@@ -40,7 +51,7 @@ def get_map_state(db):
         'hex_size': 5.0,
         'pois': [],
         'focus': {'seq': 0, 'x': 50.0, 'y': 50.0, 'scale': 1.0},
-    })
+    }
 
 
 # Bounds for the grid dimensions the Master can set. A hard ceiling stops a
@@ -153,7 +164,7 @@ def _coerce_map_fields(target, data):
 
     Shared by the draft writer and the map-upload route so validation lives in
     one spot. Unknown keys are ignored; bad types leave the previous value.
-    `target` is either the confirmed state or its `pending` sub-dict.
+    `target` is either a map's confirmed state or its `pending` sub-dict.
     """
     if 'revealed_hexes' in data:
         hexes = data['revealed_hexes']
@@ -194,6 +205,15 @@ def _coerce_map_fields(target, data):
             except (TypeError, ValueError):
                 pass
 
+    # Grid shape: 'hex' (default) or 'square'. Anything unrecognised leaves the
+    # previous value, so a malformed patch can't blank it. Both the client's
+    # buildGrid() and the server-side compositor (mapmask) branch on this, so
+    # the two must offer exactly the same set of values.
+    if 'grid_type' in data:
+        val = str(data['grid_type'] or '').strip().lower()
+        if val in ('hex', 'square'):
+            target['grid_type'] = val
+
     # Calibration floats (percent). offset can be slightly negative so the grid
     # can start just off the top-left corner; hex_size has a sane floor so a
     # zero never collapses every hex to a point.
@@ -224,8 +244,158 @@ def _coerce_map_fields(target, data):
         target['pois'] = _clean_pois(data['pois'], target.get('pois', []))
 
 
-def update_map_state(db, data):
-    """Write `data` into the DRAFT (pending) layer and return the full state.
+# The scene fields a confirm promotes from pending -> confirmed, and that a
+# discard copies confirmed -> pending. `map_image` is included because a map
+# without its image staged consistently would confirm to a blank background.
+_STAGED_KEYS = (
+    'revealed_hexes', 'marker_x', 'marker_y', 'marker_visible',
+    'marker_scale', 'marker_icon', 'marker_color',
+    'grid_cols', 'grid_rows', 'grid_type', 'fog_color',
+    'map_image', 'offset_x', 'offset_y', 'hex_size', 'pois',
+)
+
+
+def clean_map_name(raw, fallback='Map'):
+    """Trim + cap a map name, falling back when the Master left it blank."""
+    name = (raw or '').strip()[:MAP_NAME_MAX]
+    return name or fallback
+
+
+def _normalize_map(m):
+    """Bring one map dict up to the current shape, in place. Idempotent.
+
+    Ensures id + name, fills every confirmed-state key from the blank template,
+    re-cleans POIs, and seeds the `pending` draft (equal to confirmed on first
+    run) plus `confirm_seq`. Mirrors the per-node defaulting the single map used
+    to get inline in db._normalize, now factored here so each map in the list
+    is normalized the same way.
+    """
+    if not isinstance(m, dict):
+        m = {}
+    m['id'] = str(m.get('id') or '').strip() or uuid.uuid4().hex
+    m['name'] = clean_map_name(m.get('name'), fallback='Map')
+
+    defaults = _blank_map_state()
+    for key, default in defaults.items():
+        m.setdefault(key, default)
+    # De-duplicate revealed hexes while preserving order: legacy data (and any
+    # hand-edit) may carry repeats, and _coerce_map_fields already keeps the
+    # confirmed list unique, so normalize matches that invariant here too.
+    if isinstance(m.get('revealed_hexes'), (list, tuple)):
+        seen = set()
+        deduped = []
+        for hx in m['revealed_hexes']:
+            key = str(hx)
+            if key not in seen:
+                seen.add(key)
+                deduped.append(key)
+        m['revealed_hexes'] = deduped
+    # Re-run stored POIs through the cleaner so older pins (saved before
+    # icon/colour/scale existed) gain the full field set with sane defaults.
+    m['pois'] = _clean_pois(m['pois'], m['pois'])
+    # Focus sub-dict defaults, in case a hand-edited map carries a partial one.
+    focus = m['focus'] if isinstance(m.get('focus'), dict) else {}
+    focus.setdefault('seq', 0)
+    focus.setdefault('x', 50.0)
+    focus.setdefault('y', 50.0)
+    focus.setdefault('scale', 1.0)
+    m['focus'] = focus
+
+    # Staging (draft) layer: seeded from the confirmed values so a fresh map
+    # starts with draft == live. See docs/STORAGE.md.
+    pending = m.setdefault('pending', {})
+    pending.setdefault('revealed_hexes', list(m['revealed_hexes']))
+    pending.setdefault('marker_x', m['marker_x'])
+    pending.setdefault('marker_y', m['marker_y'])
+    pending.setdefault('marker_visible', m['marker_visible'])
+    pending.setdefault('marker_scale', m['marker_scale'])
+    pending.setdefault('marker_icon', m['marker_icon'])
+    pending.setdefault('marker_color', m['marker_color'])
+    pending.setdefault('grid_cols', m['grid_cols'])
+    pending.setdefault('grid_rows', m['grid_rows'])
+    pending.setdefault('grid_type', m['grid_type'])
+    pending.setdefault('fog_color', m['fog_color'])
+    pending.setdefault('map_image', m['map_image'])
+    pending.setdefault('offset_x', m['offset_x'])
+    pending.setdefault('offset_y', m['offset_y'])
+    pending.setdefault('hex_size', m['hex_size'])
+    pending.setdefault('pois', [dict(poi) for poi in m['pois']])
+    pending['pois'] = _clean_pois(pending['pois'], pending['pois'])
+    m.setdefault('confirm_seq', 0)
+    return m
+
+
+# --------------------------------------------------------------------------
+# Collection access
+# --------------------------------------------------------------------------
+
+def all_maps(db):
+    """Every map, in stored order. The list players/masters choose from."""
+    maps = db.get(MAPS_KEY)
+    return maps if isinstance(maps, list) else []
+
+
+def find_map(db, map_id):
+    """Return the map dict with this id, or None."""
+    if not map_id:
+        return None
+    return next((m for m in all_maps(db) if m.get('id') == map_id), None)
+
+
+def get_map(db, map_id):
+    """Return the map with this id, normalized, or None if it doesn't exist.
+
+    Unlike the old get_map_state there is no implicit creation: with several
+    maps, a missing id is a real "not found" (a deleted map, a stale URL), which
+    the route turns into a 404 rather than silently spawning an empty map.
+    """
+    m = find_map(db, map_id)
+    return _normalize_map(m) if m is not None else None
+
+
+def create_map(db, name=''):
+    """Append a new, empty map and return it. Name defaults to 'Map N'."""
+    maps = db.setdefault(MAPS_KEY, [])
+    if not isinstance(maps, list):
+        maps = db[MAPS_KEY] = []
+    fallback = f'Map {len(maps) + 1}'
+    m = {'id': uuid.uuid4().hex, 'name': clean_map_name(name, fallback)}
+    _normalize_map(m)
+    maps.append(m)
+    return m
+
+
+def rename_map(db, map_id, name):
+    """Rename a map in place. No-op (returns None) if the map is gone."""
+    m = find_map(db, map_id)
+    if m is None:
+        return None
+    m['name'] = clean_map_name(name, fallback=m.get('name') or 'Map')
+    return m
+
+
+def delete_map(db, map_id):
+    """Remove a map from the collection. Returns the removed map, or None.
+
+    The caller is responsible for deleting the map's background image file from
+    disk (it has the storage.remove_map_image helper); this only touches the DB
+    so the module stays free of filesystem work except where it already lives.
+    """
+    maps = all_maps(db)
+    m = find_map(db, map_id)
+    if m is None:
+        return None
+    db[MAPS_KEY] = [x for x in maps if x.get('id') != map_id]
+    return m
+
+
+# --------------------------------------------------------------------------
+# Per-map scene operations. Each takes a map_id and is a no-op returning None
+# when it doesn't resolve, so a stale id from a slow client can't raise.
+# --------------------------------------------------------------------------
+
+def update_map_state(db, map_id, data):
+    """Write `data` into a map's DRAFT (pending) layer; return the map or None.
 
     This is what the Master's live edits hit: revealing a hex, dragging the
     marker, changing the grid or fog colour all land in `pending` and are NOT
@@ -235,82 +405,89 @@ def update_map_state(db, data):
     NB: the map-upload route writes map_image straight to BOTH layers via
     set_map_image() -- see there for why an uploaded image is not staged.
     """
-    state = get_map_state(db)
-    pending = state.setdefault('pending', {})
-    _coerce_map_fields(pending, data or {})
-    return state
+    m = get_map(db, map_id)
+    if m is None:
+        return None
+    _coerce_map_fields(m.setdefault('pending', {}), data or {})
+    return m
 
 
-def set_map_image(db, filename):
-    """Set (or clear) the map background on BOTH the confirmed and draft layers.
+def set_map_image(db, map_id, filename):
+    """Set (or clear) a map's background on BOTH the confirmed and draft layers.
 
     The background image is deliberately NOT staged: an uploaded map is a setup
     action, not a reveal, and a half-set-up map where the Master sees the new
     image but players still see the old one (until a confirm) would be more
     confusing than useful. Upload = immediately live for everyone.
     """
-    state = get_map_state(db)
-    _coerce_map_fields(state, {'map_image': filename})
-    _coerce_map_fields(state.setdefault('pending', {}), {'map_image': filename})
-    return state
+    m = get_map(db, map_id)
+    if m is None:
+        return None
+    _coerce_map_fields(m, {'map_image': filename})
+    _coerce_map_fields(m.setdefault('pending', {}), {'map_image': filename})
+    return m
 
 
-def confirm_map_state(db):
-    """Promote the draft to confirmed: players now see what the Master staged.
+def confirm_map_state(db, map_id):
+    """Promote a map's draft to confirmed: players now see what was staged.
 
     Copies every pending field onto the confirmed state and bumps confirm_seq
     so player pages can tell this is a fresh confirmation. This is the ONLY
     function that changes what players read (aside from set_map_image).
+    Returns the map, or None if the id doesn't resolve.
     """
-    state = get_map_state(db)
-    pending = state.get('pending', {})
-    for key in ('revealed_hexes', 'marker_x', 'marker_y', 'marker_visible',
-                'marker_scale', 'marker_icon', 'marker_color',
-                'grid_cols', 'grid_rows', 'fog_color',
-                'map_image', 'offset_x', 'offset_y', 'hex_size', 'pois'):
+    m = get_map(db, map_id)
+    if m is None:
+        return None
+    pending = m.get('pending', {})
+    for key in _STAGED_KEYS:
         if key in pending:
             # Copy lists by value so the two layers don't alias. POIs need a
-            # deep copy: each is a dict, and a shallow list() would still let
-            # a later draft edit mutate the confirmed pin in place.
+            # deep copy: each is a dict, and a shallow list() would still let a
+            # later draft edit mutate the confirmed pin in place.
             if key == 'revealed_hexes':
-                state[key] = list(pending[key])
+                m[key] = list(pending[key])
             elif key == 'pois':
-                state[key] = [dict(poi) for poi in pending[key]]
+                m[key] = [dict(poi) for poi in pending[key]]
             else:
-                state[key] = pending[key]
-    state['confirm_seq'] = state.get('confirm_seq', 0) + 1
-    return state
+                m[key] = pending[key]
+    m['confirm_seq'] = m.get('confirm_seq', 0) + 1
+    return m
 
 
-def discard_map_state(db):
-    """Throw the draft away: reset pending back to the confirmed state.
+def discard_map_state(db, map_id):
+    """Throw a map's draft away: reset pending back to its confirmed state.
 
     Used by the Master's 'Discard changes' button so a session of experimental
     reveals can be abandoned wholesale without touching what players see.
+    Returns the map, or None if the id doesn't resolve.
     """
-    state = get_map_state(db)
-    state['pending'] = {
-        'revealed_hexes': list(state['revealed_hexes']),
-        'marker_x': state['marker_x'],
-        'marker_y': state['marker_y'],
-        'marker_visible': state['marker_visible'],
-        'marker_scale': state['marker_scale'],
-        'marker_icon': state['marker_icon'],
-        'marker_color': state['marker_color'],
-        'grid_cols': state['grid_cols'],
-        'grid_rows': state['grid_rows'],
-        'fog_color': state['fog_color'],
-        'map_image': state['map_image'],
-        'offset_x': state['offset_x'],
-        'offset_y': state['offset_y'],
-        'hex_size': state['hex_size'],
-        'pois': [dict(poi) for poi in state['pois']],
+    m = get_map(db, map_id)
+    if m is None:
+        return None
+    m['pending'] = {
+        'revealed_hexes': list(m['revealed_hexes']),
+        'marker_x': m['marker_x'],
+        'marker_y': m['marker_y'],
+        'marker_visible': m['marker_visible'],
+        'marker_scale': m['marker_scale'],
+        'marker_icon': m['marker_icon'],
+        'marker_color': m['marker_color'],
+        'grid_cols': m['grid_cols'],
+        'grid_rows': m['grid_rows'],
+        'grid_type': m['grid_type'],
+        'fog_color': m['fog_color'],
+        'map_image': m['map_image'],
+        'offset_x': m['offset_x'],
+        'offset_y': m['offset_y'],
+        'hex_size': m['hex_size'],
+        'pois': [dict(poi) for poi in m['pois']],
     }
-    return state
+    return m
 
 
-def set_map_focus(db, x, y, scale):
-    """Record a camera-focus broadcast and return the new focus dict.
+def set_map_focus(db, map_id, x, y, scale):
+    """Record a camera-focus broadcast on a map; return its focus dict or None.
 
     Not staged: a focus is a live "look here, now" directive, so it takes
     effect immediately rather than waiting for a confirm -- the same design as
@@ -322,8 +499,10 @@ def set_map_focus(db, x, y, scale):
     the zoom level, clamped to a sane range so a bad client value can't ask the
     player view for an absurd magnification.
     """
-    state = get_map_state(db)
-    focus = state.setdefault('focus', {'seq': 0})
+    m = get_map(db, map_id)
+    if m is None:
+        return None
+    focus = m.setdefault('focus', {'seq': 0})
     try:
         fx = max(0.0, min(100.0, float(x)))
     except (TypeError, ValueError):
@@ -336,8 +515,8 @@ def set_map_focus(db, x, y, scale):
         fs = max(0.1, min(8.0, float(scale)))
     except (TypeError, ValueError):
         fs = 1.0
-    state['focus'] = {
+    m['focus'] = {
         'seq': focus.get('seq', 0) + 1,
         'x': fx, 'y': fy, 'scale': fs,
     }
-    return state['focus']
+    return m['focus']

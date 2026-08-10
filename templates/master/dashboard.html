@@ -198,7 +198,7 @@
                preferences; the header now carries one control, not two. #}
             <div class="hub-top__actions">
                 <a class="btn btn--create" href="{{ url_for('master.create_page') }}">&#10133; {{ 'Create a Handout' | t }}</a>
-                <a class="btn btn--ghost" href="{{ url_for('master.map_control') }}">🗺️ {{ 'Map' | t }}</a>
+                <a class="btn btn--ghost" href="{{ url_for('master.map_list') }}">🗺️ {{ 'Map' | t }}</a>
                 {% with active = 'dashboard' %}{% include 'master/_menu.html' %}{% endwith %}
             </div>
         </div>

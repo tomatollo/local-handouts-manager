@@ -260,8 +260,8 @@
     <div class="wrap">
         <div class="hub-top">
             <div>
-                <p class="subtitle"><a href="{{ url_for('master.dm_panel') }}">&lsaquo; {{ "Back to Master's Screen" | t }}</a></p>
-                <h1><a class="home-title" href="{{ url_for('master.dm_panel') }}">{{ 'Interactive Map' | t }}</a></h1>
+                <p class="subtitle"><a href="{{ url_for('master.map_list') }}">&lsaquo; {{ 'All maps' | t }}</a></p>
+                <h1><a class="home-title" href="{{ url_for('master.map_list') }}">{{ map_state.name }}</a></h1>
             </div>
             {% with active = 'map' %}{% include 'master/_menu.html' %}{% endwith %}
         </div>
@@ -341,7 +341,7 @@
                     <div class="side-group">
                         <h3>{{ 'Map image' | t }}</h3>
                         <form class="map-controls" method="post"
-                              action="{{ url_for('master.map_upload') }}" enctype="multipart/form-data">
+                              action="{{ url_for('master.map_upload', map_id=map_id) }}" enctype="multipart/form-data">
                             <div class="map-field" style="width:100%">
                                 <label for="map_image_file">{{ 'Upload a new image' | t }}</label>
                                 <input type="file" id="map_image_file" name="map_image"
@@ -363,6 +363,13 @@
                     <div class="side-group">
                         <h3>{{ 'Grid & fog' | t }}</h3>
                         <div class="map-controls">
+                            <div class="map-field">
+                                <label for="grid_type">{{ 'Grid type' | t }}</label>
+                                <select id="grid_type">
+                                    <option value="hex" {% if map_state.pending.grid_type != 'square' %}selected{% endif %}>{{ 'Hexagons' | t }}</option>
+                                    <option value="square" {% if map_state.pending.grid_type == 'square' %}selected{% endif %}>{{ 'Squares' | t }}</option>
+                                </select>
+                            </div>
                             <div class="map-field">
                                 <label for="grid_cols">{{ 'Columns' | t }}</label>
                                 <input type="number" id="grid_cols" min="1" max="400" value="{{ map_state.pending.grid_cols }}">
@@ -419,10 +426,10 @@
     <script>
     (function () {
         'use strict';
-        var WRITE_URL   = "{{ url_for('master.map_state_api') }}";
-        var CONFIRM_URL = "{{ url_for('master.map_confirm') }}";
-        var DISCARD_URL = "{{ url_for('master.map_discard') }}";
-        var FOCUS_URL   = "{{ url_for('master.map_focus') }}";
+        var WRITE_URL   = "{{ url_for('master.map_state_api', map_id=map_id) }}";
+        var CONFIRM_URL = "{{ url_for('master.map_confirm', map_id=map_id) }}";
+        var DISCARD_URL = "{{ url_for('master.map_discard', map_id=map_id) }}";
+        var FOCUS_URL   = "{{ url_for('master.map_focus', map_id=map_id) }}";
 
         var stage    = document.getElementById('map-stage');
         var viewport = document.getElementById('map-viewport');
@@ -469,6 +476,7 @@
             markerScale: clampScale(full.marker_scale),
             markerIcon: String(full.marker_icon || ''),
             markerColor: String(full.marker_color || '#c0533b'),
+            gridType: (full.grid_type === 'square') ? 'square' : 'hex',
             pois: (full.pois || []).map(clonePoi)
         };
         var p = full.pending || {};
@@ -481,6 +489,7 @@
             markerIcon: String(p.marker_icon || ''),
             markerColor: String(p.marker_color || '#c0533b'),
             cols: p.grid_cols || 20, rows: p.grid_rows || 15,
+            gridType: (p.grid_type === 'square') ? 'square' : 'hex',
             fog: p.fog_color || '#0d0b0a',
             offX: (typeof p.offset_x === 'number') ? p.offset_x : 0,
             offY: (typeof p.offset_y === 'number') ? p.offset_y : 0,
@@ -518,6 +527,7 @@
             if (Math.abs(draft.markerScale - live.markerScale) > 0.001) return true;
             if (draft.markerIcon !== live.markerIcon) return true;
             if (draft.markerColor !== live.markerColor) return true;
+            if (draft.gridType !== live.gridType) return true;
             if (draft.revealed.size !== live.revealed.size) return true;
             for (var id of draft.revealed) if (!live.revealed.has(id)) return true;
             if (poisDiffer(draft.pois, live.pois)) return true;
@@ -561,6 +571,34 @@
             grid.setAttribute('height', H);
             grid.style.width = '100%'; grid.style.height = '100%';
             grid.style.setProperty('--fog', draft.fog);
+
+            if (draft.gridType === 'square') {
+                // Square cells: side reuses hexSize (percent of width), laid
+                // out edge-to-edge from the calibration origin, no stagger.
+                // MUST match mapmask._square_geometry/_square_polygon.
+                var side = draft.hexSize / 100 * W;
+                var sqStartX = draft.offX / 100 * W;
+                var sqStartY = draft.offY / 100 * H;
+                for (var srow = 0; srow < draft.rows; srow++) {
+                    for (var scol = 0; scol < draft.cols; scol++) {
+                        var x0 = sqStartX + scol * side;
+                        var y0 = sqStartY + srow * side;
+                        var rect = document.createElementNS(svgNS, 'polygon');
+                        var sid = 'hex-' + scol + '-' + srow;
+                        rect.setAttribute('points',
+                            x0.toFixed(2) + ',' + y0.toFixed(2) + ' ' +
+                            (x0 + side).toFixed(2) + ',' + y0.toFixed(2) + ' ' +
+                            (x0 + side).toFixed(2) + ',' + (y0 + side).toFixed(2) + ' ' +
+                            x0.toFixed(2) + ',' + (y0 + side).toFixed(2));
+                        rect.setAttribute('data-hex', sid);
+                        grid.appendChild(rect);
+                        hexById[sid] = rect;
+                    }
+                }
+                stage.insertBefore(grid, ghost);
+                paintHexes();
+                return;
+            }
 
             // Flat-top hexes: a flat side on top, points on left/right.
             var hexW = draft.hexSize / 100 * W;          // corner-to-corner width
@@ -661,6 +699,7 @@
             saveTimer = setTimeout(function () {
                 persist({
                     grid_cols: draft.cols, grid_rows: draft.rows, fog_color: draft.fog,
+                    grid_type: draft.gridType,
                     offset_x: draft.offX, offset_y: draft.offY, hex_size: draft.hexSize
                 }, "{{ 'Saving…' | t }}");
             }, 400);
@@ -676,6 +715,10 @@
         });
         document.getElementById('fog_color').addEventListener('input', function (e) {
             draft.fog = e.target.value; scheduleGridSave();
+        });
+        document.getElementById('grid_type').addEventListener('change', function (e) {
+            draft.gridType = (e.target.value === 'square') ? 'square' : 'hex';
+            scheduleGridSave();
         });
 
         // ---- Marker (draft) + ghost of live position -----------------------
@@ -790,6 +833,7 @@
                     live.markerScale = clampScale(state.marker_scale);
                     live.markerIcon = String(state.marker_icon || '');
                     live.markerColor = String(state.marker_color || '#c0533b');
+                    live.gridType = (state.grid_type === 'square') ? 'square' : 'hex';
                     live.pois = (state.pois || []).map(clonePoi);
                     paintHexes(); renderMarker(); renderPois(); refreshBadge();
                     showStatus("{{ 'Revealed to players' | t }}", false);
@@ -824,11 +868,22 @@
         function hexIdAt(xPct, yPct) {
             var W = img.clientWidth || img.naturalWidth || 1600;
             var H = img.clientHeight || img.naturalHeight || 1200;
+            var px = xPct / 100 * W, py = yPct / 100 * H;
+
+            if (draft.gridType === 'square') {
+                var side = draft.hexSize / 100 * W;
+                if (side <= 0) return null;
+                var sqStartX = draft.offX / 100 * W, sqStartY = draft.offY / 100 * H;
+                var scol = Math.floor((px - sqStartX) / side);
+                var srow = Math.floor((py - sqStartY) / side);
+                if (scol < 0 || srow < 0 || scol >= draft.cols || srow >= draft.rows) return null;
+                return 'hex-' + scol + '-' + srow;
+            }
+
             var r = (draft.hexSize / 100 * W) / 2;
             if (r <= 0) return null;
             var colStep = r * 1.5, rowStep = Math.sqrt(3) * r;
             var startX = draft.offX / 100 * W, startY = draft.offY / 100 * H;
-            var px = xPct / 100 * W, py = yPct / 100 * H;
             var best = null, bestD = Infinity;
             for (var col = 0; col < draft.cols; col++) {
                 var cx = startX + col * colStep;

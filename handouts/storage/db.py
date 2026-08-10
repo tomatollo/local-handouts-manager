@@ -18,11 +18,11 @@ import os
 import threading
 
 from .. import theming
-from .paths import DB_PATH, POP_KEY, MAP_KEY
+from .paths import DB_PATH, POP_KEY, MAP_KEY, MAPS_KEY
 from .util import clean_view_type
 from .formats import format_of_handout
 from .welcome import _normalize_welcome
-from .map_state import _clean_pois
+from .map_state import _normalize_map
 
 # --------------------------------------------------------------------------
 # Concurrency + request-scoped caching
@@ -133,92 +133,36 @@ def _normalize(data):
     pop.setdefault('handout_id', None)
     pop.setdefault('at', None)
 
-    # DB-level: interactive map state, shared by the Master (who reveals hexes
-    # and moves the marker) and every player screen (which polls it). Created
-    # on the fly with per-key setdefault so a DB written before this feature
-    # existed gains it without touching the rest of the record, and so a
-    # partially hand-edited node keeps whatever keys it already has.
-    map_state = data.setdefault(MAP_KEY, {})
-    map_state.setdefault('revealed_hexes', [])
-    map_state.setdefault('marker_x', 0)
-    map_state.setdefault('marker_y', 0)
-    map_state.setdefault('marker_visible', False)
-    # How big the party marker is drawn, as a multiplier on its base size.
-    map_state.setdefault('marker_scale', 1.0)
-    # The party marker is customisable like a POI: an optional custom glyph
-    # and a colour. Empty icon = the default diamond marker.
-    map_state.setdefault('marker_icon', '')
-    map_state.setdefault('marker_color', '#c0533b')
-    # Grid the Master can size to match a printed map (e.g. Chult is 23x24).
-    map_state.setdefault('grid_cols', 20)
-    map_state.setdefault('grid_rows', 15)
-    # Colour of un-revealed (fogged) hexes, as a CSS hex string.
-    map_state.setdefault('fog_color', '#0d0b0a')
-    # Uploaded map image filename (in static/maps), or None for placeholder.
-    map_state.setdefault('map_image', None)
-    # Grid calibration, all as PERCENT of the map image so they survive a
-    # resolution change. offset_x/offset_y move the whole grid so its first hex
-    # lands on the map's first printed hex; hex_size is one hex's width as a
-    # percent of the image width (height follows from hex geometry). These let
-    # the Master align the overlay to a map that already has hexes drawn on it,
-    # instead of stretching the grid to the image edges.
-    map_state.setdefault('offset_x', 0.0)
-    map_state.setdefault('offset_y', 0.0)
-    map_state.setdefault('hex_size', 5.0)
-    # Points of interest: labels the Master pins to the map (city names, etc.).
-    # Each is {id, label, x, y, always_visible} with x/y as PERCENT of the
-    # image so they survive a resolution change, exactly like the calibration
-    # fields. They live ON TOP of everything (fog, grid, marker) and carry only
-    # text -- never map pixels -- so an always_visible POI is safe to show even
-    # over an un-revealed hex. always_visible False means the POI only appears
-    # once the hex it sits in has been revealed (resolved client-side).
-    map_state.setdefault('pois', [])
-    # Older POIs (saved before icon/colour/scale existed) are re-run through the
-    # cleaner so every stored pin carries the full field set with sane defaults,
-    # rather than leaking null icon/colour/scale to the player JSON.
-    map_state['pois'] = _clean_pois(map_state['pois'], map_state['pois'])
-    # Camera focus broadcast: "everyone look here, now". Like the POP, this is
-    # NOT staged -- it is a live directive, not a draft edit. {seq, x, y, scale}
-    # where x/y are the focus point as PERCENT of the image and scale is the
-    # zoom level the Master was using. Players compare seq to tell a fresh
-    # focus from an unchanged poll and animate their view to match. seq 0 means
-    # "never focused"; players ignore it.
-    map_state.setdefault('focus', {})
-    focus = map_state['focus']
-    focus.setdefault('seq', 0)
-    focus.setdefault('x', 50.0)
-    focus.setdefault('y', 50.0)
-    focus.setdefault('scale', 1.0)
-
-    # --- Staging (draft) layer ---------------------------------------------
-    # Everything above is the CONFIRMED state -- the only thing players read.
-    # The Master edits a draft first and explicitly confirms it, so a mistaken
-    # click never flashes onto the table. `pending` mirrors the same keys; a
-    # confirm copies pending -> confirmed, a discard copies confirmed -> pending.
-    # Seeded from confirmed values so a fresh DB starts with draft == live.
-    pending = map_state.setdefault('pending', {})
-    pending.setdefault('revealed_hexes', list(map_state['revealed_hexes']))
-    pending.setdefault('marker_x', map_state['marker_x'])
-    pending.setdefault('marker_y', map_state['marker_y'])
-    pending.setdefault('marker_visible', map_state['marker_visible'])
-    pending.setdefault('marker_scale', map_state['marker_scale'])
-    pending.setdefault('marker_icon', map_state['marker_icon'])
-    pending.setdefault('marker_color', map_state['marker_color'])
-    pending.setdefault('grid_cols', map_state['grid_cols'])
-    pending.setdefault('grid_rows', map_state['grid_rows'])
-    pending.setdefault('fog_color', map_state['fog_color'])
-    pending.setdefault('map_image', map_state['map_image'])
-    pending.setdefault('offset_x', map_state['offset_x'])
-    pending.setdefault('offset_y', map_state['offset_y'])
-    pending.setdefault('hex_size', map_state['hex_size'])
-    # POIs are staged like everything else: the draft carries its own list and
-    # a confirm promotes it. Deep-copied from the confirmed list so the two
-    # layers never alias (each POI is its own dict).
-    pending.setdefault('pois', [dict(poi) for poi in map_state['pois']])
-    pending['pois'] = _clean_pois(pending['pois'], pending['pois'])
-    # Bumped on every confirm; players compare it to tell a fresh confirmation
-    # from an unchanged poll (and so the marker only animates on real changes).
-    map_state.setdefault('confirm_seq', 0)
+    # DB-level: interactive maps. The table can have several (a world map, a
+    # city, a dungeon level), stored as a LIST under MAPS_KEY. Each is an
+    # independent scene the Master reveals and players poll.
+    #
+    # Migration: databases written before multi-map support stored ONE map
+    # under the legacy MAP_KEY. Convert it into maps[0] once, then drop the old
+    # key so nothing keeps reading it. This is a clean, one-way migration --
+    # after it runs the DB has only MAPS_KEY. (Backups are the safety net: the
+    # library can always be re-imported from an export made on an older build.)
+    legacy = data.pop(MAP_KEY, None)
+    maps = data.get(MAPS_KEY)
+    if not isinstance(maps, list):
+        maps = []
+    if legacy and not maps:
+        # Give the migrated map a friendly default name and a STABLE id. The
+        # legacy single map carried no id, and _normalize_map would otherwise
+        # mint a fresh random one on every load_db -- and because the migration
+        # isn't persisted until the next save_db, each request would see a
+        # different id, breaking every /map/<id> link (an endless redirect
+        # between the map list and a map that no longer matches its id). A
+        # fixed id keeps the migrated map addressable across requests until it
+        # is first saved.
+        legacy.setdefault('id', 'legacy-map')
+        legacy.setdefault('name', 'Map 1')
+        maps = [legacy]
+    data[MAPS_KEY] = maps
+    # Normalize every map in place: ensures id + name, fills any missing scene
+    # fields, re-cleans POIs, and seeds each map's pending/confirm_seq. Drops
+    # entries that aren't dicts (hand-edited junk) rather than crashing on them.
+    data[MAPS_KEY] = [_normalize_map(m) for m in maps if isinstance(m, dict)]
 
     for h in data.get('handouts', []):
         # Legacy single-file -> files: [...]

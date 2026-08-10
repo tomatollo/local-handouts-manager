@@ -35,7 +35,19 @@ POP_KEY = 'pop'
 # get_map_state / update_map_state). Kept at the root, alongside `handouts`
 # and `folders`, because the map is table-wide state rather than a per-handout
 # or display setting.
+#
+# MAP_KEY is the LEGACY single-map key: databases written before multi-map
+# support stored one map object here. It is read once by the migration in
+# db._normalize (which converts it into maps[0]) and then removed, so nothing
+# else should reference it. MAPS_KEY is the current home: a LIST of map
+# objects, each with an id, a name, and the same state fields the single map
+# used to carry.
 MAP_KEY = 'map_state'
+MAPS_KEY = 'maps'
+
+# Cap on a map's display name so it stays a label, not prose. The name is shown
+# in the master's map list and the player's map chooser.
+MAP_NAME_MAX = 80
 
 # How long a POP stays live, in seconds.
 #

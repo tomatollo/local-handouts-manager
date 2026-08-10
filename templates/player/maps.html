@@ -1,0 +1,82 @@
+{# Players' map chooser: reached when there is more than one map (the route
+   sends a lone map straight to its view). Every map is listed, including ones
+   with no background image yet -- those show a fog placeholder. Read-only:
+   each card opens that map's interactive view. #}
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'Maps' | t }}</title>
+    {% include '_head.html' %}
+    <style>
+        .map-grid {
+            display: grid; gap: 16px; margin-top: 8px;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        }
+        .map-card {
+            border: var(--px) solid var(--border);
+            box-shadow: var(--px) var(--px) 0 0 var(--shadow);
+            background: rgba(0,0,0,0.18);
+            text-decoration: none; color: inherit;
+            display: flex; flex-direction: column;
+            transition: transform 0.12s ease;
+        }
+        .map-card:hover { transform: translateY(-2px); }
+        .map-card__thumb {
+            height: 160px; overflow: hidden; background: var(--fog, #0d0b0a);
+            border-bottom: 2px solid var(--border);
+        }
+        /* The thumbnail is the REVEALED composite, never the raw map, so this
+           chooser leaks nothing the player couldn't already see on the map. */
+        .map-card__thumb img {
+            width: 100%; height: 100%; object-fit: cover;
+            image-rendering: pixelated; display: block;
+        }
+        .map-card__name {
+            padding: 10px 12px; font-family: var(--font-display);
+            font-size: 0.9rem; text-align: center;
+        }
+        /* Placeholder for a map with no background image yet: a fog panel with
+           a faint label, so the card is never a broken image. */
+        .map-card__empty {
+            width: 100%; height: 100%; display: flex; align-items: center;
+            justify-content: center; text-align: center; padding: 8px;
+            color: var(--ink-dim); font-style: italic; font-size: 0.82rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="hub-top">
+            <div>
+                <h1><a class="home-title" href="{{ url_for('player.home') }}">{{ 'Maps' | t }}</a> &#128506;&#65039;</h1>
+                <p class="subtitle">{{ 'Choose a map to explore.' | t }}</p>
+            </div>
+            <button type="button" class="btn" id="browse-btn" aria-controls="drawer" aria-expanded="false">&#9776; {{ 'Browse' | t }}</button>
+        </div>
+
+        <div class="map-grid">
+            {% for m in maps %}
+            <a class="map-card" href="{{ url_for('player.map_view', map_id=m.id) }}">
+                <div class="map-card__thumb">
+                    {% if m.map_image %}
+                    {# confirm_seq busts the cache when the Master reveals more. #}
+                    <img src="{{ url_for('player.map_reveal', map_id=m.id) }}?v={{ m.confirm_seq }}" alt="">
+                    {% else %}
+                    <span class="map-card__empty">{{ 'Not ready yet' | t }}</span>
+                    {% endif %}
+                </div>
+                <div class="map-card__name">{{ m.name }}</div>
+            </a>
+            {% endfor %}
+        </div>
+
+        {% set footer_scope = 'player' %}
+        {% set footer_page = 'player/maps.html' %}
+        {% include '_footer.html' %}
+    </div>
+
+    {% include 'player/_drawer.html' %}
+</body>
+</html>

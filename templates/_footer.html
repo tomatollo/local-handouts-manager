@@ -104,13 +104,15 @@
             {% if _scope == 'master' %}
             <a href="{{ url_for('master.dm_panel') }}">{{ "Master's Screen" | t }}</a>
             <a href="{{ url_for('master.create_page') }}">{{ 'Create' | t }}</a>
-            <a href="{{ url_for('master.map_control') }}">{{ 'Interactive Map' | t }}</a>
+            <a href="{{ url_for('master.map_list') }}">{{ 'Interactive Map' | t }}</a>
             <a href="{{ url_for('qr_page') }}">{{ 'Join by QR' | t }}</a>
             <a href="{{ url_for('master.appearance') }}">{{ 'Appearance' | t }}</a>
             <a href="{{ url_for('master.security') }}">{{ 'Master Access' | t }}</a>
             {% else %}
             <a href="{{ url_for('player.home') }}">{{ 'Home' | t }}</a>
-            <a href="{{ url_for('player.map_view') }}">{{ 'Interactive Map' | t }}</a>
+            {% if has_player_maps %}
+            <a href="{{ url_for('player.map_index') }}">{{ 'Interactive Map' | t }}</a>
+            {% endif %}
             <a href="{{ url_for('qr_page') }}">{{ 'Join by QR' | t }}</a>
             <a href="{{ url_for('app_guide') }}">{{ 'App Guide' | t }}</a>
             {% endif %}

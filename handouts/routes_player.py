@@ -33,7 +33,13 @@ def home():
         storage.save_db(db)
 
     visible = [h for h in db['handouts'] if h.get('visible')]
+    # The full folder list drives grouping/orphan resolution (it needs every
+    # real folder id to tell a true orphan from a member of a folder that
+    # happens to hold nothing visible). The drawer, however, should only list
+    # folders that actually contain something a player can open -- see
+    # `drawer_folders` below.
     folders = storage.all_folders(db)
+    drawer_folders = storage.non_empty_folders(db, only_visible=True)
 
     # State lives in the querystring so views are shareable + reloadable.
     query = request.args.get('q', '').strip()
@@ -68,7 +74,7 @@ def home():
                            folder_cards=folder_cards,
                            mode=mode,
                            query=query,
-                           folders=folders,
+                           folders=drawer_folders,
                            tags=storage.all_tags(db, only_visible=True),
                            total=len(visible),
                            shown=len(matched))
@@ -168,36 +174,63 @@ def reveal_secret():
     return jsonify({'handout': revealed})
 
 
-@bp.route('/map')
-def map_view():
-    """The players' read-only interactive map.
+@bp.route('/maps', strict_slashes=False)
+def map_index():
+    """The players' list of maps to choose from.
 
-    The page paints the current state once server-side, then polls
-    /api/map/state (below) to stay in sync as the Master reveals hexes and
-    moves the marker. There is no write path here: players observe, they do
-    not edit.
+    Every map is offered, including ones with no background image yet: those
+    simply show the fog placeholder until the Master uploads a map. If exactly
+    one map exists we skip the list and go straight to it, so the common
+    single-map table never sees an extra click. If none exist at all, there is
+    nothing to show -- the nav button that points here is itself hidden in that
+    case (see the drawer/menu), so this is a defensive redirect back to the
+    hub.
     """
     db = storage.load_db()
-    return render_template('player/map.html',
-                           map_state=storage.get_map_state(db))
+    maps = storage.all_maps(db)
+    if not maps:
+        return redirect(url_for('player.home'))
+    if len(maps) == 1:
+        return redirect(url_for('player.map_view', map_id=maps[0]['id']))
+    return render_template('player/maps.html', maps=maps)
 
 
-@bp.route('/api/map/state')
-def map_state():
-    """Public, read-only mirror of the shared map state.
+@bp.route('/map/<map_id>')
+def map_view(map_id):
+    """The players' read-only interactive map for one map.
+
+    The page paints the current state once server-side, then polls
+    /api/map/<id>/state (below) to stay in sync as the Master reveals hexes and
+    moves the marker. There is no write path here: players observe, they do
+    not edit. An unknown/deleted id sends them back to the map list.
+    """
+    db = storage.load_db()
+    m = storage.get_map(db, map_id)
+    if m is None:
+        return redirect(url_for('player.map_index'))
+    return render_template('player/map.html', map_state=m, map_id=map_id)
+
+
+@bp.route('/api/map/<map_id>/state')
+def map_state(map_id):
+    """Public, read-only mirror of one map's shared state.
 
     GET only -- players poll this to follow the Master. The matching write
     endpoint lives in routes_master.py behind master_required; keeping the two
     in separate blueprints is what makes "players can read but never write"
     true by construction rather than by an if-branch that could be forgotten.
+    An unknown id is a 404 (a deleted map, a stale tab).
     """
     db = storage.load_db()
-    return jsonify(storage.get_map_state(db))
+    m = storage.get_map(db, map_id)
+    if m is None:
+        abort(404)
+    return jsonify(m)
 
 
-@bp.route('/api/map/reveal.png')
-def map_reveal():
-    """The revealed-only map composite: the anti-spoiler payload.
+@bp.route('/api/map/<map_id>/reveal.png')
+def map_reveal(map_id):
+    """One map's revealed-only composite: the anti-spoiler payload.
 
     This is the ONLY map imagery a player ever receives. mapmask composites a
     PNG the size of the map in which only CONFIRMED-revealed hexes carry the
@@ -207,24 +240,26 @@ def map_reveal():
 
     Served with a confirm_seq-based ETag and no-cache-revalidate so a browser
     reuses the composite between polls but always re-fetches after the Master
-    reveals more (which bumps confirm_seq). A map with no image, or one whose
-    file is missing, yields 404 -- the template then shows its fog placeholder.
+    reveals more (which bumps confirm_seq). A map that doesn't exist, has no
+    image, or whose file is missing yields 404 -- the template then shows its
+    fog placeholder.
     """
     db = storage.load_db()
-    state = storage.get_map_state(db)
-    if not state.get('map_image'):
+    state = storage.get_map(db, map_id)
+    if state is None or not state.get('map_image'):
         abort(404)
 
-    # ETag ties the cached image to the reveal generation. If the client's
-    # If-None-Match already matches, skip the (potentially large) transfer.
-    etag = f'reveal-{state.get("confirm_seq", 0)}'
+    # ETag ties the cached image to this map's reveal generation. If the
+    # client's If-None-Match already matches, skip the (potentially large)
+    # transfer. Namespaced by map id so two maps never share an ETag.
+    etag = f'reveal-{map_id}-{state.get("confirm_seq", 0)}'
     if request.headers.get('If-None-Match') == etag:
         resp = Response(status=304)
         resp.headers['ETag'] = etag
         resp.headers['Cache-Control'] = 'no-cache'
         return resp
 
-    path = mapmask.build_composite(db)
+    path = mapmask.build_composite(db, map_id)
     if not path or not os.path.exists(path):
         abort(404)
 
@@ -241,7 +276,10 @@ def folder(folder_id):
     """A single folder's page: the handouts it contains, as a grid."""
     db = storage.load_db()
     visible = [h for h in db['handouts'] if h.get('visible')]
+    # Full list for resolving/looking up this folder; filtered list for the
+    # browse drawer so it never advertises an empty folder.
     folders = storage.all_folders(db)
+    drawer_folders = storage.non_empty_folders(db, only_visible=True)
 
     folder = organize.resolve_folder(folders, folder_id)
     if folder is None:
@@ -252,5 +290,5 @@ def folder(folder_id):
     return render_template('player/folder.html',
                            folder=folder,
                            handouts=items,
-                           folders=folders,
+                           folders=drawer_folders,
                            tags=storage.all_tags(db, only_visible=True))

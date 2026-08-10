@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'Interactive Maps' | t }}</title>
+    {% include '_head.html' %}
+    <style>
+        /* One card per map: a thumbnail of its background (or a fog swatch when
+           it has none yet) plus its name and the master actions. Mirrors the
+           handout folder-grid so the two lists feel like the same app. */
+        .map-grid {
+            display: grid; gap: 16px; margin-top: 8px;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        }
+        .map-card {
+            border: var(--px) solid var(--border);
+            box-shadow: var(--px) var(--px) 0 0 var(--shadow);
+            background: rgba(0,0,0,0.18);
+            display: flex; flex-direction: column;
+        }
+        .map-card__thumb {
+            display: block; height: 150px; position: relative; overflow: hidden;
+            background: var(--fog, #0d0b0a);
+            border-bottom: 2px solid var(--border);
+        }
+        .map-card__thumb img {
+            width: 100%; height: 100%; object-fit: cover;
+            image-rendering: pixelated; display: block;
+        }
+        /* Placeholder wording for a map with no image yet. */
+        .map-card__empty {
+            position: absolute; inset: 0; display: flex; align-items: center;
+            justify-content: center; text-align: center; padding: 8px;
+            color: var(--ink-dim); font-style: italic; font-size: 0.82rem;
+        }
+        .map-card__body { padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; }
+        .map-card__namerow { display: flex; gap: 6px; }
+        .map-card__namerow input[type="text"] { flex: 1; min-width: 0; }
+        .map-card__actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .map-card__actions .btn { flex: 1; text-align: center; }
+        .map-card__open { flex-basis: 100%; }
+        .maps-new { display: flex; gap: 8px; margin-bottom: 4px; }
+        .maps-new input[type="text"] { flex: 1; min-width: 0; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="hub-top">
+            <div>
+                <h1><a class="home-title" href="{{ url_for('master.dm_panel') }}">{{ 'Interactive Maps' | t }}</a> &#128506;&#65039;</h1>
+                <p class="subtitle">{{ 'Each map is its own scene: reveal hexes, drop pins and move the party marker, all staged until you reveal it.' | t }}</p>
+            </div>
+            {% with active = 'map' %}{% include 'master/_menu.html' %}{% endwith %}
+        </div>
+
+        <p><a class="btn btn--ghost" href="{{ url_for('master.dm_panel') }}">&lsaquo; {{ "Back to Master's Screen" | t }}</a></p>
+
+        <div class="panel">
+            <h2>{{ 'Your maps' | t }}</h2>
+
+            {# New map: names it and jumps straight into its control page. #}
+            <form class="maps-new" method="post" action="{{ url_for('master.map_create') }}">
+                <input type="text" name="name" placeholder="{{ 'New map name' | t }}"
+                       aria-label="{{ 'New map name' | t }}">
+                <button type="submit" class="btn">&#10133; {{ 'Create map' | t }}</button>
+            </form>
+
+            {% if not maps %}
+            <p class="subtitle">{{ 'No maps yet. Create one above to get started.' | t }}</p>
+            {% else %}
+            {% set del_map_msg = 'Delete this map and its image? This cannot be undone.' | t %}
+            <div class="map-grid">
+                {% for m in maps %}
+                <div class="map-card">
+                    <a class="map-card__thumb" href="{{ url_for('master.map_control', map_id=m.id) }}"
+                       aria-label="{{ 'Open' | t }} {{ m.name }}">
+                        {% if m.map_image %}
+                        <img src="{{ url_for('static', filename='maps/' ~ m.map_image) }}" alt="">
+                        {% else %}
+                        <span class="map-card__empty">{{ 'No image yet — open to upload one' | t }}</span>
+                        {% endif %}
+                    </a>
+                    <div class="map-card__body">
+                        <a class="btn map-card__open" href="{{ url_for('master.map_control', map_id=m.id) }}">
+                            {{ 'Open map' | t }}
+                        </a>
+
+                        <form class="map-card__namerow" method="post"
+                              action="{{ url_for('master.map_rename', map_id=m.id) }}">
+                            <input type="text" name="name" value="{{ m.name }}"
+                                   aria-label="{{ 'Map name' | t }}">
+                            <button type="submit" class="btn btn--ghost">{{ 'Rename' | t }}</button>
+                        </form>
+
+                        <div class="map-card__actions">
+                            <form method="post" action="{{ url_for('master.map_delete', map_id=m.id) }}"
+                                  data-confirm="{{ del_map_msg }} &mdash; {{ m.name }}">
+                                <button type="submit" class="btn btn--danger">{{ 'Delete map' | t }}</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        {% set footer_scope = 'master' %}
+        {% set footer_page = 'master/maps.html' %}
+        {% include '_footer.html' %}
+    </div>
+
+    <script>
+        // Confirm before a destructive map delete.
+        document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                if (!window.confirm(form.dataset.confirm)) e.preventDefault();
+            });
+        });
+    </script>
+</body>
+</html>

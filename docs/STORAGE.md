@@ -6,7 +6,7 @@ database (`data/database.json`) or the uploads folders (`static/uploads`,
 details. It used to be a single ~55 KB `storage.py`; it is now a package with
 one module per responsibility. **Its public surface is unchanged** — every
 consumer still writes `from handouts import storage` and calls
-`storage.load_db()`, `storage.get_map_state(db)`, and so on. Only the internals
+`storage.load_db()`, `storage.get_map(db, map_id)`, and so on. Only the internals
 moved.
 
 The key point to understand first: **splitting the file changed no behaviour and
@@ -38,7 +38,7 @@ internal dependencies) upward.
 
 | Module | Responsibility |
 | --- | --- |
-| `paths.py` | On-disk paths (`DB_PATH`, `UPLOAD_DIR`, `MAP_DIR`, `BASE_DIR`) and the small cross-cutting constants several modules share: `VIEW_TYPES`, `DEFAULT_VIEW_TYPE`, `ALLOWED_EXTENSIONS`, `MAP_EXTENSIONS`, `POP_KEY`, `MAP_KEY`, `POP_TTL_SECONDS`. No internal imports — the foundation everything else builds on. |
+| `paths.py` | On-disk paths (`DB_PATH`, `UPLOAD_DIR`, `MAP_DIR`, `BASE_DIR`) and the small cross-cutting constants several modules share: `VIEW_TYPES`, `DEFAULT_VIEW_TYPE`, `ALLOWED_EXTENSIONS`, `MAP_EXTENSIONS`, `POP_KEY`, `MAP_KEY` (legacy single-map key, read once by the migration), `MAPS_KEY` (current list-of-maps key), `MAP_NAME_MAX`, `POP_TTL_SECONDS`. No internal imports — the foundation everything else builds on. |
 | `util.py` | Small pure helpers with no knowledge of the DB shape: `clean_view_type`, `allowed_file`, `reader_for`, `new_handout_id`, `now_iso`, `now_stamp`. |
 | `formats.py` | Source-format labelling for the master's "Group by Format" view: `ext_of`, `normalize_format`, `format_of_handout`, `source_format_from_uploads`, `all_formats`. Carries `_PDF_PAGE_MARKER`, kept in sync with `pdfs.PDF_PAGE_MARKER`. |
 | `records.py` | Handout-record helpers over the loaded DB: `find`, `player_payload`, `reveal_secret`, plus the aggregate/parse helpers `all_categories`, `all_tags`, `parse_tags`, `parse_passwords`, `parse_session_number`. |
@@ -46,7 +46,7 @@ internal dependencies) upward.
 | `settings.py` | Global, master-controlled theme: `get_theme`, `set_theme`. The only module that imports `theming`. |
 | `welcome.py` | The player-hub welcome header (titles/subtitles/random): `get_welcome_config`, `set_welcome`, `pick_welcome`, and the shared `_normalize_welcome` cleaner. |
 | `pop.py` | POP broadcasts — "put this handout on every screen, now": `pop_state`, `pop_age_seconds`, `pop_is_live`, `set_pop`, `clear_pop`. |
-| `map_state.py` | The interactive map: confirmed state plus the `pending` draft layer, POIs, and focus broadcasts. Named `map_state` (not `map`) so it never shadows the builtin. Owns the map validation constants and cleaners (`_clean_pois`, `_coerce_map_fields`, ...). |
+| `map_state.py` | The interactive **maps**: a list of maps, each with confirmed state plus a `pending` draft layer, POIs, and focus broadcasts. Owns the map collection CRUD (`all_maps`, `find_map`, `get_map`, `create_map`, `rename_map`, `delete_map`), the per-map scene operations (all taking a `map_id`), the validation constants and cleaners (`_clean_pois`, `_coerce_map_fields`, `_normalize_map`, ...). Named `map_state` (not `map`) so it never shadows the builtin. |
 | `files.py` | Upload/file operations on disk: `save_files`, `remove_files`, `save_back_cover`, `allowed_map_file`, `save_map_image`, `remove_map_image`. The only module besides `db` that reaches the filesystem. |
 | `db.py` | The heart: `load_db`, `save_db`, `_normalize`, the write lock, atomic writes, and the opt-in per-request cache (`set_request_cache_hooks`). |
 | `__init__.py` | Re-exports the whole public API flat and declares `__all__`. |
@@ -112,36 +112,90 @@ Don't "clean it up" out of the exports.
 
 ---
 
-## The map staging model
+## The maps model
 
 `map_state.py` is the one module with non-obvious internal structure, so it is
-worth spelling out. The interactive map has **two layers**:
+worth spelling out.
+
+### A list of maps
+
+The table can have **several maps** — a world map, a city, a dungeon level. They
+live in a list at the DB root under `MAPS_KEY` (`'maps'`); each map is a dict
+with a stable `id`, a display `name`, and the full scene state. The collection
+is managed with:
+
+- `all_maps(db)` — every map, in stored order (the chooser list).
+- `find_map(db, map_id)` / `get_map(db, map_id)` — look one up. `get_map`
+  returns it **normalized**, or `None` if the id doesn't exist. There is no
+  implicit creation: a missing id is a real "not found" (a deleted map, a stale
+  URL), which the routes turn into a 404 rather than silently spawning a blank
+  map.
+- `create_map(db, name)` / `rename_map(db, map_id, name)` /
+  `delete_map(db, map_id)`. `delete_map` only touches the DB; the caller removes
+  the map's background image file (the master route does this via
+  `storage.remove_map_image`).
+
+### Migration from the legacy single map
+
+Databases written before multi-map support stored **one** map under the legacy
+`MAP_KEY` (`'map_state'`). `db._normalize` migrates that into `maps[0]` exactly
+once and drops the old key — a clean, one-way migration (backups are the safety
+net, via export/import). The migrated map is given a stable id (`'legacy-map'`)
+and a default name so it stays addressable across requests **before** the first
+save: without a fixed id, `_normalize_map` would mint a fresh random id on every
+`load_db`, and because the migration isn't persisted until a save, each request
+would see a different id — an endless redirect between the map list and a map
+that no longer matches its id. Visiting the master map list saves once, making
+the migrated shape (and its id) permanent.
+
+### The staging (draft) model — per map
+
+Each map has **two layers**:
 
 - **Confirmed state** — the only thing players read. Their screens poll it.
 - **`pending` (draft) state** — what the Master edits.
 
 The Master reveals hexes, drags the marker, resizes the grid, or moves POIs into
-the *draft*; none of it reaches players until an explicit **confirm**. This is so
-a mistaken click never flashes onto the table mid-session.
+that map's *draft*; none of it reaches players until an explicit **confirm**. So
+a mistaken click never flashes onto the table mid-session. Every per-map
+operation takes a `map_id` and is a no-op returning `None` when the id doesn't
+resolve, so a stale id from a slow client can't raise:
 
-- `update_map_state(db, data)` writes a subset of fields into `pending`.
-- `confirm_map_state(db)` copies `pending` → confirmed and bumps `confirm_seq`
-  (players compare it to tell a real change from an unchanged poll). This is the
-  only function that changes what players read, aside from `set_map_image`.
-- `discard_map_state(db)` throws the draft away, resetting `pending` back to the
-  confirmed state.
+- `update_map_state(db, map_id, data)` writes a subset of fields into that map's
+  `pending`.
+- `confirm_map_state(db, map_id)` copies `pending` → confirmed and bumps that
+  map's `confirm_seq` (players compare it to tell a real change from an
+  unchanged poll). This is the only function that changes what players read,
+  aside from `set_map_image`.
+- `discard_map_state(db, map_id)` throws that map's draft away, resetting
+  `pending` back to its confirmed state.
 
 Two things are deliberately **not** staged, because they are live directives
 rather than draft edits — the same design as a POP:
 
-- `set_map_image(db, filename)` writes the background to *both* layers at once. An
-  uploaded map is setup, not a reveal; a half-set-up map where the Master sees the
-  new image but players still see the old one would only confuse.
-- `set_map_focus(db, x, y, scale)` records a "everyone look here, now" broadcast
-  that takes effect immediately, bumping its own `seq`.
+- `set_map_image(db, map_id, filename)` writes the background to *both* layers at
+  once. An uploaded map is setup, not a reveal; a half-set-up map where the
+  Master sees the new image but players still see the old one would only confuse.
+- `set_map_focus(db, map_id, x, y, scale)` records a "everyone look here, now"
+  broadcast on that map that takes effect immediately, bumping its own `seq`.
 
 All map coordinates (POIs, calibration offsets, hex size, focus point) are stored
 as **percent of the image**, so they survive a change of map resolution.
+
+Each map also carries a `grid_type` (`'hex'`, the default, or `'square'`). It is
+a staged field like the rest, so the Master picks the shape in the draft and it
+reaches players on confirm. The client's `buildGrid()` and the server-side
+compositor (`mapmask`) both branch on it and MUST stay in step: squares reuse
+`hex_size` as the cell side (percent of image width) and the same
+`offset_x`/`offset_y` origin, laid out edge-to-edge with no stagger; hexes keep
+the flat-top interlocking layout. Cells are identified the same way in both
+modes (`hex-<col>-<row>`), so switching a map's grid type re-shapes the overlay
+without invalidating already-revealed cells.
+
+`_normalize_map(m)` is the per-map cleaner `db._normalize` calls for every map in
+the list (and for the migrated legacy map): it ensures the id + name, fills any
+missing scene field, de-duplicates revealed hexes, re-cleans POIs, and seeds the
+`pending`/`confirm_seq`. It is idempotent, so running it on every load is safe.
 
 ---
 

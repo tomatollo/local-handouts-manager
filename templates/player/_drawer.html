@@ -49,7 +49,9 @@
         <div class="drawer__section">
             <h3>{{ 'Navigate' | t }}</h3>
             <a class="drawer__link" href="{{ url_for('player.home') }}">🏠 {{ 'Player Hub' | t }}</a>
-            <a class="drawer__link" href="{{ url_for('player.map_view') }}">🗺️ {{ 'Interactive Map' | t }}</a>
+            {% if has_player_maps %}
+            <a class="drawer__link" href="{{ url_for('player.map_index') }}">🗺️ {{ 'Interactive Map' | t }}</a>
+            {% endif %}
             <a class="drawer__link" href="{{ url_for('app_guide') }}">📖 {{ 'App Guide' | t }}</a>
             <a class="drawer__link" href="{{ url_for('qr_page') }}">📱 {{ 'Join by QR' | t }}</a>
         </div>

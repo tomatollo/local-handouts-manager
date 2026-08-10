@@ -95,8 +95,8 @@
     <div class="wrap">
         <div class="hub-top">
             <div>
-                <p class="subtitle"><a href="{{ url_for('player.home') }}">&lsaquo; {{ 'Back to Hub' | t }}</a></p>
-                <h1><a class="home-title" href="{{ url_for('player.home') }}">{{ 'Map' | t }}</a></h1>
+                <p class="subtitle"><a href="{{ url_for('player.map_index') }}">&lsaquo; {{ 'All maps' | t }}</a></p>
+                <h1><a class="home-title" href="{{ url_for('player.map_index') }}">{{ map_state.name }}</a></h1>
             </div>
             <button type="button" class="btn" id="browse-btn" aria-controls="drawer" aria-expanded="false">&#9776; {{ 'Browse' | t }}</button>
         </div>
@@ -117,7 +117,7 @@
                        div behind it colours the gaps. #}
                     <div class="map-fog-bg" id="map-fog-bg"></div>
                     <img id="map-image" class="map-reveal"
-                         src="{% if map_state.map_image %}{{ url_for('player.map_reveal') }}?v={{ map_state.confirm_seq }}{% else %}https://placehold.co/1600x1200/2a2320/e8a83a/png?text=Map{% endif %}"
+                         src="{% if map_state.map_image %}{{ url_for('player.map_reveal', map_id=map_id) }}?v={{ map_state.confirm_seq }}{% else %}https://placehold.co/1600x1200/2a2320/e8a83a/png?text=Map{% endif %}"
                          alt="{{ 'Campaign map' | t }}" draggable="false">
                     <div class="marker" id="marker" hidden></div>
                     <div class="poi-layer" id="poi-layer"></div>
@@ -139,7 +139,7 @@
     <script>
     (function () {
         'use strict';
-        var READ_URL = "{{ url_for('player.map_state') }}";
+        var READ_URL = "{{ url_for('player.map_state', map_id=map_id) }}";
         var POLL_MS = 3000;
         var MAPS_BASE = JSON.parse(document.getElementById('map-base').textContent);
 
@@ -150,7 +150,7 @@
         var poiLayer = document.getElementById('poi-layer');
 
         var fogBg = document.getElementById('map-fog-bg');
-        var REVEAL_URL = "{{ url_for('player.map_reveal') }}";
+        var REVEAL_URL = "{{ url_for('player.map_reveal', map_id=map_id) }}";
         var PLACEHOLDER = 'https://placehold.co/1600x1200/2a2320/e8a83a/png?text=Map';
 
         // Grid geometry, kept only so conditional POIs can tell which hex they
@@ -158,7 +158,7 @@
         // composite that already contains ONLY revealed pixels, so hiding is
         // done before the bytes ever reach us. This mirrors buildGrid()'s
         // flat-top maths purely for hexIdAt().
-        var built = { cols: 0, rows: 0, offX: 0, offY: 0, hexSize: 5, W: 0, H: 0 };
+        var built = { cols: 0, rows: 0, offX: 0, offY: 0, hexSize: 5, gridType: 'hex', W: 0, H: 0 };
         function updateGeometry(s) {
             var W = img.clientWidth || img.naturalWidth || 1600;
             var H = img.clientHeight || img.naturalHeight || 1200;
@@ -167,6 +167,7 @@
                 offX: (typeof s.offset_x === 'number') ? s.offset_x : 0,
                 offY: (typeof s.offset_y === 'number') ? s.offset_y : 0,
                 hexSize: (typeof s.hex_size === 'number') ? s.hex_size : 5,
+                gridType: (s.grid_type === 'square') ? 'square' : 'hex',
                 W: W, H: H
             };
         }
@@ -272,11 +273,22 @@
             var W = built.W || img.clientWidth || 1600;
             var H = built.H || img.clientHeight || 1200;
             var hexSize = (built.hexSize != null) ? built.hexSize : 5;
+            var px = xPct / 100 * W, py = yPct / 100 * H;
+
+            if (built.gridType === 'square') {
+                var side = hexSize / 100 * W;
+                if (side <= 0) return null;
+                var sqStartX = (built.offX || 0) / 100 * W, sqStartY = (built.offY || 0) / 100 * H;
+                var scol = Math.floor((px - sqStartX) / side);
+                var srow = Math.floor((py - sqStartY) / side);
+                if (scol < 0 || srow < 0 || scol >= built.cols || srow >= built.rows) return null;
+                return 'hex-' + scol + '-' + srow;
+            }
+
             var r = (hexSize / 100 * W) / 2;
             if (r <= 0) return null;
             var colStep = r * 1.5, rowStep = Math.sqrt(3) * r;
             var startX = (built.offX || 0) / 100 * W, startY = (built.offY || 0) / 100 * H;
-            var px = xPct / 100 * W, py = yPct / 100 * H;
             var best = null, bestD = Infinity;
             var cols = built.cols, rows = built.rows;
             for (var col = 0; col < cols; col++) {

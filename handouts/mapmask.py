@@ -59,6 +59,35 @@ def _hex_geometry(state, W, H):
     return r, col_step, row_step, start_x, start_y
 
 
+def _square_geometry(state, W, H):
+    """Return (side, startX, startY) in pixels for a square grid.
+
+    Mirrors the square branch of buildGrid(): the cell SIDE reuses hex_size
+    (percent of image width, same slider as the hex layout), cells tile with no
+    offset stagger, and the grid origin is the same offset_x/offset_y percent.
+    """
+    hex_size = state.get('hex_size', 5.0)
+    off_x = state.get('offset_x', 0.0)
+    off_y = state.get('offset_y', 0.0)
+    side = hex_size / 100.0 * W
+    start_x = off_x / 100.0 * W
+    start_y = off_y / 100.0 * H
+    return side, start_x, start_y
+
+
+def _square_polygon(col, row, side, start_x, start_y):
+    """The four corners of one square cell, matching buildGrid()'s square branch.
+
+    Cells are laid out edge-to-edge from the grid origin: cell (col, row) spans
+    [start_x + col*side, start_x + (col+1)*side] x [start_y + row*side, ...].
+    """
+    x0 = start_x + col * side
+    y0 = start_y + row * side
+    x1 = x0 + side
+    y1 = y0 + side
+    return [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+
+
 def _hex_center(col, row, r, col_step, row_step, start_x, start_y):
     cx = start_x + col * col_step
     cy = start_y + row * row_step + (row_step / 2.0 if col % 2 else 0.0)
@@ -95,20 +124,27 @@ def _parse_hex_id(hex_id):
         return None
 
 
-def _cache_path(map_image, confirm_seq):
-    """Disk path for the composite of this image at this confirm generation."""
-    safe = os.path.basename(map_image)  # never let a path escape the cache dir
-    return os.path.join(CACHE_DIR, f'{safe}.{confirm_seq}.png')
+def _cache_path(map_id, map_image, confirm_seq):
+    """Disk path for the composite of this map's image at this confirm gen.
+
+    Keyed by map_id as well as the image name, so two maps can't collide in the
+    cache even if an import ever left them pointing at the same background file.
+    """
+    safe_id = os.path.basename(str(map_id))     # never let a path escape
+    safe = os.path.basename(map_image)          # the cache dir
+    return os.path.join(CACHE_DIR, f'{safe_id}.{safe}.{confirm_seq}.png')
 
 
-def _prune_old(map_image, keep_path):
-    """Remove stale composites for this map image (older confirm_seq values).
+def _prune_old(map_id, map_image, keep_path):
+    """Remove stale composites for this map's image (older confirm_seq values).
 
     Each confirm makes a new file; without this the cache would grow one PNG
-    per reveal forever. We only ever need the newest, so drop the rest.
+    per reveal forever. We only ever need the newest, so drop the rest. Scoped
+    by map_id + image so pruning one map never touches another map's cache.
     """
+    safe_id = os.path.basename(str(map_id))
     safe = os.path.basename(map_image)
-    prefix = safe + '.'
+    prefix = f'{safe_id}.{safe}.'
     try:
         for name in os.listdir(CACHE_DIR):
             if name.startswith(prefix) and name.endswith('.png'):
@@ -144,24 +180,27 @@ def _load_source_rgb(map_image):
         return None
 
 
-def build_composite(db, force=False):
-    """Render (or fetch cached) the revealed-only RGBA composite.
+def build_composite(db, map_id, force=False):
+    """Render (or fetch cached) a map's revealed-only RGBA composite.
 
-    Returns the cache file path, or None if there is no map image to composite.
-    The composite is the size of the source map; revealed hexes carry the map's
-    real pixels, and every other pixel is transparent. Cached by map image name
-    + confirm_seq; pass force=True to rebuild regardless (e.g. after changing
-    geometry without a confirm, during calibration previews -- not used by the
-    player path, which always reads confirmed state).
+    Returns the cache file path, or None if the map doesn't exist or has no map
+    image to composite. The composite is the size of the source map; revealed
+    hexes carry the map's real pixels, and every other pixel is transparent.
+    Cached by map id + image name + confirm_seq; pass force=True to rebuild
+    regardless (e.g. after changing geometry without a confirm, during
+    calibration previews -- not used by the player path, which always reads
+    confirmed state).
     """
-    state = storage.get_map_state(db)
+    state = storage.get_map(db, map_id)
+    if state is None:
+        return None
     map_image = state.get('map_image')
     if not map_image:
         return None
 
     confirm_seq = state.get('confirm_seq', 0)
     os.makedirs(CACHE_DIR, exist_ok=True)
-    out_path = _cache_path(map_image, confirm_seq)
+    out_path = _cache_path(map_id, map_image, confirm_seq)
 
     if os.path.exists(out_path) and not force:
         return out_path
@@ -182,6 +221,9 @@ def build_composite(db, force=False):
     mdraw = ImageDraw.Draw(mask)
 
     r, col_step, row_step, start_x, start_y = _hex_geometry(state, W, H)
+    grid_type = state.get('grid_type', 'hex')
+    if grid_type == 'square':
+        side, sq_start_x, sq_start_y = _square_geometry(state, W, H)
 
     revealed = state.get('revealed_hexes', [])
     cols = state.get('grid_cols', 20)
@@ -209,10 +251,14 @@ def build_composite(db, force=False):
             for row in range(rows):
                 if f'hex-{col}-{row}' in revealed_set:
                     continue  # revealed: leave it shown
-                cx, cy = _hex_center(col, row, r, col_step, row_step,
-                                     start_x, start_y)
-                poly = _hex_polygon(cx, cy, r)
-                mdraw.polygon(poly, fill=0)  # hide this hex exactly
+                if grid_type == 'square':
+                    poly = _square_polygon(col, row, side,
+                                           sq_start_x, sq_start_y)
+                else:
+                    cx, cy = _hex_center(col, row, r, col_step, row_step,
+                                         start_x, start_y)
+                    poly = _hex_polygon(cx, cy, r)
+                mdraw.polygon(poly, fill=0)  # hide this cell exactly
 
     # Paste the map's pixels wherever the mask says "revealed".
     composite.paste(source, (0, 0), mask)
@@ -222,5 +268,5 @@ def build_composite(db, force=False):
     tmp = out_path + '.tmp'
     composite.save(tmp, 'PNG', optimize=True)
     os.replace(tmp, out_path)
-    _prune_old(map_image, out_path)
+    _prune_old(map_id, map_image, out_path)
     return out_path

@@ -16,8 +16,9 @@ split by responsibility:
     settings.py    global theme get/set
     welcome.py     player-hub welcome header (titles/subtitles/random)
     pop.py         POP broadcasts (fire, clear, liveness/TTL)
-    map_state.py   interactive map: confirmed + pending (draft) state, POIs,
-                   focus broadcasts
+    map_state.py   interactive maps: a list of maps, each with confirmed +
+                   pending (draft) state, POIs, focus broadcasts; plus the
+                   map collection CRUD and the legacy single-map migration
     files.py       upload/file operations (save/remove handout + map files)
     db.py          load/save/normalize, the write lock, and the opt-in
                    per-request cache
@@ -47,6 +48,8 @@ from .paths import (
     DEFAULT_VIEW_TYPE,
     POP_KEY,
     MAP_KEY,
+    MAPS_KEY,
+    MAP_NAME_MAX,
     POP_TTL_SECONDS,
 )
 
@@ -86,6 +89,7 @@ from .records import (
 # Folders
 from .folders import (
     all_folders,
+    non_empty_folders,
     find_folder,
     create_folder,
     rename_folder,
@@ -118,7 +122,7 @@ from .pop import (
     clear_pop,
 )
 
-# Interactive map
+# Interactive maps
 from .map_state import (
     GRID_MIN,
     GRID_MAX,
@@ -128,7 +132,13 @@ from .map_state import (
     SCALE_MIN,
     SCALE_MAX,
     POI_DEFAULT_COLOR,
-    get_map_state,
+    clean_map_name,
+    all_maps,
+    find_map,
+    get_map,
+    create_map,
+    rename_map,
+    delete_map,
     update_map_state,
     set_map_image,
     confirm_map_state,
@@ -158,7 +168,7 @@ __all__ = [
     # paths
     'BASE_DIR', 'DB_PATH', 'UPLOAD_DIR', 'MAP_DIR', 'ALLOWED_EXTENSIONS',
     'MAP_EXTENSIONS', 'VIEW_TYPES', 'DEFAULT_VIEW_TYPE', 'POP_KEY', 'MAP_KEY',
-    'POP_TTL_SECONDS',
+    'MAPS_KEY', 'MAP_NAME_MAX', 'POP_TTL_SECONDS',
     # util
     'clean_view_type', 'allowed_file', 'reader_for', 'new_handout_id',
     'now_iso', 'now_stamp',
@@ -169,8 +179,8 @@ __all__ = [
     'find', 'player_payload', 'reveal_secret', 'all_categories', 'all_tags',
     'parse_tags', 'parse_passwords', 'parse_session_number',
     # folders
-    'all_folders', 'find_folder', 'create_folder', 'rename_folder',
-    'delete_folder', 'valid_folder_ids',
+    'all_folders', 'non_empty_folders', 'find_folder', 'create_folder',
+    'rename_folder', 'delete_folder', 'valid_folder_ids',
     # settings
     'get_theme', 'set_theme',
     # welcome
@@ -180,8 +190,9 @@ __all__ = [
     'pop_state', 'pop_age_seconds', 'pop_is_live', 'set_pop', 'clear_pop',
     # map
     'GRID_MIN', 'GRID_MAX', 'POI_MAX', 'POI_LABEL_MAX', 'POI_ICON_MAX',
-    'SCALE_MIN', 'SCALE_MAX', 'POI_DEFAULT_COLOR', 'get_map_state',
-    'update_map_state', 'set_map_image', 'confirm_map_state',
+    'SCALE_MIN', 'SCALE_MAX', 'POI_DEFAULT_COLOR', 'clean_map_name',
+    'all_maps', 'find_map', 'get_map', 'create_map', 'rename_map',
+    'delete_map', 'update_map_state', 'set_map_image', 'confirm_map_state',
     'discard_map_state', 'set_map_focus',
     # files
     'save_files', 'remove_files', 'save_back_cover', 'allowed_map_file',

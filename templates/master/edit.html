@@ -45,13 +45,16 @@
                     {% endfor %}
                 </select>
 
-                {# Book only: rigid cover + back cover, or soft-flipping ones. #}
-                <label class="folder-choice" style="margin-top:10px;">
-                    <input type="checkbox" name="hard_covers" value="1"
-                           {% if handout.hard_covers %}checked{% endif %}>
-                    {{ 'Hard covers (Book viewer)' | t }}
-                </label>
-                <p class="subtitle">{{ 'When on, the first and last page turn like a stiff book cover. Turn off to flip them like normal pages.' | t }}</p>
+                {# Book only: rigid cover + back cover, or soft-flipping ones.
+                   Shown/hidden by JS to follow the Viewer select below. #}
+                <div id="hard-covers-field">
+                    <label class="folder-choice" style="margin-top:10px;">
+                        <input type="checkbox" name="hard_covers" value="1"
+                               {% if handout.hard_covers %}checked{% endif %}>
+                        {{ 'Hard covers (Book viewer)' | t }}
+                    </label>
+                    <p class="subtitle">{{ 'When on, the first and last page turn like a stiff book cover. Turn off to flip them like normal pages.' | t }}</p>
+                </div>
 
                 <label>{{ 'Folders' | t }} <span class="hint">{{ 'optional' | t }}</span></label>
                 {% if folders %}
@@ -164,6 +167,19 @@
     </div>
 
     <script>
+        // Show the "Hard covers" option only for the Book viewer: it does
+        // nothing for the carousel. The checkbox stays in the DOM, so its value
+        // is submitted as before and the server logic is unchanged.
+        (function () {
+            var viewer = document.getElementById('view_type');
+            var field = document.getElementById('hard-covers-field');
+            if (viewer && field) {
+                var sync = function () { field.hidden = (viewer.value !== 'book'); };
+                viewer.addEventListener('change', sync);
+                sync();
+            }
+        })();
+
         (function () {
             // ---- Drag-and-drop reordering of current files ----------------
             var grid = document.getElementById('file-reorder');

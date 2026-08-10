@@ -19,8 +19,14 @@
                 {% if summary.restored_files %}
                 <span class="tag">{{ 'Images restored' | t }} {{ summary.restored_files }}</span>
                 {% endif %}
-                {% if summary.map_imported %}
-                <span class="tag tag--viewer">{{ 'Map imported' | t }}</span>
+                {% if summary.maps_added %}
+                <span class="tag tag--viewer">{{ 'Maps added' | t }} {{ summary.maps_added }}</span>
+                {% endif %}
+                {% if summary.maps_replaced %}
+                <span class="tag tag--viewer">{{ 'Maps replaced' | t }} {{ summary.maps_replaced }}</span>
+                {% endif %}
+                {% if summary.maps_kept_local %}
+                <span class="tag">{{ 'Maps kept local' | t }} {{ summary.maps_kept_local }}</span>
                 {% endif %}
             </div>
             <a href="{{ url_for('master.dm_panel') }}" class="btn btn--block">{{ "Back to Master's Screen" | t }}</a>

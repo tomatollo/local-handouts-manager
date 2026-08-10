@@ -69,14 +69,25 @@ def _handout_filenames(h):
 def _map_image_names(db):
     """Every map-background filename the DB references, deduplicated.
 
-    The confirmed state and the Master's unconfirmed draft (`pending`) can name
-    different images -- the Master may have uploaded a new map but not yet
-    confirmed it -- so both are collected, or the draft's image would be lost
-    on transfer. Bare filenames only (no path); they live in static/maps.
+    Walks ALL maps (the table can have several) and, for each, both its
+    confirmed state and the Master's unconfirmed draft (`pending`) -- the
+    Master may have uploaded a new background but not yet confirmed it, so both
+    are collected or the draft's image would be lost on transfer. Bare
+    filenames only (no path); they live in static/maps.
     """
     names = []
-    map_state = db.get('map_state', {})
-    for source in (map_state, map_state.get('pending', {})):
+    for m in db.get('maps', []):
+        for source in (m, m.get('pending', {})):
+            name = source.get('map_image')
+            if name and name not in names:
+                names.append(name)
+    return names
+
+
+def _map_image_names_one(m):
+    """Map-background filename(s) for a SINGLE map dict (confirmed + draft)."""
+    names = []
+    for source in (m, m.get('pending', {})):
         name = source.get('map_image')
         if name and name not in names:
             names.append(name)
@@ -255,6 +266,16 @@ def _map_has_content(map_state):
     return False
 
 
+def _map_counts(m):
+    """The small tallies the review page shows for a map (hexes/pois/image)."""
+    return {
+        'name': m.get('name', ''),
+        'hexes': len(m.get('revealed_hexes', [])),
+        'pois': len(m.get('pois', [])),
+        'has_image': bool(m.get('map_image')),
+    }
+
+
 def analyze(zip_bytes):
     """Compare an incoming bundle against the current library.
 
@@ -290,31 +311,30 @@ def analyze(zip_bytes):
     new_wiki = [p for p in incoming.get('wiki', [])
                 if p['id'] not in local_wiki_ids]
 
-    # Interactive map. Unlike handouts, the map is a single global object, not a
-    # collection to merge by id, so it can't be split into new/identical/
-    # conflict. Instead we report enough for the review page to offer ONE
-    # explicit choice -- keep the local map or take the incoming one -- and only
-    # when it's a real decision:
-    #   * incoming has no content  -> nothing to offer (map_action omitted).
-    #   * local has no content     -> offer it, but there's nothing to lose.
-    #   * both have content + differ -> a genuine either/or the Master resolves.
-    #   * both identical           -> no choice needed.
-    incoming_map = incoming.get('map_state', {})
-    local_map = local.get('map_state', {})
-    map_report = None
-    if _map_has_content(incoming_map):
-        differs = _map_signature(incoming_map) != _map_signature(local_map)
-        if differs:
-            map_report = {
-                'incoming_has_content': True,
-                'local_has_content': _map_has_content(local_map),
-                'incoming_hexes': len(incoming_map.get('revealed_hexes', [])),
-                'incoming_pois': len(incoming_map.get('pois', [])),
-                'incoming_has_image': bool(incoming_map.get('map_image')),
-                'local_hexes': len(local_map.get('revealed_hexes', [])),
-                'local_pois': len(local_map.get('pois', [])),
-                'local_has_image': bool(local_map.get('map_image')),
-            }
+    # Interactive maps. The table can hold several, so -- like handouts --
+    # they merge by id into new / identical / conflict, rather than the single
+    # either-or the old single-map bundle used:
+    #   * incoming id not present locally -> NEW: added outright on apply.
+    #   * same id, same content           -> identical: skipped.
+    #   * same id, content differs        -> conflict: the Master chooses keep
+    #                                        local vs take imported, per map.
+    # An incoming map with no content at all is ignored (nothing to carry).
+    local_maps_by_id = {m['id']: m for m in local.get('maps', [])}
+    new_maps, identical_maps, map_conflicts = [], [], []
+    for m in incoming.get('maps', []):
+        if not _map_has_content(m):
+            continue
+        cur = local_maps_by_id.get(m['id'])
+        if cur is None:
+            new_maps.append(_map_counts(m))
+        elif _map_signature(cur) == _map_signature(m):
+            identical_maps.append(m['id'])
+        else:
+            map_conflicts.append({
+                'id': m['id'],
+                'local': _map_counts(cur),
+                'incoming': _map_counts(m),
+            })
 
     return {
         'new': new,
@@ -322,7 +342,9 @@ def analyze(zip_bytes):
         'conflicts': conflicts,
         'incoming_folders': incoming.get('folders', []),
         'new_wiki': new_wiki,
-        'map': map_report,
+        'new_maps': new_maps,
+        'identical_maps': identical_maps,
+        'map_conflicts': map_conflicts,
     }
 
 
@@ -370,10 +392,10 @@ def _ensure_files_on_disk(handout, zf):
     return restored
 
 
-def _extract_map_images(incoming, zf):
-    """Copy the incoming map background image(s) out of the bundle into
-    static/maps. Missing members are skipped. Safe to call even if the map has
-    no image (it simply copies nothing).
+def _extract_map_images(names, zf):
+    """Copy the named map background image(s) out of the bundle into
+    static/maps. Missing members are skipped. `names` is a list of bare
+    filenames (see _map_image_names / _map_image_names_one).
 
     Only bare filenames are honoured; a member whose stored name somehow
     carries a path separator is ignored, so a crafted bundle can't write
@@ -381,7 +403,7 @@ def _extract_map_images(incoming, zf):
     """
     os.makedirs(storage.MAP_DIR, exist_ok=True)
     members = set(zf.namelist())
-    for name in _map_image_names(incoming):
+    for name in names:
         if '/' in name or '\\' in name:
             continue
         member = BUNDLE_MAPS + name
@@ -392,7 +414,7 @@ def _extract_map_images(incoming, zf):
                     out.write(src.read())
 
 
-def apply_import(zip_bytes, resolutions, import_map=False):
+def apply_import(zip_bytes, resolutions, map_resolutions=None):
     """Apply a merge. `resolutions` maps conflict id -> 'local' | 'imported'.
 
     - New handouts: added, with their files extracted.
@@ -402,16 +424,20 @@ def apply_import(zip_bytes, resolutions, import_map=False):
       so folder memberships carried on imported handouts still resolve.
     - Wiki: incoming pages whose id is not present locally are added, scope
       and all. Existing ids are left alone (see analyze).
-    - Map: applied ONLY if `import_map` is True (the Master chose the incoming
-      map on the review page). The map is a single global object, so importing
-      it REPLACES the local one wholesale -- its image is extracted, the local
-      background it supersedes is removed, and the draft (`pending`) is reset to
-      match so the freshly-imported map isn't shadowed by a stale draft. When
-      False, the local map is left exactly as it was.
+    - Maps: the table can hold several, so they merge by id exactly like
+      handouts. A map whose id is new locally is ADDED (its background image
+      extracted). A map whose id already exists but differs is a conflict,
+      resolved via `map_resolutions` (id -> 'local' | 'imported'); 'imported'
+      replaces the local map wholesale (its image extracted, the superseded
+      local background removed if no longer referenced, its draft reset to the
+      imported confirmed state), 'local' (or absent) leaves it untouched.
+      Identical maps are skipped. `map_resolutions` defaults to empty (keep
+      local on every conflict).
     - Settings are NOT merged: the theme is a local choice, and the bundle
       deliberately carries no credentials (see PRIVATE_SETTINGS).
     Returns a summary dict of counts.
     """
+    map_resolutions = map_resolutions or {}
     incoming, zf = _read_bundle(zip_bytes)
     db = storage.load_db()
     local_by_id = {h['id']: h for h in db['handouts']}
@@ -473,29 +499,58 @@ def apply_import(zip_bytes, resolutions, import_map=False):
             local_wiki_ids.add(p['id'])
             wiki_added += 1
 
-    # Interactive map: replace wholesale, only on explicit request.
-    map_imported = False
-    incoming_map = incoming.get('map_state', {})
-    if import_map and _map_has_content(incoming_map):
-        old_image = db.get('map_state', {}).get('map_image')
-        _extract_map_images(incoming, zf)
-        # Replace the whole map_state with the incoming one (already normalized
-        # by _read_bundle). Bump confirm_seq so player pages pick up the change
-        # on their next poll, then reset the draft (`pending`) to the imported
-        # confirmed values via storage.discard_map_state, so the freshly-
-        # imported map isn't shadowed by a stale local draft.
-        new_map = incoming_map
-        new_map['confirm_seq'] = db.get('map_state', {}).get('confirm_seq', 0) + 1
-        db['map_state'] = new_map
-        storage.discard_map_state(db)  # seeds pending from the confirmed state
-        # Remove the previous background if the import replaced it with a
-        # different file (or cleared it), so old maps don't pile up.
-        new_image = new_map.get('map_image')
-        if old_image and old_image != new_image:
-            storage.remove_map_image(old_image)
-        map_imported = True
+    # Interactive maps: merge by id, like handouts.
+    #   * new id            -> add the map + extract its background image;
+    #   * same id, differs  -> conflict, resolved via map_resolutions;
+    #   * same id, identical-> skipped.
+    # Importing a map REPLACES that id's local map wholesale (a map is a single
+    # scene, not a field-by-field merge). confirm_seq is bumped past the local
+    # one so player pages polling that map pick up the change, and the draft
+    # (`pending`) is reset to the imported confirmed state so a stale local
+    # draft can't shadow it.
+    local_maps_by_id = {m['id']: m for m in db.get('maps', [])}
+    maps_added = maps_replaced = maps_kept = 0
+    for m in incoming.get('maps', []):
+        if not _map_has_content(m):
+            continue
+        cur = local_maps_by_id.get(m['id'])
+        if cur is None:
+            # New map: extract its image(s) and append.
+            _extract_map_images(_map_image_names_one(m), zf)
+            db.setdefault('maps', []).append(m)
+            local_maps_by_id[m['id']] = m
+            maps_added += 1
+        elif _map_signature(cur) == _map_signature(m):
+            # Identical map: still make sure its image is on disk (fresh device
+            # or a DB copied without static/maps), then leave it.
+            for name in _map_image_names_one(cur):
+                dest = os.path.join(storage.MAP_DIR, name)
+                if not os.path.exists(dest):
+                    _extract_map_images([name], zf)
+            continue
+        else:
+            choice = map_resolutions.get(m['id'], 'local')
+            if choice == 'imported':
+                old_image = cur.get('map_image')
+                _extract_map_images(_map_image_names_one(m), zf)
+                m['confirm_seq'] = cur.get('confirm_seq', 0) + 1
+                idx = db['maps'].index(cur)
+                db['maps'][idx] = m
+                local_maps_by_id[m['id']] = m
+                # Reset this map's draft to its freshly-imported confirmed
+                # state so a stale local draft doesn't shadow it.
+                storage.discard_map_state(db, m['id'])
+                # Drop the superseded background if nothing else references it.
+                new_image = m.get('map_image')
+                if old_image and old_image != new_image \
+                        and old_image not in _map_image_names(db):
+                    storage.remove_map_image(old_image)
+                maps_replaced += 1
+            else:
+                maps_kept += 1
 
     storage.save_db(db)
     return {'added': added, 'replaced': replaced, 'kept_local': kept,
-            'wiki_added': wiki_added, 'map_imported': map_imported,
-            'restored_files': restored_files}
+            'wiki_added': wiki_added, 'restored_files': restored_files,
+            'maps_added': maps_added, 'maps_replaced': maps_replaced,
+            'maps_kept_local': maps_kept}

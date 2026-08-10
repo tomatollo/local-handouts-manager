@@ -108,6 +108,17 @@ STRINGS = {
     "responds": {"en": "responds", "it": "risponde"},
     "no_response": {"en": "no response", "it": "non risponde"},
     "config": {"en": "Configuration", "it": "Configurazione"},
+    "advanced": {"en": "Advanced configuration",
+                 "it": "Configurazione avanzata"},
+    "show_advanced": {"en": "Show advanced \u25be",
+                      "it": "Mostra avanzate \u25be"},
+    "hide_advanced": {"en": "Hide advanced \u25b4",
+                      "it": "Nascondi avanzate \u25b4"},
+    "host_hint": {
+        "en": "Leave 0.0.0.0 so phones on your Wi-Fi can connect. "
+              "127.0.0.1 keeps it to this computer only.",
+        "it": "Lascia 0.0.0.0 per far connettere i telefoni sul Wi-Fi. "
+              "127.0.0.1 lo limita a questo computer."},
     "host": {"en": "Host (IP):", "it": "Host (IP):"},
     "port": {"en": "Port:", "it": "Porta:"},
     "reset_defaults": {"en": "Reset to defaults", "it": "Reimposta ai default"},
@@ -543,39 +554,62 @@ class LauncherApp:
         self.ping_label = ttk.Label(self.status_frame, text="")
         self.ping_label.pack(side="right", padx=8)
 
-        # Configuration
+        # Configuration. The everyday controls (port, LAN IP, autostart) sit
+        # here in the open; the host lives under a collapsible "Advanced"
+        # section below, since 0.0.0.0 is the right value for almost everyone
+        # and exposing it invites confusion.
         self.cfg_frame = ttk.LabelFrame(self.root, text="")
         self.cfg_frame.pack(fill="x", **pad)
 
-        self.host_lbl = ttk.Label(self.cfg_frame, text="")
-        self.host_lbl.grid(row=0, column=0, sticky="w", **pad)
-        self.host_var = tk.StringVar(value=str(self.cfg["host"]))
-        self.host_entry = ttk.Entry(self.cfg_frame, textvariable=self.host_var,
-                                    width=18)
-        self.host_entry.grid(row=0, column=1, sticky="w", **pad)
-
         self.port_lbl = ttk.Label(self.cfg_frame, text="")
-        self.port_lbl.grid(row=0, column=2, sticky="w", **pad)
+        self.port_lbl.grid(row=0, column=0, sticky="w", **pad)
         self.port_var = tk.StringVar(value=str(self.cfg["port"]))
         self.port_entry = ttk.Entry(self.cfg_frame, textvariable=self.port_var,
                                     width=8)
-        self.port_entry.grid(row=0, column=3, sticky="w", **pad)
+        self.port_entry.grid(row=0, column=1, sticky="w", **pad)
 
         self.reset_btn = ttk.Button(self.cfg_frame, text="",
                                     command=self.reset_defaults)
-        self.reset_btn.grid(row=0, column=4, **pad)
+        self.reset_btn.grid(row=0, column=2, **pad)
 
         self.lan_lbl = ttk.Label(self.cfg_frame, text="")
-        self.lan_lbl.grid(row=1, column=0, columnspan=3, sticky="w", **pad)
+        self.lan_lbl.grid(row=1, column=0, columnspan=2, sticky="w", **pad)
         self.lan_value = ttk.Label(self.cfg_frame, text=self.lan_ip,
                                    font=("Segoe UI", 10, "bold"))
-        self.lan_value.grid(row=1, column=3, columnspan=2, sticky="w", **pad)
+        self.lan_value.grid(row=1, column=2, sticky="w", **pad)
 
         self.autostart_var = tk.BooleanVar(value=bool(self.cfg.get("autostart")))
         self.autostart_chk = ttk.Checkbutton(
             self.cfg_frame, text="", variable=self.autostart_var,
             command=self._persist)
-        self.autostart_chk.grid(row=2, column=0, columnspan=4, sticky="w", **pad)
+        self.autostart_chk.grid(row=2, column=0, columnspan=3, sticky="w", **pad)
+
+        # --- Advanced (collapsible): the host field lives here -------------
+        # A single toggle button shows/hides the advanced frame. The host is
+        # still fully editable, just tucked away so the main view stays simple.
+        self.host_var = tk.StringVar(value=str(self.cfg["host"]))
+        self._advanced_open = False
+
+        self.advanced_toggle = ttk.Button(self.cfg_frame, text="",
+                                          command=self._toggle_advanced)
+        self.advanced_toggle.grid(row=3, column=0, columnspan=3, sticky="w",
+                                  **pad)
+
+        # The advanced body is grid-managed but starts hidden (grid_remove);
+        # the toggle re-adds it. Kept as its own frame so showing/hiding is one
+        # call and the layout below it just reflows.
+        self.advanced_frame = ttk.Frame(self.cfg_frame)
+        self.advanced_frame.grid(row=4, column=0, columnspan=3, sticky="we")
+        self.advanced_frame.grid_remove()
+
+        self.host_lbl = ttk.Label(self.advanced_frame, text="")
+        self.host_lbl.grid(row=0, column=0, sticky="w", **pad)
+        self.host_entry = ttk.Entry(self.advanced_frame,
+                                    textvariable=self.host_var, width=18)
+        self.host_entry.grid(row=0, column=1, sticky="w", **pad)
+        self.host_hint = ttk.Label(self.advanced_frame, text="",
+                                   wraplength=460, justify="left")
+        self.host_hint.grid(row=1, column=0, columnspan=2, sticky="w", **pad)
 
         # Commands
         btns = ttk.Frame(self.root)
@@ -639,6 +673,11 @@ class LauncherApp:
         self.status_frame.config(text=self._t("server_status"))
         self.cfg_frame.config(text=self._t("config"))
         self.host_lbl.config(text=self._t("host"))
+        self.host_hint.config(text=self._t("host_hint"))
+        # The toggle label reflects the current open/closed state.
+        self.advanced_toggle.config(
+            text=self._t("hide_advanced") if self._advanced_open
+            else self._t("show_advanced"))
         self.port_lbl.config(text=self._t("port"))
         self.reset_btn.config(text=self._t("reset_defaults"))
         self.lan_lbl.config(text=self._t("lan_ip"))
@@ -662,6 +701,22 @@ class LauncherApp:
             self.lang = choice
             self._apply_language()
             self._persist()
+
+    def _toggle_advanced(self):
+        """Show or hide the advanced (host) section.
+
+        The host field defaults to 0.0.0.0, which is correct for nearly every
+        setup, so it stays collapsed until the user asks for it. Toggling just
+        grids/ungrids the frame; the value itself is untouched either way.
+        """
+        self._advanced_open = not self._advanced_open
+        if self._advanced_open:
+            self.advanced_frame.grid()
+        else:
+            self.advanced_frame.grid_remove()
+        self.advanced_toggle.config(
+            text=self._t("hide_advanced") if self._advanced_open
+            else self._t("show_advanced"))
 
     def _toggle_theme(self):
         self.theme = "light" if self.theme == "dark" else "dark"

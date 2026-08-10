@@ -53,7 +53,9 @@
                             </select>
                         </div>
 
-                        <div class="field">
+                        {# Only meaningful for the Book viewer; shown/hidden by
+                           JS to follow the Viewer select (see end of file). #}
+                        <div class="field" id="hard-covers-field">
                             <label>{{ 'Book covers' | t }}</label>
                             <label class="folder-choice">
                                 <input type="checkbox" name="hard_covers" value="1" checked>
@@ -194,6 +196,21 @@
 
 
     <script>
+        // Show the "Book covers" field only when the Book viewer is selected:
+        // hard/soft covers do nothing for the carousel, so the option is noise
+        // there. The checkbox stays in the DOM (its value is simply ignored by
+        // the server for a carousel), so nothing about the POST changes.
+        (function () {
+            var viewer = document.getElementById('view_type');
+            var field = document.getElementById('hard-covers-field');
+            if (!viewer || !field) return;
+            function sync() {
+                field.hidden = (viewer.value !== 'book');
+            }
+            viewer.addEventListener('change', sync);
+            sync();
+        })();
+
         // Confirm before the POP submit (only that button needs it).
         document.querySelectorAll('button[data-confirm]').forEach(function (btn) {
             btn.addEventListener('click', function (e) {

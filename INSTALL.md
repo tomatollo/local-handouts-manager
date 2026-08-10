@@ -6,12 +6,20 @@ it updated later without losing your campaign data.
 There are two ways to run it:
 
 - **The desktop launcher** - a small window with Start/Stop buttons. Best if you
-  would rather not touch a terminal. *(Windows has a double-click `.bat`; macOS
-  and Linux run the same launcher with one command.)*
+  would rather not touch a terminal. Each OS has its own double-click starter
+  (`start_launcher.bat` on Windows, `start_launcher.command` on macOS,
+  `start_launcher.sh` on Linux) and **the first run sets everything up for you**
+  - it checks the prerequisites and installs what is missing.
 - **The terminal** - one command to start the server. Best for quick tests, or
   if you already live in a shell.
 
 Both use the same app and the same data, so you can switch freely.
+
+> **In a hurry?** Install [Python](#prerequisites) (3.9+), get the code, then
+> double-click the starter for your system. It creates the virtual environment,
+> installs the dependencies, and opens the launcher - no terminal needed. The
+> manual steps below are there if you prefer to do it yourself or something goes
+> wrong.
 
 ---
 
@@ -69,8 +77,12 @@ extracted folder.
 ## 2. Create a virtual environment & install
 
 A virtual environment (`.venv`) keeps this app's dependencies out of your system
-Python. The launcher looks for `.venv` automatically, so this step is worth
-doing.
+Python.
+
+> **You can skip this whole step if you use the launcher.** The double-click
+> starters (`start_launcher.bat` / `.command` / `.sh`) create `.venv` and
+> install the dependencies on their first run. Do this manually only if you
+> prefer the terminal, or want to see each step yourself.
 
 **Windows (PowerShell):**
 
@@ -104,36 +116,43 @@ copy your LAN address for the players, open the player/master/QR pages in a
 browser, switch language, toggle dark/light, and reset the master passphrase if
 you ever forget it.
 
+Each system has its own starter in the project folder. **On first run it checks
+the prerequisites and installs whatever is missing** - it creates `.venv` and
+installs the dependencies for you - then opens the launcher. Later runs skip
+straight to opening it.
+
 ### Windows
 
-Double-click **`start_launcher.bat`** in the project folder. It activates
-`.venv` (if present) and opens the launcher with no stray console window.
+Double-click **`start_launcher.bat`**. The first time, a small setup window
+reports its progress (finding Python, creating `.venv`, installing packages);
+after that it opens the launcher with no stray console window.
 
 *Want a shortcut?* Right-click `start_launcher.bat` -> **Send to -> Desktop
 (create shortcut)**. You can give the shortcut a nicer name and icon.
 
-### macOS / Linux
+### macOS
 
-There is no `.bat`, but the launcher is the same Python file. With the venv
-active:
+Double-click **`start_launcher.command`** in Finder. The first run opens a
+Terminal window that sets things up (Python check, `.venv`, dependencies) and
+then launches the app.
 
-```bash
-python launcher.py
-```
+> The very first time, macOS may need you to make it runnable: either
+> right-click -> **Open** and confirm once, or run `chmod +x
+> start_launcher.command` in a Terminal in the project folder. If Gatekeeper
+> blocks it, **System Settings -> Privacy & Security** has an *Open anyway*
+> button.
 
-To make it one click later, create a tiny script `start_launcher.command`
-(macOS) or `start_launcher.sh` (Linux):
+### Linux
 
-```bash
-#!/usr/bin/env bash
-cd "$(dirname "$0")"
-[ -d .venv ] && source .venv/bin/activate
-python launcher.py
-```
+Run **`start_launcher.sh`** - `./start_launcher.sh` from a terminal, or
+double-click it in your file manager and choose *Run* (mark it executable first
+with `chmod +x start_launcher.sh`, or via Properties -> Permissions). The first
+run sets up `.venv` and the dependencies, then opens the launcher.
 
-Then `chmod +x start_launcher.command` (macOS) - double-clicking it in Finder
-runs the launcher. On Linux, mark it executable and launch it from your file
-manager or a `.desktop` entry.
+> The launcher's window needs Python's Tk toolkit. If the script says tkinter is
+> missing, install it: `sudo apt install python3-tk` (Debian/Ubuntu),
+> `sudo dnf install python3-tkinter` (Fedora), or `sudo pacman -S tk` (Arch),
+> then run the script again.
 
 ### Using the launcher
 
@@ -143,6 +162,12 @@ manager or a `.desktop` entry.
 3. Use **Open Player / Open Master / Open QR** to jump straight to a page.
 4. Press **Stop server** when you are done, or just close the window (it offers
    to stop the server for you).
+
+> **Changing the host.** The server listens on `0.0.0.0` by default, which is
+> what lets phones on your Wi-Fi reach it - you rarely need to change it. If you
+> do (for example `127.0.0.1` to keep it to this computer only), open the
+> **Advanced configuration** section in the launcher to reveal the Host field.
+> The port stays on the main view.
 
 ---
 
@@ -259,8 +284,23 @@ Confirm they are on the same Wi-Fi, that you gave them the **LAN** address (not
 address in the host machine's own browser first to rule the app out.
 
 **The launcher opens then closes immediately (Windows).**
-It likely couldn't find Python. Make sure you created `.venv` (step 2). Running
-`python launcher.py` from a terminal will show the actual error.
+The starter now keeps its setup window open and prints the reason on failure -
+read the last lines. The usual cause is Python not being found: install it and
+tick *Add python.exe to PATH*. You can also run `python launcher.py` from a
+terminal (with `.venv` active) to see the raw error.
+
+**The starter says "Python 3.9 or newer was not found."**
+Either Python isn't installed, or it isn't on your PATH, or it's older than 3.9.
+Install a current version (see [Prerequisites](#prerequisites)); on Windows,
+re-run the installer and enable *Add python.exe to PATH*. The starter also tries
+the `py` launcher on Windows, so `py -3 --version` is a good thing to check.
+
+**macOS / Linux: the starter won't run or "permission denied."**
+Mark it executable once: `chmod +x start_launcher.command` (macOS) or
+`chmod +x start_launcher.sh` (Linux). On macOS you can instead right-click ->
+**Open** the first time. If a file manager only *opens* the script in an editor,
+use the terminal (`./start_launcher.sh`) or enable "run executable text files"
+in its preferences.
 
 **"waitress not found."**
 The venv isn't active, or dependencies weren't installed. Activate it (step 2)
