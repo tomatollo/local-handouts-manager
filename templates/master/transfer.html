@@ -22,11 +22,12 @@
             <h2>{{ 'Export everything (.zip)' | t }}</h2>
             <p class="subtitle">{{ 'Move your whole library (handouts, images, folders) to another computer.' | t }}</p>
             <a href="{{ url_for('master.export_library') }}" class="btn btn--block">{{ 'Export everything (.zip)' | t }}</a>
+            <p class="subtitle" style="margin-top:10px">{{ 'To export a single handout or map instead, use its own Export button — on the dashboard for handouts, on the Maps page for maps.' | t }}</p>
         </div>
 
         <div class="panel">
-            <h2>{{ 'Import Library' | t }}</h2>
-            <p class="subtitle">{{ 'Upload a .zip you exported from another computer. Nothing is changed until you review and confirm.' | t }}</p>
+            <h2>{{ 'Import (.zip)' | t }}</h2>
+            <p class="subtitle">{{ 'Upload any .zip exported from this app — a whole library, or a single handout or map. They all import the same way: nothing changes until you review and confirm.' | t }}</p>
             <a href="{{ url_for('master.import_library') }}" class="btn btn--ghost btn--block">{{ 'Import from a .zip…' | t }}</a>
         </div>
     </div>

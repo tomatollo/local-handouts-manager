@@ -131,6 +131,10 @@
 
         <div class="h-actions">
             <a href="{{ url_for('master.edit_handout', handout_id=h.id) }}" class="btn btn--ghost btn--block">{{ 'Edit' | t }}</a>
+            {# Download just this handout as a portable .zip (same format as the
+               full backup, so it re-imports through the normal Import flow). #}
+            <a href="{{ url_for('master.export_handout', handout_id=h.id) }}" class="btn btn--ghost btn--block"
+               title="{{ 'Download this handout as a .zip. Re-import it from Menu → Backup & Transfer → Import.' | t }}">&#11015; {{ 'Export' | t }}</a>
             {# The handout title is appended to the translated prompt rather than
                interpolated into it, so no sentence needs a placeholder. #}
             {% if h.visible %}
@@ -596,6 +600,45 @@
                     if (!window.confirm(btn.dataset.confirm)) e.preventDefault();
                 });
             });
+            // ---- Invert order by clicking the already-active "Group by" tab ----
+            // Mirrors the player hub: the first click on a mode navigates (it's
+            // a link); clicking the mode that is ALREADY active instead flips
+            // the order in place -- the groups within each list (Hidden and
+            // Public), and the handouts within each group -- and toggles a
+            // ↑/↓ arrow. Purely client-side, so it doesn't touch the server
+            // ordering or the collapse state; reloading returns to ascending.
+            (function () {
+                var activeBtn = document.querySelector('.group-btn--active');
+                if (!activeBtn) return;
+                var ascending = true;
+                activeBtn.insertAdjacentText('beforeend', ' \u2191');
+
+                activeBtn.addEventListener('click', function (e) {
+                    e.preventDefault();   // don't re-fetch; reverse in place
+                    ascending = !ascending;
+
+                    // Reverse the group blocks within each scope, and the
+                    // items within each group. Reappending in reversed order
+                    // is what physically flips them.
+                    document.querySelectorAll('.dm-list[data-scope]').forEach(function (scope) {
+                        var groups = Array.prototype.slice.call(
+                            scope.querySelectorAll(':scope > .h-group'));
+                        groups.reverse().forEach(function (g) {
+                            scope.appendChild(g);
+                            var items = Array.prototype.slice.call(
+                                g.querySelectorAll(':scope > .h-item'));
+                            items.reverse().forEach(function (it) { g.appendChild(it); });
+                        });
+                    });
+
+                    // Update the arrow.
+                    activeBtn.textContent = activeBtn.textContent.replace(/ \u2191| \u2193/g, '');
+                    activeBtn.insertAdjacentText('beforeend', ascending ? ' \u2191' : ' \u2193');
+
+                    // Keep the tree view in sync if it's the current view.
+                    if (treeSection && !treeSection.hidden) buildTree();
+                });
+            })();
         })();
     </script>
 </body>

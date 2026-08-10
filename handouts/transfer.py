@@ -100,8 +100,75 @@ def _map_image_names_one(m):
 MISSING_MANIFEST_NAME = 'missing_files.json'
 
 
+def _build_bundle(db):
+    """Zip a (possibly filtered) DB into an export bundle in memory.
+
+    Shared core of every export: the full-library backup and the single-item
+    exports all funnel through here. `db` is whatever set of handouts/maps the
+    caller wants in the bundle -- already trimmed to one item for the single
+    exports -- and this writes the manifest plus every upload and map image the
+    given records reference. Returns (raw_bytes, missing), where `missing`
+    lists files referenced but absent on disk (also written into the bundle as
+    a breadcrumb). The caller owns any DB mutation (e.g. thumbnail backfill)
+    and PDF concerns; this function only reads and zips.
+    """
+    missing = []
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(MANIFEST_NAME,
+                    json.dumps(_public_db(db), indent=2, ensure_ascii=False))
+        # Handout graphics (pages, back covers, PDF thumbnails).
+        seen = set()
+        for h in db.get('handouts', []):
+            for name in _handout_filenames(h):
+                if name in seen:
+                    continue
+                seen.add(name)
+                src = os.path.join(storage.UPLOAD_DIR, name)
+                if os.path.exists(src):
+                    zf.write(src, BUNDLE_UPLOADS + name)
+                else:
+                    # Referenced but gone: record which handout it belonged to
+                    # so the Master can find and re-upload it.
+                    missing.append({'file': name, 'handout_id': h.get('id'),
+                                    'title': h.get('title', ''),
+                                    'kind': 'upload'})
+        # Interactive-map background image(s), from static/maps. Without this
+        # the imported map would point at a file that never travelled, leaving
+        # the map blank on the destination machine.
+        for name in _map_image_names(db):
+            src = os.path.join(storage.MAP_DIR, name)
+            if os.path.exists(src):
+                zf.write(src, BUNDLE_MAPS + name)
+            else:
+                missing.append({'file': name, 'handout_id': None,
+                                'title': 'Interactive map background',
+                                'kind': 'map'})
+        # Leave a breadcrumb inside the bundle itself.
+        if missing:
+            zf.writestr(MISSING_MANIFEST_NAME,
+                        json.dumps(missing, indent=2, ensure_ascii=False))
+    buf.seek(0)
+    return buf.getvalue(), missing
+
+
+def _backfill_thumbs_quietly(db):
+    """Re-render any missing PDF thumbnails so an export carries its previews.
+
+    Mutates `db` in memory and persists if anything changed, so the names it
+    fills in match what we are about to zip. Never raises: a thumb that can't
+    be produced simply shows up in the export's `missing` list.
+    """
+    try:
+        from . import pdfs
+        if pdfs.backfill_thumbs(db):
+            storage.save_db(db)
+    except Exception:
+        pass
+
+
 def export_bytes():
-    """Build the export .zip in memory and return (raw_bytes, missing).
+    """Build the full-library export .zip in memory; return (raw_bytes, missing).
 
     Includes the normalized database (minus this machine's credentials, see
     PRIVATE_SETTINGS), every upload it references, and the interactive-map
@@ -120,58 +187,66 @@ def export_bytes():
     reported like any other missing file rather than aborting the export.
     """
     db = storage.load_db()
+    _backfill_thumbs_quietly(db)
+    return _build_bundle(db)
 
-    # Re-render any missing PDF thumbnails so a freshly-uploaded PDF doesn't
-    # export without its preview. backfill_thumbs mutates the db in memory and
-    # returns True if it changed anything; persist so the names it filled in
-    # match what we are about to zip and what the DB now claims.
-    try:
-        from . import pdfs
-        if pdfs.backfill_thumbs(db):
-            storage.save_db(db)
-    except Exception:
-        # Thumbnail rendering must never block a backup. A thumb that couldn't
-        # be produced simply shows up in `missing` below.
-        pass
 
-    missing = []
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr(MANIFEST_NAME,
-                    json.dumps(_public_db(db), indent=2, ensure_ascii=False))
-        # Handout graphics (pages, back covers, PDF thumbnails).
-        seen = set()
-        for h in db['handouts']:
-            for name in _handout_filenames(h):
-                if name in seen:
-                    continue
-                seen.add(name)
-                src = os.path.join(storage.UPLOAD_DIR, name)
-                if os.path.exists(src):
-                    zf.write(src, BUNDLE_UPLOADS + name)
-                else:
-                    # Referenced but gone: record which handout it belonged to
-                    # so the Master can find and re-upload it.
-                    missing.append({'file': name, 'handout_id': h.get('id'),
-                                    'title': h.get('title', ''),
-                                    'kind': 'upload'})
-        # Interactive-map background image(s), from static/maps. Without this
-        # the imported map_state would point at a file that never travelled,
-        # leaving the map blank on the destination machine.
-        for name in _map_image_names(db):
-            src = os.path.join(storage.MAP_DIR, name)
-            if os.path.exists(src):
-                zf.write(src, BUNDLE_MAPS + name)
-            else:
-                missing.append({'file': name, 'handout_id': None,
-                                'title': 'Interactive map background',
-                                'kind': 'map'})
-        # Leave a breadcrumb inside the bundle itself.
-        if missing:
-            zf.writestr(MISSING_MANIFEST_NAME,
-                        json.dumps(missing, indent=2, ensure_ascii=False))
-    buf.seek(0)
-    return buf.getvalue(), missing
+def _single_item_db(db, handouts=None, maps=None, folders=None):
+    """A shallow copy of `db` carrying only the given handouts/maps/folders.
+
+    Used by the single-item exports so the shared bundle builder and the import
+    side see a normal DB shape -- just a smaller one. Wiki pages and settings
+    are dropped (a single handout/map export shouldn't drag the whole wiki or
+    any theme along); `_public_db` still strips credentials when the bundle is
+    written. Folders are included so an exported handout's folder membership
+    can be re-created on import.
+    """
+    return {
+        'handouts': handouts or [],
+        'maps': maps or [],
+        'folders': folders or [],
+        'wiki': [],
+        'settings': db.get('settings', {}),
+    }
+
+
+def export_handout_bytes(handout_id):
+    """Export ONE handout as a bundle; return (raw_bytes, missing).
+
+    The bundle has the same shape as a full export, carrying just this handout
+    plus the folders it belongs to (so its folder membership survives the
+    round-trip). Because the format is identical, the ordinary import flow
+    handles it with no special case: it simply reports one new/identical/
+    conflicting handout. Returns (None, None) if the id doesn't exist.
+    """
+    db = storage.load_db()
+    handout = storage.find(db, handout_id)
+    if handout is None:
+        return None, None
+    _backfill_thumbs_quietly(db)
+    # Re-fetch after the possible save+reload so we hand the builder the
+    # thumbnail names it just filled in.
+    handout = storage.find(db, handout_id) or handout
+    # Carry only the folders this handout actually belongs to.
+    member_ids = set(handout.get('folders', []))
+    folders = [fo for fo in db.get('folders', []) if fo.get('id') in member_ids]
+    sub = _single_item_db(db, handouts=[handout], folders=folders)
+    return _build_bundle(sub)
+
+
+def export_map_bytes(map_id):
+    """Export ONE map as a bundle; return (raw_bytes, missing).
+
+    Same shape as a full export, carrying just this map (and its background
+    image). The ordinary import flow treats it as one new/identical/conflicting
+    map. Returns (None, None) if the id doesn't exist.
+    """
+    db = storage.load_db()
+    m = storage.find_map(db, map_id)
+    if m is None:
+        return None, None
+    sub = _single_item_db(db, maps=[m])
+    return _build_bundle(sub)
 
 
 def _read_bundle(zip_bytes):

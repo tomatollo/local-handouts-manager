@@ -35,7 +35,7 @@
         </div>
 
         <div class="panel">
-            <a href="{{ url_for('master.export_library', force=1) }}" class="btn btn--block">{{ 'Download anyway (incomplete)' | t }}</a>
+            <a href="{{ force_url or url_for('master.export_library', force=1) }}" class="btn btn--block">{{ 'Download anyway (incomplete)' | t }}</a>
             <a href="{{ url_for('master.transfer_page') }}" class="btn btn--ghost btn--block">{{ 'Cancel' | t }}</a>
         </div>
     </div>

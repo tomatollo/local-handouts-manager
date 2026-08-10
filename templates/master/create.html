@@ -186,6 +186,22 @@
                     </div>
                     {% endif %}
                 </div>
+
+                {# Import a handout right where they're made: pick a .zip
+                   exported from this app (a single handout, or a whole
+                   library) and land straight on the review page. Same endpoint
+                   and two-step review as Backup & Transfer -- nothing changes
+                   until the Master confirms. #}
+                <div class="panel">
+                    <h2>{{ 'Import a handout' | t }}</h2>
+                    <p class="subtitle">{{ 'Have a .zip exported from this app? Upload it to add its handouts here. You review before anything changes.' | t }}</p>
+                    <form action="{{ url_for('master.import_library') }}" method="post"
+                          enctype="multipart/form-data" class="folder-new">
+                        <input type="file" name="bundle" accept=".zip" required
+                               aria-label="{{ 'Export file (.zip)' | t }}">
+                        <button type="submit" class="btn">{{ 'Import…' | t }}</button>
+                    </form>
+                </div>
             </div>
         </div>
 

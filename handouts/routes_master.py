@@ -845,6 +845,56 @@ def export_library():
                  'attachment; filename=handouts-export.zip'})
 
 
+@bp.route('/export/handout/<handout_id>')
+@auth.master_required
+def export_handout(handout_id):
+    """Download ONE handout as a bundle (same .zip format as a full export).
+
+    Reuses the whole-library export's missing-file safeguard: if the handout
+    references a file that isn't on disk, show the warning page (with a
+    ?force=1 escape hatch) rather than streaming a silently-incomplete bundle.
+    An unknown id is a 404.
+    """
+    data, missing = transfer.export_handout_bytes(handout_id)
+    if data is None:
+        abort(404, 'Handout not found.')
+
+    if missing and not request.args.get('force'):
+        return render_template(
+            'master/export_warning.html', missing=missing,
+            force_url=url_for('master.export_handout',
+                              handout_id=handout_id, force=1))
+
+    return Response(
+        data,
+        mimetype='application/zip',
+        headers={'Content-Disposition':
+                 f'attachment; filename=handout-{handout_id}.zip'})
+
+
+@bp.route('/export/map/<map_id>')
+@auth.master_required
+def export_map(map_id):
+    """Download ONE map as a bundle (same .zip format as a full export).
+
+    Same missing-file safeguard as the other exports. An unknown id is a 404.
+    """
+    data, missing = transfer.export_map_bytes(map_id)
+    if data is None:
+        abort(404, 'Map not found.')
+
+    if missing and not request.args.get('force'):
+        return render_template(
+            'master/export_warning.html', missing=missing,
+            force_url=url_for('master.export_map', map_id=map_id, force=1))
+
+    return Response(
+        data,
+        mimetype='application/zip',
+        headers={'Content-Disposition':
+                 f'attachment; filename=map-{map_id}.zip'})
+
+
 @bp.route('/import', methods=['GET', 'POST'])
 @auth.master_required
 def import_library():

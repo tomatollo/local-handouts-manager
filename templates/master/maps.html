@@ -94,6 +94,8 @@
                         </form>
 
                         <div class="map-card__actions">
+                            <a class="btn btn--ghost" href="{{ url_for('master.export_map', map_id=m.id) }}"
+                               title="{{ 'Download this map as a .zip. Re-import it from Menu → Backup & Transfer → Import.' | t }}">&#11015; {{ 'Export' | t }}</a>
                             <form method="post" action="{{ url_for('master.map_delete', map_id=m.id) }}"
                                   data-confirm="{{ del_map_msg }} &mdash; {{ m.name }}">
                                 <button type="submit" class="btn btn--danger">{{ 'Delete map' | t }}</button>
@@ -104,6 +106,21 @@
                 {% endfor %}
             </div>
             {% endif %}
+        </div>
+
+        {# Import a map right where maps are managed: pick a .zip exported from
+           this app (a single map, or a whole library) and land on the review
+           page. Same endpoint + two-step review as Backup & Transfer, so
+           nothing changes until confirmed. #}
+        <div class="panel">
+            <h2>{{ 'Import a map' | t }}</h2>
+            <p class="subtitle">{{ 'Have a .zip exported from this app? Upload it to add its maps here. You review before anything changes.' | t }}</p>
+            <form action="{{ url_for('master.import_library') }}" method="post"
+                  enctype="multipart/form-data" class="maps-new">
+                <input type="file" name="bundle" accept=".zip" required
+                       aria-label="{{ 'Export file (.zip)' | t }}">
+                <button type="submit" class="btn">{{ 'Import…' | t }}</button>
+            </form>
         </div>
 
         {% set footer_scope = 'master' %}
