@@ -151,6 +151,7 @@ from .files import (
     save_files,
     remove_files,
     save_back_cover,
+    save_back_texture,
     allowed_map_file,
     save_map_image,
     remove_map_image,
@@ -195,8 +196,8 @@ __all__ = [
     'delete_map', 'update_map_state', 'set_map_image', 'confirm_map_state',
     'discard_map_state', 'set_map_focus',
     # files
-    'save_files', 'remove_files', 'save_back_cover', 'allowed_map_file',
-    'save_map_image', 'remove_map_image',
+    'save_files', 'remove_files', 'save_back_cover', 'save_back_texture',
+    'allowed_map_file', 'save_map_image', 'remove_map_image',
     # db
     'set_request_cache_hooks', 'load_db', 'save_db', '_normalize',
 ]

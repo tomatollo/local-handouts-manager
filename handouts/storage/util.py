@@ -28,7 +28,21 @@ def allowed_file(filename):
 
 
 def reader_for(ext):
-    return 'pdf' if ext.lower() == 'pdf' else 'image'
+    """Label a stored file by how the client should open it.
+
+    'pdf'   -> rendered to images at upload, then read as pages.
+    'model' -> a .glb 3D model, shown only by the object3d viewer. Kept as its
+               own reader so the PDF-expansion and thumbnail passes skip it (a
+               model is not a paged image) and the templates never try to draw
+               an <img> for it.
+    'image' -> everything else (png/jpg/gif/webp), the default.
+    """
+    ext = ext.lower()
+    if ext == 'pdf':
+        return 'pdf'
+    if ext == 'glb':
+        return 'model'
+    return 'image'
 
 
 def new_handout_id():

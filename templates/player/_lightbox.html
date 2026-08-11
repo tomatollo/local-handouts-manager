@@ -1,9 +1,29 @@
 {# Shared player lightbox: opened by any .handout-card. The card carries
-   data-view (carousel|book) and optionally data-back (back-cover file).
+   data-view (carousel|book|object3d) and optionally data-back (back-cover
+   file) / data-back-texture (3D reverse-side texture).
    Requires vendor/page-flip.browser.js to be loaded before this include.
 
    Also exposes window.Lightbox.openData(payload) so the POP watcher can open
    a handout that has no card on this page (see player/_pop.html). #}
+
+{# 3D viewer styles, loaded only where the lightbox lives (see inspector3d.css). #}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/inspector3d.css') }}">
+
+{# Import map so the 3D reader can use bare 'three' / 'three/addons/...'
+   specifiers that resolve to the self-hosted copies under static/vendor/three/
+   (fetched by fetch_vendor.py). It is declared here, before any module is
+   imported: the 3D module is loaded lazily via import() only when an object3d
+   handout is opened, which happens long after this map is parsed, so a
+   body-level map is in place in time. No CDN is used. #}
+<script type="importmap">
+{
+  "imports": {
+    "three": "{{ url_for('static', filename='vendor/three/three.module.min.js') }}",
+    "three/addons/": "{{ url_for('static', filename='vendor/three/addons/') }}"
+  }
+}
+</script>
+
 <div id="lightbox" class="lightbox" hidden aria-hidden="true">
     <div class="lightbox__backdrop" data-close></div>
     <div class="lightbox__dialog" role="dialog" aria-modal="true">
@@ -65,6 +85,9 @@
 
         var UPLOADS = "{{ url_for('static', filename='uploads/') }}";
         function uploadUrl(name) { return UPLOADS + name; }
+        // URL of the lazily-loaded 3D reader module, resolved by Flask so it is
+        // correct whatever the app is mounted under.
+        var INSPECTOR_URL = "{{ url_for('static', filename='vendor/three/inspector3d.js') }}";
 
         // The few strings this script writes at runtime, translated server-side.
         var T = {
@@ -72,7 +95,10 @@
             hideInfo: {{ 'Hide info' | t | tojson }},
             foundAt: {{ 'Found at' | t | tojson }},
             wrongPassword: {{ 'Wrong password.' | t | tojson }},
-            revealError: {{ 'Could not check that right now.' | t | tojson }}
+            revealError: {{ 'Could not check that right now.' | t | tojson }},
+            loading3d: {{ 'Loading 3D view…' | t | tojson }},
+            error3d: {{ 'This 3D view could not be loaded.' | t | tojson }},
+            hint3d: {{ 'Drag to rotate • scroll to zoom • right-drag to pan' | t | tojson }}
         };
 
         // Endpoint the secret-reveal form posts to. The CSRF header is added
@@ -81,10 +107,12 @@
 
         var files = [];       // page files [{filename, reader, description}]
         var back = null;      // optional back-cover file entry
+        var backTexture = null; // optional 3D reverse-side texture entry
         var view = 'carousel';
         var hardCovers = true; // book: draw cover + back cover as rigid pages
         var index = 0;        // carousel file index
         var pageFlip = null;  // StPageFlip instance (book mode)
+        var inspector = null; // Inspector3D instance (object3d mode)
         var currentId = null; // id of the handout on screen, for secret reveals
         // Set per-open by the POP watcher so it can drop its banner when the
         // player dismisses the modal, however they dismissed it (button,
@@ -92,10 +120,11 @@
         var onClose = null;
 
         // ---- Zoom / pan state -------------------------------------------
-        // One controller shared by both viewers. `zoom` is the scale factor;
+        // One controller shared by both 2D viewers. `zoom` is the scale factor;
         // panX/panY shift the scaled media so the reader can reach the parts
         // that overflow. Applied as CSS custom properties on .lightbox__media
         // (see the stylesheet), so nothing here reaches into individual pages.
+        // The object3d viewer ignores all of this (it has its own OrbitControls).
         var ZOOM_MIN = 1, ZOOM_MAX = 4, ZOOM_STEP = 0.05;
         var zoom = 1, panX = 0, panY = 0;
         var zoomLevelEl = box.querySelector('.lightbox__zoomlevel');
@@ -264,6 +293,96 @@
             }
         }
 
+        // =====================================================================
+        // OBJECT3D: full-stage WebGL inspection (rotate/zoom/pan). The Three.js
+        // engine and the reader module are LAZY-loaded here, the first time an
+        // object3d handout is opened, so nothing 3D is downloaded otherwise.
+        //
+        // The handout is EITHER a .glb model (files[0].reader === 'model') OR a
+        // double-sided sheet from files[0] (front) + backTexture (back), with
+        // PNG transparency showing as holes. destroy3d() below unwinds it all.
+        // =====================================================================
+        function renderObject3d() {
+            dots.innerHTML = '';
+            // No page nav in 3D: OrbitControls owns the interaction.
+            prevBtn.style.display = 'none';
+            nextBtn.style.display = 'none';
+
+            media.innerHTML = '';
+            media.className = 'lightbox__media lightbox__media--object3d';
+
+            // The stage the canvas lives in, plus a loading state + a hint. The
+            // reader appends its <canvas> into `hostEl`.
+            var hostEl = document.createElement('div');
+            hostEl.className = 'inspector3d';
+
+            var stateEl = document.createElement('div');
+            stateEl.className = 'inspector3d__state';
+            var spinner = document.createElement('div');
+            spinner.className = 'inspector3d__spinner';
+            var stateText = document.createElement('div');
+            stateText.textContent = T.loading3d;
+            stateEl.appendChild(spinner);
+            stateEl.appendChild(stateText);
+
+            var hintEl = document.createElement('p');
+            hintEl.className = 'inspector3d__hint';
+            hintEl.textContent = T.hint3d;
+
+            hostEl.appendChild(stateEl);
+            hostEl.appendChild(hintEl);
+            media.appendChild(hostEl);
+
+            // Work out what to hand the reader: a model, or front/back textures.
+            var cover = files[0] || null;
+            var opts = {
+                onLoaded: function () { stateEl.hidden = true; },
+                onError: function () {
+                    stateEl.hidden = false;
+                    stateEl.classList.add('inspector3d__state--error');
+                    spinner.style.display = 'none';
+                    stateText.textContent = T.error3d;
+                    hintEl.style.display = 'none';
+                }
+            };
+            if (cover && cover.reader === 'model') {
+                opts.modelUrl = uploadUrl(cover.filename);
+            } else if (cover) {
+                opts.frontUrl = uploadUrl(cover.filename);
+                if (backTexture && backTexture.filename) {
+                    opts.backUrl = uploadUrl(backTexture.filename);
+                }
+            } else {
+                // Nothing to show; surface the error state and stop.
+                opts.onError();
+                return;
+            }
+
+            // Guard against a close() that happens while the module is still
+            // downloading: `open3dToken` is bumped on every open/close, and a
+            // resolved import whose token is stale is dropped.
+            var myToken = ++open3dToken;
+            import(INSPECTOR_URL).then(function (mod) {
+                if (myToken !== open3dToken || box.hidden) return; // superseded
+                var Inspector3D = mod.Inspector3D || mod.default;
+                inspector = new Inspector3D(hostEl, opts).init();
+            }).catch(function (err) {
+                if (myToken !== open3dToken) return;
+                opts.onError(err);
+            });
+        }
+        // Monotonic guard for the async 3D module import (see renderObject3d).
+        var open3dToken = 0;
+
+        function destroy3d() {
+            // Invalidate any in-flight import so its .then() no-ops.
+            open3dToken++;
+            if (inspector) {
+                try { inspector.destroy(); } catch (e) { /* ignore */ }
+                inspector = null;
+            }
+        }
+
         // ---- info toggle (description + discovery + password), one button ----
         // The button is ALWAYS shown now: even a handout with no description
         // and no discovery text still carries the password box (a player may
@@ -284,6 +403,8 @@
 
         // ---- navigation ----
         function step(delta) {
+            // No paging in 3D: a spin gesture is not a page turn.
+            if (view === 'object3d') return;
             if (view === 'book') {
                 if (!pageFlip) return;
                 // Turning a page always returns to 100%: you read a page zoomed,
@@ -310,6 +431,7 @@
             files = (data && data.files) || [];
             if (!files.length) return false;
             back = (data && data.back_cover) || null;
+            backTexture = (data && data.back_texture) || null;
 
             view = (data && data.view_type) || 'carousel';
             // Default TRUE so a payload that omits the flag (an older POP, a
@@ -332,8 +454,11 @@
             if (date) parts.push(date);
             setupInfo(desc, parts.join(' \u2022 '));
 
+            // Tear down whichever heavy viewer was up before switching.
             destroyBook();
+            destroy3d();
             if (view === 'book') renderBook();
+            else if (view === 'object3d') renderObject3d();
             else renderCarousel();
             resetZoom();   // a freshly opened handout always starts at 100%
 
@@ -351,6 +476,10 @@
                 var b = card.getAttribute('data-back');
                 data.back_cover = b ? JSON.parse(b) : null;
             } catch (e) { data.back_cover = null; }
+            try {
+                var bt = card.getAttribute('data-back-texture');
+                data.back_texture = bt ? JSON.parse(bt) : null;
+            } catch (e) { data.back_texture = null; }
 
             data.view_type = card.getAttribute('data-view') || 'carousel';
             // data-hard-covers is the string "false" only when explicitly off;
@@ -366,10 +495,12 @@
 
         function close() {
             destroyBook();
+            destroy3d();
             resetZoom();
             box.hidden = true;
             box.setAttribute('aria-hidden', 'true');
             media.innerHTML = '';
+            media.className = 'lightbox__media';   // drop any viewer modifier
             document.body.style.overflow = '';
             if (onClose) { var cb = onClose; onClose = null; cb(); }
         }
@@ -434,20 +565,21 @@
             if (e.key === 'Escape') close();
             else if (e.key === 'ArrowLeft') step(-1);
             else if (e.key === 'ArrowRight') step(1);
-            else if (e.key === '+' || e.key === '=') zoomBy(ZOOM_STEP);
-            else if (e.key === '-' || e.key === '_') zoomBy(-ZOOM_STEP);
-            else if (e.key === '0') resetZoom();
+            else if (view !== 'object3d' && (e.key === '+' || e.key === '=')) zoomBy(ZOOM_STEP);
+            else if (view !== 'object3d' && (e.key === '-' || e.key === '_')) zoomBy(-ZOOM_STEP);
+            else if (view !== 'object3d' && e.key === '0') resetZoom();
         });
 
         // ---- Zoom mechanics only (no on-screen buttons) ------------------
         //      Desktop: mouse wheel (below) and keyboard +/-/0. Touch: pinch
-        //      and double-tap. The old +/-/reset buttons were removed as
-        //      redundant, so there is no [data-zoom] handler here anymore.
+        //      and double-tap. All of this is SKIPPED in object3d mode, where
+        //      OrbitControls owns wheel/drag/pinch on its own canvas.
 
         // ---- Mouse wheel zoom on desktop. The lightbox is a fullscreen modal,
         //      so the wheel has nothing else to scroll here and zooming it is
         //      the natural gesture; anchored at the pointer. ----------------
         stage.addEventListener('wheel', function (e) {
+            if (view === 'object3d') return;   // let OrbitControls have it
             e.preventDefault();
             var anchor = { x: e.clientX, y: e.clientY };
             zoomBy(e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP, anchor);
@@ -455,6 +587,7 @@
 
         // ---- Double-click / double-tap to toggle 1x <-> 2x ---------------
         stage.addEventListener('dblclick', function (e) {
+            if (view === 'object3d') return;
             if (zoom > 1) resetZoom();
             else zoomBy(1, { x: e.clientX, y: e.clientY });
         });
@@ -462,6 +595,7 @@
         // ---- Drag to pan (mouse), only meaningful while zoomed ------------
         var panning = false, panStart = null;
         stage.addEventListener('mousedown', function (e) {
+            if (view === 'object3d') return;
             if (zoom <= 1) return;
             panning = true;
             panStart = { x: e.clientX, y: e.clientY, px: panX, py: panY };
@@ -484,6 +618,8 @@
         // Bound in the CAPTURE phase so that, when zoomed, we can claim the
         // gesture before StPageFlip's own touch handlers on the book canvas
         // see it -- otherwise a drag would flip the page instead of panning.
+        // In object3d mode we bail immediately: the canvas + OrbitControls
+        // handle all touch themselves.
         var pinchStart = null;   // { dist, zoom, midX, midY }
         var touchPan = null;     // { x, y, px, py }
 
@@ -498,6 +634,7 @@
         }
 
         stage.addEventListener('touchstart', function (e) {
+            if (view === 'object3d') return;
             if (e.touches.length === 2) {
                 // Two fingers: begin a pinch. Claim it so the book doesn't flip.
                 var t = e.touches;
@@ -515,6 +652,7 @@
         }, { capture: true, passive: false });
 
         stage.addEventListener('touchmove', function (e) {
+            if (view === 'object3d') return;
             if (pinchStart && e.touches.length === 2) {
                 var t = e.touches;
                 var ratio = touchDist(t) / (pinchStart.dist || 1);
@@ -534,6 +672,7 @@
         }, { capture: true, passive: false });
 
         stage.addEventListener('touchend', function (e) {
+            if (view === 'object3d') return;
             if (pinchStart && e.touches.length < 2) {
                 pinchStart = null;
                 media.classList.remove('lightbox__media--live');
@@ -546,14 +685,14 @@
         }, { capture: true, passive: false });
 
         // swipe for carousel only; StPageFlip handles its own touch in book
-        // mode. Skipped entirely while zoomed -- there a one-finger drag pans.
+        // mode, and OrbitControls handles it in object3d. Skipped while zoomed.
         var startX = null;
         stage.addEventListener('touchstart', function (e) {
-            if (view === 'book' || zoom > 1) return;
+            if (view === 'book' || view === 'object3d' || zoom > 1) return;
             startX = e.touches[0].clientX;
         }, {passive: true});
         stage.addEventListener('touchend', function (e) {
-            if (view === 'book' || zoom > 1 || startX === null) { startX = null; return; }
+            if (view === 'book' || view === 'object3d' || zoom > 1 || startX === null) { startX = null; return; }
             var dx = e.changedTouches[0].clientX - startX;
             if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1);
             startX = null;

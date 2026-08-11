@@ -190,11 +190,26 @@ def upload_handout():
             abort(400, f'File type not allowed: {back_file.filename}')
         back_cover = storage.save_back_cover(back_file, handout_id)
 
-    # Both viewers show images, never a live PDF. Expand every PDF into one
-    # image per page now, for Book AND Carousel alike -- the only difference
-    # left between the two is how the player steps through those images
-    # (page-curl vs arrows). A back cover is expanded the same way and, being a
-    # single page, keeps its first rendered page.
+    # Optional back TEXTURE (only meaningful for the object3d sheet viewer).
+    # This is the image painted on the reverse face of the 3D sheet; kept a
+    # separate field/file from the Book back cover so a handout could in
+    # principle carry both, and so switching viewers never reinterprets one as
+    # the other. A .glb here would make no sense (it is a face texture), so a
+    # model file is rejected -- only images are allowed as a back texture.
+    back_texture = None
+    tex_file = request.files.get('back_texture')
+    if tex_file and tex_file.filename:
+        if not storage.allowed_file(tex_file.filename):
+            abort(400, f'File type not allowed: {tex_file.filename}')
+        if storage.reader_for(storage.ext_of(tex_file.filename)) == 'model':
+            abort(400, 'The back texture must be an image, not a 3D model.')
+        back_texture = storage.save_back_texture(tex_file, handout_id)
+
+    # Both paged viewers show images, never a live PDF, and a 3D model is left
+    # untouched. Expand every PDF into one image per page now; expand_pdfs only
+    # touches entries whose reader is 'pdf', so a 'model' (.glb) or an image
+    # passes straight through. A back cover is expanded the same way and, being
+    # a single page, keeps its first rendered page.
     stored_files, dropped = pdfs.expand_pdfs(stored_files, handout_id)
     storage.remove_files(dropped)
     if back_cover and pdfs.is_pdf(back_cover):
@@ -244,6 +259,7 @@ def upload_handout():
         'hard_covers': hard_covers,
         'source_format': source_format,
         'back_cover': back_cover,
+        'back_texture': back_texture,
         'secret_passwords': secret_passwords,
         'secret_ignore_case': secret_ignore_case,
         'secret_handout_id': secret_handout_id,
@@ -277,7 +293,8 @@ def edit_handout(handout_id):
                                tags=storage.all_tags(db),
                                folders=storage.all_folders(db),
                                handouts=db['handouts'],
-                               view_types=storage.VIEW_TYPES)
+                               view_types=storage.VIEW_TYPES,
+                               default_view_type=storage.DEFAULT_VIEW_TYPE)
 
     # --- POST: metadata ---
     handout['title'] = request.form.get('title', '').strip() or handout['title']
@@ -364,9 +381,24 @@ def edit_handout(handout_id):
             storage.remove_files([handout['back_cover']])
         handout['back_cover'] = storage.save_back_cover(back_file, handout_id)
 
-    # --- PDFs: both viewers show images, so convert any PDF now. This also
-    # covers a handout that still had PDF pages from before the carousel
-    # rendered images, and the Master switching an existing handout's viewer. ---
+    # --- Back texture (object3d sheet): optional single image, remove/replace ---
+    if request.form.get('remove_back_texture') and handout.get('back_texture'):
+        storage.remove_files([handout['back_texture']])
+        handout['back_texture'] = None
+    tex_file = request.files.get('back_texture')
+    if tex_file and tex_file.filename:
+        if not storage.allowed_file(tex_file.filename):
+            abort(400, f'File type not allowed: {tex_file.filename}')
+        if storage.reader_for(storage.ext_of(tex_file.filename)) == 'model':
+            abort(400, 'The back texture must be an image, not a 3D model.')
+        if handout.get('back_texture'):
+            storage.remove_files([handout['back_texture']])
+        handout['back_texture'] = storage.save_back_texture(tex_file, handout_id)
+
+    # --- PDFs: both paged viewers show images, so convert any PDF now. This
+    # also covers a handout that still had PDF pages from before the carousel
+    # rendered images, and the Master switching an existing handout's viewer.
+    # A 3D model (reader='model') is not a PDF, so expand_pdfs leaves it be. ---
     handout['files'], dropped = pdfs.expand_pdfs(
         handout['files'], handout_id)
     storage.remove_files(dropped)
@@ -470,6 +502,8 @@ def delete_handout(handout_id):
     storage.remove_files(handout.get('files', []))
     if handout.get('back_cover'):
         storage.remove_files([handout['back_cover']])
+    if handout.get('back_texture'):
+        storage.remove_files([handout['back_texture']])
     db['handouts'].remove(handout)
 
     # Never leave the POP pointing at a handout that no longer exists.

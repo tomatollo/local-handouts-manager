@@ -48,16 +48,22 @@ def _public_db(db):
 
 
 def _handout_filenames(h):
-    """Every stored filename a handout references (pages + back cover).
+    """Every stored filename a handout references (pages + back cover +
+    3D back texture).
 
     Includes generated PDF thumbnails so an imported library still shows its
-    previews without having to re-render anything.
+    previews without having to re-render anything. The object3d viewer's
+    reverse-side texture (`back_texture`) is included too, or a 3D sheet would
+    lose its back face on transfer.
     """
     names = []
     entries = list(h.get('files', []))
     bc = h.get('back_cover')
     if bc:
         entries.append(bc)
+    bt = h.get('back_texture')
+    if bt:
+        entries.append(bt)
     for entry in entries:
         if entry.get('filename'):
             names.append(entry['filename'])
@@ -289,6 +295,7 @@ def _content_signature(h):
         'visible': h.get('visible', False),
         'files': h.get('files', []),
         'back_cover': h.get('back_cover'),
+        'back_texture': h.get('back_texture'),
     }, sort_keys=True, ensure_ascii=False)
 
 
@@ -551,6 +558,8 @@ def apply_import(zip_bytes, resolutions, map_resolutions=None):
                 storage.remove_files(cur.get('files', []))
                 if cur.get('back_cover'):
                     storage.remove_files([cur['back_cover']])
+                if cur.get('back_texture'):
+                    storage.remove_files([cur['back_texture']])
                 _extract_files_for(h, zf)
                 idx = db['handouts'].index(cur)
                 db['handouts'][idx] = h

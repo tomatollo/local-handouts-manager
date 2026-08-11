@@ -66,6 +66,36 @@ the phase of work that produced them, newest first.
   behind each control, with sources.
 
 ### Added
+- **3D Inspect viewer (`object3d`).** A third handout viewer, alongside
+  Carousel and Book, that opens the handout in a full-screen WebGL canvas the
+  player can **rotate, zoom and pan** (Resident Evil / *Nobody Wants to Die*
+  style object inspection). Two kinds of handout are supported:
+  - a **`.glb` 3D model** (loaded with `GLTFLoader`), or
+  - a **double-sided sheet** built procedurally from a front image and an
+    optional **back texture**, where PNG transparency punches *real holes*
+    through the paper (torn scrolls, bullet holes) rather than showing white.
+  - **Interaction:** `OrbitControls` with `enableDamping` for fluid motion,
+    ambient + two directional lights so both faces read when the sheet is spun.
+  - **Performance / memory:** Three.js and the reader module are **lazy-loaded**
+    — nothing 3D is downloaded until an `object3d` handout is actually opened.
+    Closing the viewer runs a **total cleanup**: the `requestAnimationFrame`
+    loop is stopped, the canvas removed from the DOM, and `.dispose()` is
+    called on every geometry, material, texture, the controls and the renderer
+    (which also loses its GL context), so opening and closing repeatedly never
+    leaks. The init and destroy paths are kept separate in
+    `static/vendor/three/inspector3d.js` (class `Inspector3D`).
+  - **Self-hosted, offline-first:** Three.js r160 (build + `GLTFLoader` +
+    `OrbitControls` + `BufferGeometryUtils`) is served from
+    `static/vendor/three/`, resolved via an import map in the lightbox — no CDN.
+    Run `python fetch_vendor.py` once to fetch it (same one-command setup the
+    Book viewer's StPageFlip already uses).
+  - **Storage:** handouts gain an optional `back_texture` (the sheet's reverse
+    side), stored parallel to the Book viewer's `back_cover`; `.glb` files are
+    recorded with `reader: 'model'` so the PDF-expansion and thumbnail passes
+    skip them. Both the new field and format survive export/import.
+  - **Master UI:** the upload and edit forms offer the new viewer, a back-texture
+    upload (shown only for 3D Inspect), and accept `.glb`; the file card shows a
+    `3D` badge for model handouts.
 - **Three new themes**, each inspired by a D&D sourcebook:
   - *Vecna: Eve of Ruin* — necrotic grave-green and rotten violet.
   - *Tasha's Cauldron of Everything* — a simmering arcane brew: animated

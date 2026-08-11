@@ -190,7 +190,7 @@ def _normalize(data):
         h.setdefault('tags', [])
         # Folder membership: a list of folder ids (multi-membership).
         h.setdefault('folders', [])
-        # How players view this handout's files (carousel/book).
+        # How players view this handout's files (carousel/book/object3d).
         h['view_type'] = clean_view_type(h.get('view_type'))
         # Book viewer only: whether the first page (cover) and the back cover
         # are drawn as RIGID "hard" pages -- the stiff card of a real binding --
@@ -248,6 +248,15 @@ def _normalize(data):
         if h.get('back_cover'):
             h['back_cover'].setdefault('description', '')
             h['back_cover'].setdefault('thumb', None)
+
+        # Optional reverse-side texture for the object3d sheet viewer (a single
+        # image entry or None). Painted on the BACK face of the double-sided 3D
+        # sheet; PNG transparency shows through as holes. Ignored by every other
+        # viewer. Default None keeps existing handouts single-sided.
+        h.setdefault('back_texture', None)
+        if h.get('back_texture'):
+            h['back_texture'].setdefault('description', '')
+            h['back_texture'].setdefault('thumb', None)
 
 
 def _atomic_write(data):

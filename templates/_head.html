@@ -63,6 +63,16 @@
 </script>
 <style>{{ theme_css | safe }}</style>
 <style>
+    /* ---- The [hidden] attribute must always win ----
+       The browser's UA rule for [hidden] is display:none at a low specificity
+       ((0,1,0)), so a more specific layout rule can silently defeat it. In
+       particular `.form-grid .field { display: flex }` ((0,2,0)) beats it, so a
+       `<div class="field" hidden>` in the master upload form stayed VISIBLE.
+       That is why the Book / 3D fields showed under the Carousel viewer. This
+       one rule restores the attribute's meaning everywhere, for every element,
+       and is why the existing footer/nag toggles can rely on `hidden` too. */
+    [hidden] { display: none !important; }
+
     /* ---- Shared site footer (see templates/_footer.html) ---- */
     .site-footer {
         margin-top: 32px; padding: 14px 16px;

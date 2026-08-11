@@ -28,6 +28,11 @@ def player_payload(handout):
         'hard_covers': handout.get('hard_covers', True),
         'files': handout.get('files', []),
         'back_cover': handout.get('back_cover'),
+        # The reverse-side texture for the object3d sheet viewer (see paths.py).
+        # Parallel to back_cover but consumed only by the 3D inspector, where it
+        # paints the back face of the double-sided sheet. None when the handout
+        # is a model or a single-sided sheet.
+        'back_texture': handout.get('back_texture'),
         # True when THIS handout itself carries a further secret reveal, so the
         # viewer knows to keep showing the password box after a reveal chains
         # into another handout. The password values are never included.

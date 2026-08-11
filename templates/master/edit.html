@@ -41,19 +41,29 @@
                 <label for="view_type">{{ 'Viewer' | t }}</label>
                 <select id="view_type" name="view_type">
                     {% for vt in view_types %}
-                    <option value="{{ vt }}" {% if handout.view_type == vt %}selected{% endif %}>{{ vt|capitalize }}</option>
+                    <option value="{{ vt }}" {% if handout.view_type == vt %}selected{% endif %}>
+                        {%- if vt == 'object3d' %}{{ '3D Inspect' | t }}{% else %}{{ vt|capitalize }}{% endif -%}
+                    </option>
                     {% endfor %}
                 </select>
 
-                {# Book only: rigid cover + back cover, or soft-flipping ones.
-                   Shown/hidden by JS to follow the Viewer select below. #}
-                <div id="hard-covers-field">
+                {# Book only: rigid vs soft covers. Initial hidden state is set
+                   server-side from this handout's viewer; JS follows the select. #}
+                <div id="hard-covers-field" {% if handout.view_type != 'book' %}hidden{% endif %}>
                     <label class="folder-choice" style="margin-top:10px;">
                         <input type="checkbox" name="hard_covers" value="1"
                                {% if handout.hard_covers %}checked{% endif %}>
                         {{ 'Hard covers (Book viewer)' | t }}
                     </label>
                     <p class="subtitle">{{ 'When on, the first and last page turn like a stiff book cover. Turn off to flip them like normal pages.' | t }}</p>
+                </div>
+
+                {# 3D Inspect only: what the viewer does. Hidden server-side
+                   unless this handout uses object3d; JS follows the select. #}
+                <div id="object3d-help" {% if handout.view_type != 'object3d' %}hidden{% endif %}>
+                    <p class="subtitle" style="margin-top:10px;">
+                        {{ 'The player rotates, zooms and pans the handout in 3D. Use a .glb 3D model as the file, or a front image (PNG) as a double-sided sheet: transparent areas of the PNG become real holes.' | t }}
+                    </p>
                 </div>
 
                 <label>{{ 'Folders' | t }} <span class="hint">{{ 'optional' | t }}</span></label>
@@ -113,6 +123,8 @@
                         <span class="edit-file__handle" aria-hidden="true">&#8942;&#8942;</span>
                         {% if f.reader == 'image' %}
                         <img src="{{ url_for('static', filename='uploads/' ~ f.filename) }}" alt="">
+                        {% elif f.reader == 'model' %}
+                        <div class="edit-file__pdf">3D</div>
                         {% elif f.thumb %}
                         <img src="{{ url_for('static', filename='uploads/' ~ f.thumb) }}" alt="">
                         {% else %}
@@ -136,29 +148,56 @@
                     {% endfor %}
                 </div>
 
-                <label for="file">{{ 'Add More Files' | t }} <span class="hint">{{ 'optional' | t }}</span></label>
-                <input type="file" id="file" name="files" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf" multiple>
+                {# Add-files hint follows the viewer; initial visibility set
+                   server-side, JS toggles it and the accept list. #}
+                <label for="file">{{ 'Add More Files' | t }}
+                    <span class="hint" id="file-hint-default" {% if handout.view_type == 'object3d' %}hidden{% endif %}>{{ 'optional' | t }}</span>
+                    <span class="hint" id="file-hint-3d" {% if handout.view_type != 'object3d' %}hidden{% endif %}>{{ '.glb model or PNG sheet' | t }}</span>
+                </label>
+                <input type="file" id="file" name="files" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.glb" multiple>
                 <!-- One description input per newly-picked file, filled in by JS. -->
                 <div id="new-desc" class="new-desc"></div>
 
-                <label>{{ 'Back Cover' | t }} <span class="hint">{{ 'Book viewer, optional' | t }}</span></label>
-                {% if handout.back_cover %}
-                <div class="back-cover-current">
-                    {% if handout.back_cover.reader == 'image' %}
-                    <img src="{{ url_for('static', filename='uploads/' ~ handout.back_cover.filename) }}" alt="Back cover">
-                    {% elif handout.back_cover.thumb %}
-                    <img src="{{ url_for('static', filename='uploads/' ~ handout.back_cover.thumb) }}" alt="Back cover">
-                    {% else %}
-                    <div class="edit-file__pdf">PDF</div>
+                {# Book viewer only: the back cover (current preview + remove +
+                   replace). Whole block hidden server-side unless Book; JS
+                   follows the select. #}
+                <div id="back-cover-field" {% if handout.view_type != 'book' %}hidden{% endif %}>
+                    <label>{{ 'Back Cover' | t }} <span class="hint">{{ 'Book viewer, optional' | t }}</span></label>
+                    {% if handout.back_cover %}
+                    <div class="back-cover-current">
+                        {% if handout.back_cover.reader == 'image' %}
+                        <img src="{{ url_for('static', filename='uploads/' ~ handout.back_cover.filename) }}" alt="Back cover">
+                        {% elif handout.back_cover.thumb %}
+                        <img src="{{ url_for('static', filename='uploads/' ~ handout.back_cover.thumb) }}" alt="Back cover">
+                        {% else %}
+                        <div class="edit-file__pdf">PDF</div>
+                        {% endif %}
+                        <label class="edit-file__remove">
+                            <input type="checkbox" name="remove_back_cover" value="1"> {{ 'Remove back cover' | t }}
+                        </label>
+                    </div>
+                    <p class="subtitle">{{ 'Upload a new file to replace it:' | t }}</p>
                     {% endif %}
-                    <label class="edit-file__remove">
-                        <input type="checkbox" name="remove_back_cover" value="1"> {{ 'Remove back cover' | t }}
-                    </label>
+                    <input type="file" id="back_cover" name="back_cover" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf">
+                    <p class="subtitle">{{ 'Shown as the last page in the Book viewer.' | t }}</p>
                 </div>
-                <p class="subtitle">{{ 'Upload a new file to replace it:' | t }}</p>
-                {% endif %}
-                <input type="file" id="back_cover" name="back_cover" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf">
-                <p class="subtitle">{{ 'Shown as the last page in the Book viewer.' | t }}</p>
+
+                {# 3D Inspect only: the reverse-side texture of the double-sided
+                   sheet. Hidden server-side unless object3d; JS follows select. #}
+                <div id="back-texture-field" {% if handout.view_type != 'object3d' %}hidden{% endif %}>
+                    <label>{{ 'Back Texture' | t }} <span class="hint">{{ '3D Inspect sheet, optional' | t }}</span></label>
+                    {% if handout.back_texture %}
+                    <div class="back-cover-current">
+                        <img src="{{ url_for('static', filename='uploads/' ~ handout.back_texture.filename) }}" alt="Back texture">
+                        <label class="edit-file__remove">
+                            <input type="checkbox" name="remove_back_texture" value="1"> {{ 'Remove back texture' | t }}
+                        </label>
+                    </div>
+                    <p class="subtitle">{{ 'Upload a new file to replace it:' | t }}</p>
+                    {% endif %}
+                    <input type="file" id="back_texture" name="back_texture" accept=".png,.jpg,.jpeg,.gif,.webp">
+                    <p class="subtitle">{{ 'Painted on the reverse of the 3D sheet. Use a PNG with transparency for holes. Leave empty to reuse the front.' | t }}</p>
+                </div>
 
                 <label>&nbsp;</label>
                 <button type="submit" class="btn btn--block">{{ 'Save Changes' | t }}</button>
@@ -167,16 +206,52 @@
     </div>
 
     <script>
-        // Show the "Hard covers" option only for the Book viewer: it does
-        // nothing for the carousel. The checkbox stays in the DOM, so its value
-        // is submitted as before and the server logic is unchanged.
+        // Show only the fields that belong to the selected viewer. The initial
+        // state is already set server-side from handout.view_type (hidden
+        // attributes), so this only needs to react to later changes.
         (function () {
-            var viewer = document.getElementById('view_type');
-            var field = document.getElementById('hard-covers-field');
-            if (viewer && field) {
-                var sync = function () { field.hidden = (viewer.value !== 'book'); };
+            function wire() {
+                var viewer = document.getElementById('view_type');
+                if (!viewer) return;
+                var ids = {
+                    hard: 'hard-covers-field',
+                    backCover: 'back-cover-field',
+                    backTex: 'back-texture-field',
+                    help3d: 'object3d-help',
+                    hintDefault: 'file-hint-default',
+                    hint3d: 'file-hint-3d'
+                };
+                var el = {};
+                for (var k in ids) el[k] = document.getElementById(ids[k]);
+                var fileInput = document.getElementById('file');
+
+                var ACCEPT_3D = '.glb,.png,.jpg,.jpeg,.gif,.webp';
+                var ACCEPT_PAGED = '.png,.jpg,.jpeg,.gif,.webp,.pdf,.glb';
+
+                function show(e, on) { if (e) { e.hidden = !on; } }
+
+                function sync() {
+                    var v = viewer.value;
+                    var isBook = (v === 'book');
+                    var is3d = (v === 'object3d');
+
+                    show(el.hard, isBook);
+                    show(el.backCover, isBook);
+                    show(el.backTex, is3d);
+                    show(el.help3d, is3d);
+
+                    show(el.hintDefault, !is3d);
+                    show(el.hint3d, is3d);
+
+                    if (fileInput) fileInput.setAttribute('accept', is3d ? ACCEPT_3D : ACCEPT_PAGED);
+                }
                 viewer.addEventListener('change', sync);
                 sync();
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', wire);
+            } else {
+                wire();
             }
         })();
 

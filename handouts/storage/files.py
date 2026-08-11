@@ -64,6 +64,22 @@ def save_back_cover(file_storage, handout_id):
     return stored[0] if stored else None
 
 
+def save_back_texture(file_storage, handout_id):
+    """Save the reverse-side texture for the 3D sheet, or None if none given.
+
+    This is the object3d viewer's counterpart to the Book viewer's back cover:
+    a single image (PNG for its transparency) painted on the BACK face of the
+    double-sided sheet built in the 3D inspector. Named with a 'tex_back'
+    marker so it never collides with page files or the Book back cover, and
+    forced through save_files so it gets the same {filename, reader,
+    description} shape (reader will be 'image').
+    """
+    if not file_storage or not file_storage.filename:
+        return None
+    stored = save_files([file_storage], handout_id, prefix='tex_back_')
+    return stored[0] if stored else None
+
+
 def allowed_map_file(filename):
     return '.' in filename and \
         filename.rsplit('.', 1)[1].lower() in MAP_EXTENSIONS

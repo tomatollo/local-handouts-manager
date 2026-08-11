@@ -18,14 +18,24 @@ UPLOAD_DIR = os.path.join(BASE_DIR, 'static', 'uploads')
 MAP_DIR = os.path.join(BASE_DIR, 'static', 'maps')
 
 # Extension whitelist (images + PDF). Kept lowercase, no leading dot.
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf'}
+# 'glb' is allowed for the 3D inspection viewer: a single binary glTF model the
+# player rotates in the object3d viewer. It is NOT a paged image, so the PDF
+# expansion and thumbnailing steps skip it (see reader_for / pdfs.is_pdf).
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf', 'glb'}
 
 # Map backgrounds are images only -- no PDF (the map viewer draws an <img>).
 MAP_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 # How a handout's files are presented to players. This is a handout-level
-# property (distinct from each file's `reader`, which is image/pdf).
-VIEW_TYPES = ('carousel', 'book')
+# property (distinct from each file's `reader`, which is image/pdf/model).
+#
+# 'object3d' is the 3D inspection viewer (Resident Evil / Nobody Wants to Die
+# style): the handout is examined in a full-screen WebGL canvas that the player
+# can rotate, zoom and pan. It shows EITHER a .glb model (files[0] is the model)
+# OR a double-sided sheet built from a front texture (files[0]) and an optional
+# back texture (the handout's `back_texture`), with PNG transparency punching
+# real holes through the paper (torn scrolls, bullet holes, ...).
+VIEW_TYPES = ('carousel', 'book', 'object3d')
 DEFAULT_VIEW_TYPE = 'carousel'
 
 # Key under `settings` holding the current POP broadcast (see pop_state).

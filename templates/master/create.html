@@ -48,20 +48,32 @@
                             <label for="view_type">{{ 'Viewer' | t }}</label>
                             <select id="view_type" name="view_type">
                                 {% for vt in view_types %}
-                                <option value="{{ vt }}" {% if vt == default_view_type %}selected{% endif %}>{{ vt|capitalize }}</option>
+                                <option value="{{ vt }}" {% if vt == default_view_type %}selected{% endif %}>
+                                    {%- if vt == 'object3d' %}{{ '3D Inspect' | t }}{% else %}{{ vt|capitalize }}{% endif -%}
+                                </option>
                                 {% endfor %}
                             </select>
                         </div>
 
-                        {# Only meaningful for the Book viewer; shown/hidden by
-                           JS to follow the Viewer select (see end of file). #}
-                        <div class="field" id="hard-covers-field">
+                        {# Book viewer only: rigid/soft covers. The initial
+                           hidden state is set here server-side from the default
+                           viewer, so the field is correct even before JS runs;
+                           the JS at the foot then follows the Viewer select. #}
+                        <div class="field" id="hard-covers-field" {% if default_view_type != 'book' %}hidden{% endif %}>
                             <label>{{ 'Book covers' | t }}</label>
                             <label class="folder-choice">
                                 <input type="checkbox" name="hard_covers" value="1" checked>
                                 {{ 'Hard covers' | t }}
                             </label>
                             <p class="subtitle">{{ 'First and last page turn like a stiff cover. Uncheck to flip them softly.' | t }}</p>
+                        </div>
+
+                        {# 3D Inspect viewer only: an explanation. Hidden unless
+                           the default viewer is object3d; JS follows the select. #}
+                        <div class="field field--wide" id="object3d-help" {% if default_view_type != 'object3d' %}hidden{% endif %}>
+                            <p class="subtitle">
+                                {{ 'The player rotates, zooms and pans the handout in 3D. Upload a .glb 3D model as the file, or a front image (PNG) as a double-sided sheet: transparent areas of the PNG become real holes (torn scrolls, bullet holes).' | t }}
+                            </p>
                         </div>
 
                         <div class="field field--wide">
@@ -129,18 +141,38 @@
                             <p class="subtitle">{{ 'When a player types the password in this handout\'s info panel, the chosen handout opens in its place.' | t }}</p>
                         </div>
 
+                        {# The Files label + its hint change with the viewer.
+                           Server-side sets which hint/sub is visible initially;
+                           the JS at the foot switches them and the accept list. #}
                         <div class="field field--wide">
-                            <label for="file">{{ 'Files' | t }} <span class="hint">{{ 'images or PDF' | t }}</span></label>
+                            <label for="file">{{ 'Files' | t }}
+                                <span class="hint" id="file-hint-default" {% if default_view_type == 'object3d' %}hidden{% endif %}>{{ 'images, PDF or 3D model (.glb)' | t }}</span>
+                                <span class="hint" id="file-hint-3d" {% if default_view_type != 'object3d' %}hidden{% endif %}>{{ 'one .glb model, or one PNG for a sheet' | t }}</span>
+                            </label>
                             <input type="file" id="file" name="files"
-                                   accept=".png,.jpg,.jpeg,.gif,.webp,.pdf" multiple required>
-                            <p class="subtitle">{{ 'Select several images to build a carousel or book.' | t }}</p>
+                                   accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.glb" multiple required>
+                            <p class="subtitle" id="file-sub-default" {% if default_view_type == 'object3d' %}hidden{% endif %}>{{ 'Select several images to build a carousel or book.' | t }}</p>
+                            <p class="subtitle" id="file-sub-3d" {% if default_view_type != 'object3d' %}hidden{% endif %}>{{ 'For 3D Inspect, upload one .glb model, or one PNG for a double-sided sheet.' | t }}</p>
                         </div>
 
-                        <div class="field field--wide">
+                        {# Book viewer only: the back cover shown as the last
+                           page. Hidden server-side unless the default is Book;
+                           JS follows the select. #}
+                        <div class="field field--wide" id="back-cover-field" {% if default_view_type != 'book' %}hidden{% endif %}>
                             <label for="back_cover">{{ 'Back Cover' | t }} <span class="hint">{{ 'Book viewer, optional' | t }}</span></label>
                             <input type="file" id="back_cover" name="back_cover"
                                    accept=".png,.jpg,.jpeg,.gif,.webp,.pdf">
                             <p class="subtitle">{{ 'Shown as the last page in the Book viewer.' | t }}</p>
+                        </div>
+
+                        {# 3D Inspect viewer only: the reverse-side texture of the
+                           double-sided sheet. Hidden server-side unless default
+                           is object3d; JS follows the select. #}
+                        <div class="field field--wide" id="back-texture-field" {% if default_view_type != 'object3d' %}hidden{% endif %}>
+                            <label for="back_texture">{{ 'Back Texture' | t }} <span class="hint">{{ '3D Inspect sheet, optional' | t }}</span></label>
+                            <input type="file" id="back_texture" name="back_texture"
+                                   accept=".png,.jpg,.jpeg,.gif,.webp">
+                            <p class="subtitle">{{ 'Painted on the reverse of the 3D sheet. Use a PNG with transparency for holes. Leave empty to reuse the front.' | t }}</p>
                         </div>
 
                         <div class="field field--wide">
@@ -212,19 +244,64 @@
 
 
     <script>
-        // Show the "Book covers" field only when the Book viewer is selected:
-        // hard/soft covers do nothing for the carousel, so the option is noise
-        // there. The checkbox stays in the DOM (its value is simply ignored by
-        // the server for a carousel), so nothing about the POST changes.
+        // Show only the fields that belong to the selected viewer, so the form
+        // never offers a control that does nothing for the chosen viewer:
+        //   * Carousel  -> just the files (no covers, no texture, no 3D note).
+        //   * Book      -> "Book covers" (hard/soft) + "Back Cover".
+        //   * 3D Inspect-> the 3D help note + "Back Texture", and the Files
+        //                  label/hint switch to the .glb/PNG wording.
+        // The initial state is already set server-side (hidden attributes from
+        // default_view_type), so this only needs to react to later changes.
+        // Wrapped so a throw can't leave fields stuck; runs on DOMContentLoaded
+        // in case this <script> parses before the form for any reason.
         (function () {
-            var viewer = document.getElementById('view_type');
-            var field = document.getElementById('hard-covers-field');
-            if (!viewer || !field) return;
-            function sync() {
-                field.hidden = (viewer.value !== 'book');
+            function wire() {
+                var viewer = document.getElementById('view_type');
+                if (!viewer) return;
+                var ids = {
+                    hard: 'hard-covers-field',
+                    backCover: 'back-cover-field',
+                    backTex: 'back-texture-field',
+                    help3d: 'object3d-help',
+                    hintDefault: 'file-hint-default',
+                    hint3d: 'file-hint-3d',
+                    subDefault: 'file-sub-default',
+                    sub3d: 'file-sub-3d'
+                };
+                var el = {};
+                for (var k in ids) el[k] = document.getElementById(ids[k]);
+                var fileInput = document.getElementById('file');
+
+                var ACCEPT_3D = '.glb,.png,.jpg,.jpeg,.gif,.webp';
+                var ACCEPT_PAGED = '.png,.jpg,.jpeg,.gif,.webp,.pdf,.glb';
+
+                function show(e, on) { if (e) { e.hidden = !on; } }
+
+                function sync() {
+                    var v = viewer.value;
+                    var isBook = (v === 'book');
+                    var is3d = (v === 'object3d');
+
+                    show(el.hard, isBook);
+                    show(el.backCover, isBook);
+                    show(el.backTex, is3d);
+                    show(el.help3d, is3d);
+
+                    show(el.hintDefault, !is3d);
+                    show(el.hint3d, is3d);
+                    show(el.subDefault, !is3d);
+                    show(el.sub3d, is3d);
+
+                    if (fileInput) fileInput.setAttribute('accept', is3d ? ACCEPT_3D : ACCEPT_PAGED);
+                }
+                viewer.addEventListener('change', sync);
+                sync();   // reconcile once on load (harmless: matches server state)
             }
-            viewer.addEventListener('change', sync);
-            sync();
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', wire);
+            } else {
+                wire();
+            }
         })();
 
         // Confirm before the POP submit (only that button needs it).

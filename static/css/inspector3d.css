@@ -1,0 +1,94 @@
+/* ==================================================================
+   3D object-inspection viewer (view_type = object3d)
+   ------------------------------------------------------------------
+   Kept in its own stylesheet, loaded only where the lightbox lives
+   (see player/_lightbox.html), so the 3D viewer's styles ship
+   alongside the feature rather than bloating the main style.css.
+
+   The WebGL canvas is created and destroyed by
+   static/vendor/three/inspector3d.js; these rules style the stage it
+   lives in, the rotate/zoom hint, and the loading / error overlays.
+   Colours come from the active theme's CSS custom properties, so the
+   viewer matches whatever theme the Master has chosen.
+   ================================================================== */
+
+.inspector3d {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  width: 100%;
+  height: 72vh;
+  background: #0b0b0d;
+  border: var(--px, 3px) solid var(--border, #0d0b0a);
+  overflow: hidden;
+  display: block;
+}
+
+/* The canvas the engine appends fills the box; sizing also set inline in JS. */
+.inspector3d__canvas { display: block; width: 100%; height: 100%; }
+
+/* Rotate / zoom / pan hint, faded so it doesn't compete with the object. */
+.inspector3d__hint {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: var(--ink-dim, #b9a78d);
+  background: color-mix(in srgb, var(--bg, #1a1614) 72%, transparent);
+  border: 1px solid var(--border, #0d0b0a);
+  border-radius: 2px;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 92%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Loading + error overlays, centred over the (initially empty) canvas. */
+.inspector3d__state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px;
+  color: var(--ink-dim, #b9a78d);
+  pointer-events: none;
+}
+.inspector3d__state[hidden] { display: none; }
+.inspector3d__state--error { color: var(--accent-2, #c0532b); }
+
+.inspector3d__spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid var(--border, #0d0b0a);
+  border-top-color: var(--accent, #e8a83a);
+  border-radius: 50%;
+  animation: inspector3d-spin 0.9s linear infinite;
+}
+@keyframes inspector3d-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .inspector3d__spinner { animation-duration: 2.4s; }
+}
+
+/* On the 3D view the media area must not clip the full-height stage, and the
+   zoom-transform machinery (used by the image/book viewers) is irrelevant, so
+   neutralise it here. */
+.lightbox__media--object3d {
+  --zoom: 1; --pan-x: 0px; --pan-y: 0px;
+  align-items: stretch;
+}
+.lightbox__media--object3d > * { transform: none; transition: none; }
+
+/* Shorter stage on short screens / phones so the caption + close stay in view. */
+@media (max-height: 640px) {
+  .inspector3d { height: 60vh; }
+}
