@@ -92,3 +92,117 @@
 @media (max-height: 640px) {
   .inspector3d { height: 60vh; }
 }
+
+/* ==================================================================
+   2D FALLBACK viewer (view_type = object3d, no usable WebGL)
+   ------------------------------------------------------------------
+   Rendered by static/vendor/three/inspector2d.js in place of the WebGL
+   canvas when supportsWebGL() is false. It reuses the .inspector3d box
+   sizing (the host is the same stage) and only styles its own children:
+   the flat sheet image(s), the flip button, the model notice, and the
+   corner "2D view" badge. All colours come from the theme's custom
+   properties so it matches whatever the Master picked, exactly like the
+   3D viewer above.
+   ================================================================== */
+
+.inspector2d {
+  position: relative;
+  width: 100%;
+  height: 72vh;
+  background: #0b0b0d;
+  border: var(--px, 3px) solid var(--border, #0d0b0a);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (max-height: 640px) {
+  .inspector2d { height: 60vh; }
+}
+
+/* Small "2D view" badge so the degraded mode is explicit, not mistaken
+   for a broken 3D view. Top-left so it never sits under the close button. */
+.inspector2d__badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-dim, #b9a78d);
+  background: color-mix(in srgb, var(--bg, #1a1614) 78%, transparent);
+  border: 1px solid var(--border, #0d0b0a);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* Sheet mode: front (and optional back) image, shown flat and contained so
+   the whole page is visible. The lightbox's own 2D zoom/pan still applies
+   to the media wrapper, so a reader can zoom into a flat page as usual. */
+.inspector2d__sheet {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.inspector2d__img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.inspector2d__img[hidden] { display: none; }
+
+/* Flip button, bottom-centre, matching the app's chunky bordered controls. */
+.inspector2d__flip {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  z-index: 2;
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  color: var(--ink, #f3e6cf);
+  background: var(--bg, #1a1614);
+  border: var(--px, 3px) solid var(--border, #0d0b0a);
+  box-shadow: 2px 2px 0 0 var(--shadow, #000);
+  border-radius: 2px;
+}
+.inspector2d__flip:hover { background: color-mix(in srgb, var(--bg, #1a1614) 82%, var(--accent, #e8a83a)); }
+.inspector2d__flip:active { transform: translateX(-50%) translate(2px, 2px); box-shadow: none; }
+
+/* Model notice: a .glb cannot be rasterised without WebGL, so an honest
+   message (optionally over a poster still) replaces the interactive view. */
+.inspector2d__model {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+}
+.inspector2d__poster {
+  max-width: 100%;
+  max-height: 70%;
+  object-fit: contain;
+  opacity: 0.85;
+}
+.inspector2d__note {
+  margin: 0;
+  max-width: 46ch;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ink-dim, #b9a78d);
+}

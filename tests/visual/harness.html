@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Viewer test harness</title>
+<!-- Import map mirrors templates/player/_lightbox.html so the viewer modules
+     resolve the bare 'three' / 'three/addons/...' specifiers to the very same
+     self-hosted files the app ships. Paths are relative to this harness, which
+     the test server serves from the project root. -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "/static/vendor/three/three.module.min.js",
+    "three/addons/": "/static/vendor/three/addons/"
+  }
+}
+</script>
+<style>
+  html, body { margin: 0; background: #0b0b0d; }
+  /* The stage is given a FIXED, device-pixel-ratio-independent size so the
+     canvas backing store is identical on every machine/CI runner. The tests
+     also force devicePixelRatio to 1 before mounting (see spec). */
+  #stage {
+    position: relative;
+    width: 640px;
+    height: 480px;
+    overflow: hidden;
+  }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script type="module">
+  import { Inspector3D } from '/static/vendor/three/inspector3d.js';
+  import { Inspector2D, supportsWebGL } from '/static/vendor/three/inspector2d.js';
+
+  const stage = document.getElementById('stage');
+  let current = null;
+
+  // Test hooks. The spec calls mount3D/mount2D, then waits for
+  // window.__viewerReady to flip true (set from the viewer's onLoaded).
+  window.__viewerReady = false;
+  window.__viewerError = null;
+  window.supportsWebGL = supportsWebGL;
+
+  function baseOpts(extra) {
+    return Object.assign({
+      onLoaded() { window.__viewerReady = true; },
+      onError(err) {
+        window.__viewerError = (err && err.message) || String(err);
+        window.__viewerReady = true;   // unblock the spec; it asserts on error
+      }
+    }, extra || {});
+  }
+
+  window.mount3D = function (opts) {
+    window.__viewerReady = false;
+    window.__viewerError = null;
+    current = new Inspector3D(stage, baseOpts(opts));
+    // Kill the two nondeterminism sources for golden images:
+    //  - damping keeps easing the camera after input (there is none here, but
+    //    update() still nudges); disable it so the first frame is the final one.
+    //  - a fractional devicePixelRatio would change the backing-store size.
+    current.init();
+    if (current.controls) {
+      current.controls.enableDamping = false;
+      current.controls.update();
+    }
+    return true;
+  };
+
+  window.mount2D = function (opts) {
+    window.__viewerReady = false;
+    window.__viewerError = null;
+    current = new Inspector2D(stage, baseOpts(opts));
+    current.init();
+    return true;
+  };
+
+  window.destroyViewer = function () {
+    if (current) { try { current.destroy(); } catch (e) {} current = null; }
+    window.__viewerReady = false;
+    window.__viewerError = null;
+    return true;
+  };
+
+  // Force one more render after the content resolves, so the screenshot is of
+  // a fully-drawn frame rather than the empty first paint. Exposed for the spec.
+  window.renderOnce = function () {
+    if (current && current.renderer && current.scene && current.camera) {
+      if (current.controls) current.controls.update();
+      current.renderer.render(current.scene, current.camera);
+    }
+    return true;
+  };
+
+  // Report how many WebGL canvases exist (leak check across mount/destroy).
+  window.canvasCount = function () {
+    return document.querySelectorAll('canvas').length;
+  };
+
+  window.__harnessReady = true;
+</script>
+</body>
+</html>

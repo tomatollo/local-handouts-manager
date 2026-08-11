@@ -88,6 +88,10 @@
         // URL of the lazily-loaded 3D reader module, resolved by Flask so it is
         // correct whatever the app is mounted under.
         var INSPECTOR_URL = "{{ url_for('static', filename='vendor/three/inspector3d.js') }}";
+        // Its 2D fallback, used when the environment has no usable WebGL. Same
+        // public surface (new X(host, opts).init() / .destroy()); it also
+        // exports supportsWebGL(), which decides between the two below.
+        var INSPECTOR2D_URL = "{{ url_for('static', filename='vendor/three/inspector2d.js') }}";
 
         // The few strings this script writes at runtime, translated server-side.
         var T = {
@@ -98,7 +102,12 @@
             revealError: {{ 'Could not check that right now.' | t | tojson }},
             loading3d: {{ 'Loading 3D view…' | t | tojson }},
             error3d: {{ 'This 3D view could not be loaded.' | t | tojson }},
-            hint3d: {{ 'Drag to rotate • scroll to zoom • right-drag to pan' | t | tojson }}
+            hint3d: {{ 'Drag to rotate • scroll to zoom • right-drag to pan' | t | tojson }},
+            // 2D fallback (no WebGL) strings, passed to Inspector2D.
+            flipToBack: {{ 'Flip to back' | t | tojson }},
+            flipToFront: {{ 'Flip to front' | t | tojson }},
+            modelNeedsWebgl: {{ 'This 3D model needs WebGL, which is unavailable here. Open it in a browser with 3D graphics enabled to inspect it.' | t | tojson }},
+            fallback2d: {{ '2D view' | t | tojson }}
         };
 
         // Endpoint the secret-reveal form posts to. The CSRF header is added
@@ -362,16 +371,43 @@
             // downloading: `open3dToken` is bumped on every open/close, and a
             // resolved import whose token is stale is dropped.
             var myToken = ++open3dToken;
-            import(INSPECTOR_URL).then(function (mod) {
+
+            // Pick the viewer by capability. The fallback module is the one
+            // that owns supportsWebGL(), so we always import IT first (it is
+            // tiny and dependency-free); if WebGL is present we then pull in the
+            // heavier 3D reader, otherwise we render the 2D fallback in place.
+            // Both expose new X(host, opts).init() / .destroy(), so everything
+            // downstream (destroy3d, close) treats `inspector` identically.
+            import(INSPECTOR2D_URL).then(function (fb) {
                 if (myToken !== open3dToken || box.hidden) return; // superseded
-                var Inspector3D = mod.Inspector3D || mod.default;
-                inspector = new Inspector3D(hostEl, opts).init();
+
+                if (fb.supportsWebGL()) {
+                    // WebGL available: load the real 3D inspector.
+                    return import(INSPECTOR_URL).then(function (mod) {
+                        if (myToken !== open3dToken || box.hidden) return;
+                        var Inspector3D = mod.Inspector3D || mod.default;
+                        inspector = new Inspector3D(hostEl, opts).init();
+                    });
+                }
+
+                // No usable WebGL: drop the rotate/zoom hint (it does not apply
+                // to the flat view) and render the 2D fallback instead. It gets
+                // the same front/back (or model) opts, plus translated strings.
+                if (hintEl) hintEl.style.display = 'none';
+                var Inspector2D = fb.Inspector2D || fb.default;
+                opts.strings = {
+                    flipToBack: T.flipToBack,
+                    flipToFront: T.flipToFront,
+                    modelNeedsWebgl: T.modelNeedsWebgl,
+                    fallbackBadge: T.fallback2d
+                };
+                inspector = new Inspector2D(hostEl, opts).init();
             }).catch(function (err) {
                 if (myToken !== open3dToken) return;
                 opts.onError(err);
             });
         }
-        // Monotonic guard for the async 3D module import (see renderObject3d).
+        // Monotonic guard for the async viewer module import (see renderObject3d).
         var open3dToken = 0;
 
         function destroy3d() {

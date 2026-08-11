@@ -1,0 +1,20 @@
+{
+  "name": "local-handouts-manager-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "JS test tooling for the Local Handouts Manager viewer: visual regression + performance profiling. The Flask app itself has no Node dependency; this is dev-only.",
+  "type": "module",
+  "scripts": {
+    "fixtures:visual": "node tests/visual/make-fixtures.mjs",
+    "fixtures:perf": "node tests/perf/make-perf-fixtures.mjs",
+    "test:visual": "npm run fixtures:visual && playwright test --config playwright.config.mjs",
+    "test:visual:update": "npm run fixtures:visual && playwright test --config playwright.config.mjs --update-snapshots",
+    "profile": "npm run fixtures:perf && node tests/perf/profile.mjs",
+    "setup": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "playwright": "1.56.1",
+    "pngjs": "^7.0.0"
+  }
+}

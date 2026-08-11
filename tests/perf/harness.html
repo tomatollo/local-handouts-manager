@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Viewer perf harness</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "/static/vendor/three/three.module.min.js",
+    "three/addons/": "/static/vendor/three/addons/"
+  }
+}
+</script>
+<style>
+  html,body{margin:0;background:#0b0b0d}
+  #stage{position:relative;width:1000px;height:750px;overflow:hidden}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script type="module">
+  import { Inspector3D } from '/static/vendor/three/inspector3d.js';
+  import { Inspector2D } from '/static/vendor/three/inspector2d.js';
+
+  const stage = document.getElementById('stage');
+  let current = null;
+
+  // --- frame-time instrumentation ------------------------------------------
+  // We wrap the live render loop by sampling requestAnimationFrame ourselves:
+  // the profiler starts sampling, exercises the viewer (a scripted orbit), then
+  // reads back the frame durations. This measures the SAME rAF cadence the real
+  // loop runs on without touching the module.
+  let frames = [];
+  let sampling = false;
+  let lastT = 0;
+  function sampleLoop(t) {
+    if (!sampling) return;
+    if (lastT) frames.push(t - lastT);
+    lastT = t;
+    requestAnimationFrame(sampleLoop);
+  }
+  window.perfStartSampling = function () {
+    frames = []; lastT = 0; sampling = true;
+    requestAnimationFrame(sampleLoop);
+  };
+  window.perfStopSampling = function () { sampling = false; return frames.slice(); };
+
+  // Spin the camera a set amount so the render loop does real work while we
+  // sample (a static scene would under-report per-frame cost). Uses the live
+  // OrbitControls so it exercises exactly the runtime path.
+  window.perfOrbit = function (steps) {
+    if (!current || !current.camera) return;
+    const cam = current.camera;
+    const r = Math.hypot(cam.position.x, cam.position.z) || 3;
+    let a = Math.atan2(cam.position.z, cam.position.x);
+    a += (steps || 0.03);
+    cam.position.x = r * Math.cos(a);
+    cam.position.z = r * Math.sin(a);
+    cam.lookAt(0, 0, 0);
+  };
+
+  window.perfMount3D = function (opts) {
+    window.__ready = false; window.__err = null;
+    current = new Inspector3D(stage, Object.assign({
+      onLoaded(){ window.__ready = true; },
+      onError(e){ window.__err = (e&&e.message)||String(e); window.__ready = true; }
+    }, opts));
+    current.init();
+    if (current.controls) current.controls.enableDamping = false;
+    return true;
+  };
+
+  window.perfMount2D = function (opts) {
+    window.__ready = false; window.__err = null;
+    current = new Inspector2D(stage, Object.assign({
+      onLoaded(){ window.__ready = true; },
+      onError(e){ window.__err = (e&&e.message)||String(e); window.__ready = true; }
+    }, opts));
+    current.init();
+    return true;
+  };
+
+  window.perfDestroy = function () {
+    if (current){ try{current.destroy();}catch(e){} current = null; }
+    return true;
+  };
+
+  // Measure teardown cost INSIDE the page so a Playwright round-trip and the
+  // rAF cadence can't leak into the number: time the destroy() call alone.
+  window.perfDestroyTimed = function () {
+    if (!current) return 0;
+    const t = performance.now();
+    try { current.destroy(); } catch (e) {}
+    const dt = performance.now() - t;
+    current = null;
+    return dt;
+  };
+
+  // Count live GPU resources via the renderer's own bookkeeping, so we can
+  // report texture/geometry footprint without guessing. Only meaningful for 3D.
+  window.perfRenderInfo = function () {
+    if (!current || !current.renderer) return null;
+    const m = current.renderer.info.memory;
+    const r = current.renderer.info.render;
+    return { textures: m.textures, geometries: m.geometries, calls: r.calls, triangles: r.triangles };
+  };
+
+  window.perfCanvasCount = function () { return document.querySelectorAll('canvas').length; };
+  window.__harnessReady = true;
+</script>
+</body>
+</html>

@@ -21,3 +21,15 @@ Thumbs.db
 /data
 data/database.json
 notes.md
+
+# --- JS test tooling (visual regression + perf profiling) ---
+node_modules/
+test-results/
+playwright-report/
+# Generated fixtures + profiler output are reproducible from the scripts.
+tests/visual/fixtures/
+tests/perf/fixtures/
+tests/perf/results/
+# Golden screenshots are generated per-machine on first run (see tests/README).
+# Commit them deliberately once reviewed if you want CI to diff against them.
+tests/visual/__screenshots__/
