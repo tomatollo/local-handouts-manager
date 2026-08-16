@@ -84,6 +84,32 @@ MAX_LOG_LINES = 200
 
 CONFIG_FILENAME = "launcher_config.json"
 
+# Fonts. The app's UI face is a pixel font (Press Start 2P) that isn't installed
+# system-wide, so the launcher uses ordinary UI/mono families instead, picked
+# per-OS with a fallback chain tk resolves left-to-right. Kept as tuples so the
+# whole UI can be restyled in one place.
+UI_FONT = ("Segoe UI", "Helvetica Neue", "DejaVu Sans", "Arial", "sans-serif")
+MONO_FONT = ("Cascadia Mono", "Consolas", "Menlo", "DejaVu Sans Mono", "monospace")
+
+
+def _font(family_stack, size, weight="normal"):
+    """Return the first available family from a stack, as a tk font tuple.
+
+    tk only accepts ONE family name in a font tuple (it does not fall back
+    through a CSS-style list), so we resolve the stack to a concrete family at
+    call time against the fonts actually installed. Falls back to the last
+    entry (a generic tk family alias) if none match.
+    """
+    try:
+        import tkinter.font as tkfont
+        available = set(tkfont.families())
+        for fam in family_stack:
+            if fam in available:
+                return (fam, size, weight)
+    except Exception:
+        pass
+    return (family_stack[-1], size, weight)
+
 # Directory holding this launcher (assumed to be the project root, next to
 # app.py).
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -237,29 +263,40 @@ def tr(key, lang, **kwargs):
 # ---------------------------------------------------------------------------
 
 PALETTES = {
+    # Dark = the app's "Dungeon Torch" default: soot, torch gold, ember red,
+    # parchment ink. Values mirror static/css/style.css :root so the launcher
+    # reads as part of the same product.
     "dark": {
-        "bg": "#1e1b18",
-        "panel": "#2a2320",
-        "fg": "#f0e6d6",
-        "fg_dim": "#b9a78d",
-        "entry_bg": "#141110",
-        "accent": "#e8a83a",
-        "running": "#5bb060",
-        "stopped": "#e0685f",
+        "bg": "#1a1614",        # soot / anthracite (--bg)
+        "panel": "#2a2320",     # lifted panel (--bg-panel)
+        "fg": "#f4e9d8",        # parchment text (--ink)
+        "fg_dim": "#b9a78d",    # muted text (--ink-dim)
+        "entry_bg": "#141110",  # sunken field
+        "border": "#0d0b0a",    # hard black outline (--border)
+        "accent": "#e8a83a",    # torch gold (--accent)
+        "accent_ink": "#0d0b0a", # text on top of the gold accent
+        "danger": "#c0532b",    # ember red (--accent-2), used for Stop
+        "running": "#6a9c4f",   # "visible" green (--good)
+        "stopped": "#c0532b",   # ember red
         "log_bg": "#141110",
         "log_fg": "#d8ccb8",
     },
+    # Light = the same identity, inverted to a parchment-on-cream sheet. Kept
+    # legible with darker accents so gold/green/red still read on white.
     "light": {
-        "bg": "#f2efe9",
-        "panel": "#ffffff",
-        "fg": "#1e1b18",
+        "bg": "#efe7d6",        # aged parchment
+        "panel": "#fbf6ea",     # lighter card
+        "fg": "#1a1614",        # soot text
         "fg_dim": "#6b5f4f",
         "entry_bg": "#ffffff",
-        "accent": "#a5731a",
-        "running": "#1a7f37",
-        "stopped": "#a40e26",
+        "border": "#0d0b0a",    # keep the hard black outline in both themes
+        "accent": "#b9791f",    # deeper gold so it reads on cream
+        "accent_ink": "#1a1614",
+        "danger": "#9e3f1e",    # deeper ember
+        "running": "#3c7a2f",
+        "stopped": "#9e3f1e",
         "log_bg": "#ffffff",
-        "log_fg": "#1e1b18",
+        "log_fg": "#1a1614",
     },
 }
 
@@ -549,7 +586,7 @@ class LauncherApp:
         self.status_frame = ttk.LabelFrame(self.root, text="")
         self.status_frame.pack(fill="x", **pad)
         self.status_label = ttk.Label(self.status_frame, text="",
-                                      font=("Segoe UI", 12, "bold"))
+                                      font=_font(UI_FONT, 13, "bold"))
         self.status_label.pack(side="left", padx=8, pady=6)
         self.ping_label = ttk.Label(self.status_frame, text="")
         self.ping_label.pack(side="right", padx=8)
@@ -575,7 +612,7 @@ class LauncherApp:
         self.lan_lbl = ttk.Label(self.cfg_frame, text="")
         self.lan_lbl.grid(row=1, column=0, columnspan=2, sticky="w", **pad)
         self.lan_value = ttk.Label(self.cfg_frame, text=self.lan_ip,
-                                   font=("Segoe UI", 10, "bold"))
+                                   font=_font(MONO_FONT, 11, "bold"))
         self.lan_value.grid(row=1, column=2, sticky="w", **pad)
 
         self.autostart_var = tk.BooleanVar(value=bool(self.cfg.get("autostart")))
@@ -611,13 +648,16 @@ class LauncherApp:
                                    wraplength=460, justify="left")
         self.host_hint.grid(row=1, column=0, columnspan=2, sticky="w", **pad)
 
-        # Commands
+        # Commands. The two primary actions share the full width so they read
+        # as the main controls, not two small buttons tucked to the left.
         btns = ttk.Frame(self.root)
         btns.pack(fill="x", **pad)
-        self.start_btn = ttk.Button(btns, text="", command=self.start_server)
-        self.start_btn.pack(side="left", padx=8)
-        self.stop_btn = ttk.Button(btns, text="", command=self.stop_server)
-        self.stop_btn.pack(side="left", padx=8)
+        self.start_btn = ttk.Button(btns, text="", command=self.start_server,
+                                    style="Start.TButton")
+        self.start_btn.pack(side="left", fill="x", expand=True, padx=(8, 4))
+        self.stop_btn = ttk.Button(btns, text="", command=self.stop_server,
+                                   style="Stop.TButton")
+        self.stop_btn.pack(side="left", fill="x", expand=True, padx=(4, 8))
 
         # Links
         self.link_frame = ttk.LabelFrame(self.root, text="")
@@ -649,7 +689,7 @@ class LauncherApp:
         self.log_frame = ttk.LabelFrame(self.root, text="")
         self.log_frame.pack(fill="both", expand=True, **pad)
         self.log_text = tk.Text(self.log_frame, height=10, wrap="word",
-                                state="disabled", font=("Consolas", 9),
+                                state="disabled", font=_font(MONO_FONT, 9),
                                 relief="flat", borderwidth=0)
         self.log_text.pack(side="left", fill="both", expand=True,
                            padx=(8, 0), pady=8)
@@ -727,34 +767,98 @@ class LauncherApp:
         self._persist()
 
     def _apply_theme(self):
-        """Repaint the window and ttk widgets with the active palette."""
+        """Repaint the window and ttk widgets with the active palette.
+
+        Aims for the app's flat 8-bit look: hard borders, no bevels, torch-gold
+        accents. ttk's 'clam' theme is the one that honours flat relief and
+        custom border colours, so everything here assumes it (set in __init__).
+        """
         p = PALETTES[self.theme]
         self.root.configure(bg=p["bg"])
 
+        base_font = _font(UI_FONT, 10)
+        bold_font = _font(UI_FONT, 10, "bold")
+
         self.style.configure(".", background=p["bg"], foreground=p["fg"],
-                             fieldbackground=p["entry_bg"])
+                             fieldbackground=p["entry_bg"], font=base_font,
+                             borderwidth=0, focuscolor=p["accent"])
         self.style.configure("TFrame", background=p["bg"])
+
+        # Labelframes carry the section titles. A flat 1px hard border and a
+        # gold, slightly bolder title make each section read as a panel.
         self.style.configure("TLabelframe", background=p["bg"],
-                             foreground=p["fg"], bordercolor=p["fg_dim"])
+                             bordercolor=p["border"], relief="solid",
+                             borderwidth=1)
         self.style.configure("TLabelframe.Label", background=p["bg"],
-                             foreground=p["accent"])
+                             foreground=p["accent"], font=bold_font)
+
         self.style.configure("TLabel", background=p["bg"], foreground=p["fg"])
         self.style.configure("TCheckbutton", background=p["bg"],
                              foreground=p["fg"])
-        self.style.map("TCheckbutton", background=[("active", p["bg"])])
+        self.style.map("TCheckbutton",
+                       background=[("active", p["bg"])],
+                       indicatorcolor=[("selected", p["accent"]),
+                                       ("!selected", p["entry_bg"])])
+
+        # Default (secondary) buttons: flat panel fill, hard border, gold on
+        # hover. Used for the link row, reset, maintenance, advanced toggle.
         self.style.configure("TButton", background=p["panel"],
-                             foreground=p["fg"])
+                             foreground=p["fg"], bordercolor=p["border"],
+                             relief="solid", borderwidth=1, focusthickness=1,
+                             padding=(10, 6), font=base_font)
         self.style.map("TButton",
                        background=[("active", p["accent"]),
                                    ("disabled", p["bg"])],
-                       foreground=[("disabled", p["fg_dim"])])
-        self.style.configure("TEntry", fieldbackground=p["entry_bg"],
-                             foreground=p["fg"], insertcolor=p["fg"])
-        self.style.configure("TCombobox", fieldbackground=p["entry_bg"],
-                             foreground=p["fg"], background=p["panel"])
+                       foreground=[("active", p["accent_ink"]),
+                                   ("disabled", p["fg_dim"])],
+                       bordercolor=[("active", p["border"])])
 
+        # Primary action = Start: torch-gold fill, dark ink, like the app's
+        # main .btn. Stands out as the thing you press first.
+        self.style.configure("Start.TButton", background=p["accent"],
+                             foreground=p["accent_ink"], bordercolor=p["border"],
+                             relief="solid", borderwidth=1, padding=(14, 8),
+                             font=bold_font)
+        self.style.map("Start.TButton",
+                       background=[("active", p["accent"]),
+                                   ("disabled", p["panel"])],
+                       foreground=[("disabled", p["fg_dim"])])
+
+        # Stop = ember red, like .btn--danger: a session-ending action.
+        self.style.configure("Stop.TButton", background=p["danger"],
+                             foreground=p["fg"], bordercolor=p["border"],
+                             relief="solid", borderwidth=1, padding=(14, 8),
+                             font=bold_font)
+        self.style.map("Stop.TButton",
+                       background=[("active", p["danger"]),
+                                   ("disabled", p["panel"])],
+                       foreground=[("disabled", p["fg_dim"])])
+
+        self.style.configure("TEntry", fieldbackground=p["entry_bg"],
+                             foreground=p["fg"], insertcolor=p["fg"],
+                             bordercolor=p["border"], relief="solid",
+                             borderwidth=1, padding=4)
+        self.style.map("TEntry",
+                       bordercolor=[("focus", p["accent"])])
+        self.style.configure("TCombobox", fieldbackground=p["entry_bg"],
+                             foreground=p["fg"], background=p["panel"],
+                             bordercolor=p["border"], arrowcolor=p["accent"],
+                             relief="solid", borderwidth=1, padding=4)
+        self.style.map("TCombobox",
+                       fieldbackground=[("readonly", p["entry_bg"])],
+                       bordercolor=[("focus", p["accent"])])
+
+        # Scrollbar: flat, in-palette rather than the OS default grey.
+        self.style.configure("TScrollbar", background=p["panel"],
+                             troughcolor=p["bg"], bordercolor=p["border"],
+                             arrowcolor=p["fg_dim"], relief="flat")
+
+        # Log: sunken field, hard border drawn by its own tk widget config.
         self.log_text.config(bg=p["log_bg"], fg=p["log_fg"],
-                             insertbackground=p["fg"])
+                             insertbackground=p["fg"],
+                             highlightthickness=1,
+                             highlightbackground=p["border"],
+                             highlightcolor=p["border"])
         # Status colours are palette-specific; re-apply.
         self._refresh_status(running=self.controller.is_running())
 

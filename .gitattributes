@@ -1,0 +1,10 @@
+# GitHub Linguist overrides.
+#
+# The three double-click launchers (Windows .bat, macOS .command, Linux .sh)
+# are small setup shims, not part of the app's source. Marking them
+# linguist-vendored keeps them in the repo and fully working, but excludes them
+# from the language bar on the repository page (and from code search / default
+# PR diffs). Remove a line here to let that file count toward the stats again.
+start_launcher.bat      linguist-vendored
+start_launcher.command  linguist-vendored
+start_launcher.sh       linguist-vendored
