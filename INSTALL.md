@@ -1,5 +1,8 @@
 # Installation & Update Guide
 
+> Part of the project documentation — see the full index in
+> [docs/README.md](docs/README.md).
+
 This guide gets the **Local Handouts Manager** running on your machine and keeps
 it updated later without losing your campaign data.
 
@@ -28,6 +31,7 @@ Both use the same app and the same data, so you can switch freely.
 - [Prerequisites](#prerequisites)
 - [1. Get the code](#1-get-the-code)
 - [2. Create a virtual environment & install](#2-create-a-virtual-environment--install)
+- [3. Vendor libraries (already included)](#3-vendor-libraries-already-included)
 - [Option A: the desktop launcher (recommended)](#option-a-the-desktop-launcher-recommended)
 - [Option B: the terminal](#option-b-the-terminal)
 - [Connecting from phones & other devices](#connecting-from-phones--other-devices)
@@ -106,6 +110,27 @@ pip install -r requirements.txt
 
 You only do this once. `requirements.txt` includes `waitress`, the small
 production server the launcher uses.
+
+---
+
+## 3. Vendor libraries (already included)
+
+The **Book** viewer (page-curl) and the **3D Inspect** viewer rely on two
+JavaScript libraries (StPageFlip and Three.js) that the app serves *itself*
+rather than from a CDN, so the table stays fully offline. **These are already
+committed to the repository**, in `static/vendor/`, so a normal clone or ZIP
+download has everything — there is nothing to do here.
+
+You only need `fetch_vendor.py` if you want to **re-download or update** those
+libraries (for example after bumping a version):
+
+```bash
+# optional — with the venv active, from the project folder
+python fetch_vendor.py        # or: python3 fetch_vendor.py
+```
+
+It overwrites the copies in `static/vendor/` and needs internet access while it
+runs. For a normal install you can skip it entirely.
 
 ---
 
@@ -305,6 +330,13 @@ in its preferences.
 **"waitress not found."**
 The venv isn't active, or dependencies weren't installed. Activate it (step 2)
 and run `pip install -r requirements.txt` again.
+
+**The Book or 3D Inspect viewer opens blank.**
+Those viewers use the self-hosted libraries in `static/vendor/`, which ship with
+the repo. If the folder is missing or the files were damaged, restore them: from
+the project folder with the venv active, run `python fetch_vendor.py` (it needs
+internet access while it runs). The Carousel viewer works regardless, so a blank
+Book/3D viewer with working image handouts is the tell-tale sign.
 
 **I set a passphrase and forgot it.**
 Use the launcher's **Reset master passphrase** button (it asks for confirmation

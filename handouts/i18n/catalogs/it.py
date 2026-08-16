@@ -798,28 +798,113 @@ TRANSLATIONS = {
         'Refile the Case (Home)': 'Riarchivia il Caso (Home)',
         'Reset Navigation (Home)': 'Reimposta la Navigazione (Home)',
 
-        # ---- App Guide ----
-        'App Guide': 'Guida all\'App',
-        'Help': 'Aiuto',
-        'Back to Dashboard': 'Torna al Pannello',
-        'For the Master': 'Per il Master',
-        'Uploading Handouts:': 'Caricare i Documenti:',
-        'Use the Dashboard to upload images or PDFs. You can assign them to folders, tag them, and write descriptions.': 
-            'Usa il Pannello per caricare immagini o PDF. Puoi assegnarli a cartelle, etichettarli e scrivere descrizioni.',
-        'Publishing vs Hidden:': 'Pubblicati vs Nascosti:',
-        'Newly uploaded handouts are hidden by default. Click the Publish button to reveal them.': 
-            'I nuovi documenti caricati sono nascosti di default. Clicca sul pulsante Pubblica per rivelarli.',
-        'The POP Feature (Broadcast):': 'La funzione POP (Trasmissione):',
-        'Click the POP button next to a handout. It will instantly pop up in full-screen on every player screen (expires in 2 minutes).': 
-            'Clicca sul pulsante POP accanto a un documento. Apparirà istantaneamente a schermo intero su tutti gli schermi dei giocatori (scade dopo 2 minuti).',
-        'For the Players': 'Per i Giocatori',
-        'The Hub:': 'L\'Area Principale:',
-        'The main page displays all the handouts the Master has revealed to you.': 
-            'La pagina principale mostra tutti i documenti che il Master ti ha rivelato.',
-        'Navigation:': 'Navigazione:',
-        'You can browse by Folder, by Session, or search by tags and keywords.': 
-            'Puoi sfogliare per Cartella, per Sessione, o cercare per etichette e parole chiave.',
-        'Real-time Reveals:': 'Rivelazioni in Tempo Reale:',
-        'Keep your tab open! If the Master triggers a POP broadcast, the handout will appear automatically.': 
-            'Tieni la scheda aperta! Se il Master avvia una trasmissione POP, il documento apparirà automaticamente.',
+        # ---- App Guide (in-app /guide page) ----
+        # Keys mirror templates/guide.html exactly (English source). 'App Guide',
+        # 'Browse' and 'Back to the Player Hub' are translated elsewhere in this
+        # file, so they are not repeated here.
+        'The Complete Guide': 'La Guida Completa',
+        'Everything you need to know about Local Handouts Manager':
+            'Tutto quello che devi sapere su Local Handouts Manager',
+        'Back to the Dashboard': 'Torna al Pannello',
+
+        # Master section
+        'For the Master: Running Your Table': 'Per il Master: Gestire il Tavolo',
+        '1. Hidden until you reveal': '1. Nascosti finché non li riveli',
+        'Every handout starts hidden — a private draft only you can see. Prepare everything in advance while it is hidden, then reveal each piece at the moment the party earns it. Nothing you have not published can leak.':
+            'Ogni documento parte nascosto — una bozza privata che vedi solo tu. Prepara tutto in anticipo mentre è nascosto, poi rivela ogni pezzo nel momento in cui il gruppo se lo guadagna. Nulla di ciò che non hai pubblicato può trapelare.',
+        '2. Adding handouts': '2. Aggiungere documenti',
+        'Upload:': 'Caricamento:',
+        'Use the Create page to add images (PNG/JPG/GIF/WebP), PDF documents (rendered to page images automatically), or a .glb 3D model. A handout can hold several files shown together — drag to reorder pages and give each its own caption.':
+            'Usa la pagina Crea per aggiungere immagini (PNG/JPG/GIF/WebP), documenti PDF (convertiti in pagine-immagine in automatico) o un modello 3D .glb. Un documento può contenere più file mostrati insieme — trascina per riordinare le pagine e dai a ognuna la sua didascalia.',
+        'Metadata:': 'Dati:',
+        'Add a title, description, folders, tags, a session number, and optional in-fiction discovery place and date.':
+            'Aggiungi titolo, descrizione, cartelle, etichette, un numero di sessione e, se vuoi, luogo e data del ritrovamento in gioco.',
+        '3. The three viewers': '3. I tre visualizzatori',
+        'Carousel:': 'Carosello:',
+        'The default. Swipe through images and PDF pages — best for maps, portraits and single documents.':
+            'Il predefinito. Scorri immagini e pagine PDF — ideale per mappe, ritratti e documenti singoli.',
+        'Book:': 'Libro:',
+        'A page-curl for multi-page tomes, journals and grimoires, with an optional back cover and hard or soft covers.':
+            'Uno sfogliapagine per tomi, diari e grimori multipagina, con retrocopertina opzionale e copertine rigide o morbide.',
+        '3D Inspect:': 'Ispezione 3D:',
+        'A full-screen canvas the player can rotate, zoom and pan — either a .glb model or a double-sided sheet whose transparent areas show through as real holes (torn scrolls, bullet holes).':
+            'Una tela a schermo intero che il giocatore può ruotare, ingrandire e spostare — un modello .glb oppure un foglio a doppia faccia le cui zone trasparenti diventano veri buchi (pergamene strappate, fori di proiettile).',
+        '4. Publish and POP': '4. Pubblica e POP',
+        'Publishing makes a hidden handout visible: it appears on the hub, ready the next time a player looks. POP goes further — it opens the handout on every player screen right now, without anyone touching their phone.':
+            'Pubblicare rende visibile un documento nascosto: appare nell\'area giocatori, pronto la prossima volta che guardano. POP va oltre — apre il documento su ogni schermo dei giocatori all\'istante, senza che nessuno tocchi il telefono.',
+        'broadcasts a handout that is already public.':
+            'trasmette un documento già pubblico.',
+        'reveals a hidden handout and pops it in one click.':
+            'rivela un documento nascosto e lo fa apparire con un clic.',
+        'does the same straight from the upload form.':
+            'fa lo stesso direttamente dal modulo di caricamento.',
+        'You cannot POP a hidden handout — publish it first. Only the newest POP counts, it reaches players who join late or wake a sleeping phone, and it expires after a couple of minutes. Popping the same handout again re-opens it, for when half the table was not looking. A player already reading something is not interrupted — they get a banner offering the new handout.':
+            'Non puoi fare POP di un documento nascosto — prima pubblicalo. Conta solo il POP più recente, raggiunge i giocatori che arrivano tardi o risvegliano il telefono, e scade dopo un paio di minuti. Rifare POP sullo stesso documento lo riapre, per quando metà del tavolo non stava guardando. Un giocatore che sta già leggendo qualcosa non viene interrotto — riceve un avviso che gli propone il nuovo documento.',
+        '5. Organising: folders, tags, sessions': '5. Organizzare: cartelle, etichette, sessioni',
+        'Folders:': 'Cartelle:',
+        'Named collections (Maps, Letters, NPCs). A handout can be in several at once; empty folders never show to players.':
+            'Collezioni con un nome (Mappe, Lettere, PNG). Un documento può stare in più cartelle; le cartelle vuote non vengono mai mostrate ai giocatori.',
+        'Tags:': 'Etichette:',
+        'Free-text labels, searchable and groupable, separate from folders.':
+            'Etichette a testo libero, ricercabili e raggruppabili, distinte dalle cartelle.',
+        'Sessions:': 'Sessioni:',
+        'Tag handouts by the session they were found in, so the table can browse the library as a timeline.':
+            'Contrassegna i documenti con la sessione in cui sono stati trovati, così il tavolo può sfogliare la libreria come una linea temporale.',
+        '6. Password-gated secrets': '6. Segreti protetti da password',
+        'Give a handout one or more passwords and link it to another handout. When a player types a correct password into the open handout, the linked one opens on the spot. A wrong or empty guess looks identical to a handout with no secret, so the feature never reveals that a secret exists. This is table theatre, not security — the passwords are stored as plain text.':
+            'Assegna a un documento una o più password e collegalo a un altro documento. Quando un giocatore digita la password giusta nel documento aperto, quello collegato si apre all\'istante. Un tentativo sbagliato o vuoto è identico a un documento senza segreti, così la funzione non rivela mai che un segreto esiste. È teatro da tavolo, non sicurezza — le password sono salvate in chiaro.',
+        '7. The interactive map': '7. La mappa interattiva',
+        'Upload one or more campaign maps (a world map, a city, a dungeon level). Calibrate a hex or square grid, reveal cells as the party explores, drop labelled points of interest, and move the party marker. Only revealed terrain is ever sent to players — the rest is simply absent, not hidden, so there is nothing to peek at.':
+            'Carica una o più mappe della campagna (una mappa del mondo, una città, un livello di dungeon). Calibra una griglia esagonale o quadrata, rivela le celle man mano che il gruppo esplora, posiziona punti di interesse con etichetta e sposta il segnalino del gruppo. Ai giocatori arriva solo il terreno rivelato — il resto è semplicemente assente, non nascosto, quindi non c\'è nulla da sbirciare.',
+        'Draft and confirm:': 'Bozza e conferma:',
+        'Your edits are a private draft until you press Confirm, so a stray click never flashes onto the table. Discard throws the draft away. Focus is a live "everyone look here" action that pushes every view to a spot at once.':
+            'Le tue modifiche restano una bozza privata finché non premi Conferma, così un clic sbagliato non appare mai al tavolo. Scarta butta via la bozza. Focus è un\'azione dal vivo "guardate tutti qui" che porta ogni vista sullo stesso punto in una volta sola.',
+        '8. Themes and appearance': '8. Temi e aspetto',
+        'From the Appearance page you can pick a theme (twenty presets, from D&D sourcebooks to other universes). The theme is table-wide: change it and every player screen updates live. You can also set a custom welcome header, and each person chooses their own interface language (English or Italian).':
+            'Dalla pagina Aspetto puoi scegliere un tema (venti preset, dai manuali di D&D ad altri universi). Il tema vale per tutto il tavolo: cambialo e ogni schermo dei giocatori si aggiorna dal vivo. Puoi anche impostare un\'intestazione di benvenuto personalizzata, e ognuno sceglie la propria lingua dell\'interfaccia (inglese o italiano).',
+        '9. Backup & Transfer': '9. Backup e Trasferimento',
+        'Export bundles the whole library — handouts, images, folders, and the map (state and background) — into one .zip, with your passphrase stripped out so it is safe to share. Import merges a bundle on another computer with a review step, so nothing is overwritten without your say-so. Export is also the safest campaign backup; make one before you update the app.':
+            'Esporta raccoglie l\'intera libreria — documenti, immagini, cartelle e la mappa (stato e sfondo) — in un unico .zip, con la tua passphrase rimossa così è sicuro da condividere. Importa unisce un pacchetto su un altro computer con un passaggio di controllo, così nulla viene sovrascritto senza il tuo consenso. Esporta è anche il backup più sicuro della campagna; falne uno prima di aggiornare l\'app.',
+        'Session-day checklist': 'Lista di controllo del giorno di gioco',
+        'Set a passphrase before your first game (Menu → Master Access); until you do, anyone on the Wi-Fi can open the Master side.':
+            'Imposta una passphrase prima della prima partita (Menù → Accesso Master); finché non lo fai, chiunque sia sul Wi-Fi può aprire il lato Master.',
+        'Upload this session\'s handouts in advance and leave them hidden — during play you only click Publish or POP.':
+            'Carica in anticipo i documenti di questa sessione e lasciali nascosti — durante il gioco clicchi solo Pubblica o POP.',
+        'Give players your LAN address or the QR code, and open one handout on a player device to confirm the Wi-Fi path works.':
+            'Dai ai giocatori il tuo indirizzo di rete o il codice QR, e apri un documento su un dispositivo giocatore per verificare che il Wi-Fi funzioni.',
+        'Lock master mode (Menu → Lock) if you hand your device to a player.':
+            'Blocca la modalità Master (Menù → Blocca) se passi il tuo dispositivo a un giocatore.',
+        'Full installation and update instructions live in INSTALL.md in the project folder.':
+            'Le istruzioni complete di installazione e aggiornamento sono in INSTALL.md nella cartella del progetto.',
+
+        # Player section
+        'Your Players\' Guide': 'La Guida dei tuoi Giocatori',
+        'The Players\' Guide': 'La Guida per i Giocatori',
+        'This section explains how to get the most out of your player view and find what you are looking for quickly.':
+            'Questa sezione spiega come sfruttare al massimo la tua vista giocatore e trovare in fretta ciò che cerchi.',
+        'Getting in': 'Come entrare',
+        'Open the address your Master gives you (or scan the QR code) in any browser. You must be on the same Wi-Fi as the Master\'s computer — there is nothing to install and no account to create.':
+            'Apri in un qualsiasi browser l\'indirizzo che ti dà il Master (o scansiona il codice QR). Devi essere sullo stesso Wi-Fi del computer del Master — non c\'è nulla da installare né alcun account da creare.',
+        'Browsing and search': 'Sfogliare e cercare',
+        'Grouping:': 'Raggruppamento:',
+        'The buttons at the top group handouts by Folders, Sessions, Tags, or newest-first (Recent).':
+            'I pulsanti in alto raggruppano i documenti per Cartelle, Sessioni, Etichette o dal più recente (Recenti).',
+        'View switch:': 'Cambio vista:',
+        'Rows, Cards, or Tree change how the list is drawn — pick whichever reads best for you.':
+            'Elenco, Schede o Albero cambiano come viene disegnata la lista — scegli quella che leggi meglio.',
+        'Search:': 'Ricerca:',
+        'Do not remember which session you found that medallion in? Use the search box in the ☰ menu to find a handout by any word in its title, description, tags or session notes.':
+            'Non ricordi in quale sessione hai trovato quel medaglione? Usa la casella di ricerca nel menù ☰ per trovare un documento con qualsiasi parola del titolo, della descrizione, delle etichette o delle note di sessione.',
+        'Reversing the order': 'Invertire l\'ordine',
+        'Tap a grouping button that is already active (for example Sessions) to reverse the order. Tap once to read from Session 1 onward, tap again to see the most recent first. An arrow (↑ or ↓) shows which way you are reading.':
+            'Tocca un pulsante di raggruppamento già attivo (per esempio Sessioni) per invertire l\'ordine. Tocca una volta per leggere dalla Sessione 1 in poi, tocca di nuovo per vedere prima le più recenti. Una freccia (↑ o ↓) indica il verso di lettura.',
+        'Reading a handout': 'Leggere un documento',
+        'Tap any handout to open it. Depending on how the Master set it up, you will get a carousel you swipe through, a book you turn page by page, or a 3D object you can rotate and zoom by dragging. Close it with the ✕ or by tapping outside. Some handouts have a password box in their info panel — if the Master gave you a password, type it there to unlock something new.':
+            'Tocca un documento per aprirlo. A seconda di come l\'ha impostato il Master, avrai un carosello da scorrere, un libro da sfogliare pagina per pagina, o un oggetto 3D da ruotare e ingrandire trascinando. Chiudilo con la ✕ o toccando fuori. Alcuni documenti hanno una casella password nel pannello info — se il Master ti ha dato una password, digitala lì per sbloccare qualcosa di nuovo.',
+        'When the Master POPs something': 'Quando il Master fa POP di qualcosa',
+        'Sometimes a handout opens by itself, full-screen, on your device — that is the Master pushing it to the whole table at once. Close it the same way. If you are already reading something you will not be interrupted: a banner offers the new one, and you open it when you are ready.':
+            'A volte un documento si apre da solo, a schermo intero, sul tuo dispositivo — è il Master che lo invia a tutto il tavolo in una volta. Chiudilo allo stesso modo. Se stai già leggendo qualcosa non verrai interrotto: un avviso ti propone il nuovo, e lo apri quando sei pronto.',
+        'The map': 'La mappa',
+        'If your campaign uses the interactive map, you will find it in the ☰ menu. It shows only what the party has discovered — fog covers the rest. The Master reveals new ground as you explore and can pull everyone\'s view to a spot on the map.':
+            'Se la tua campagna usa la mappa interattiva, la trovi nel menù ☰. Mostra solo ciò che il gruppo ha scoperto — la nebbia copre il resto. Il Master rivela nuovo terreno man mano che esplori e può portare la vista di tutti su un punto della mappa.',
 }

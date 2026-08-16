@@ -1,5 +1,8 @@
 # Security Design of the Local Handouts Manager
 
+> Part of the project documentation — see the full index in
+> [the docs index](../README.md).
+
 *A study of the access-control, request-integrity, and availability decisions
 made in this application, the reasoning behind each, and the alternatives that
 were weighed and rejected.*

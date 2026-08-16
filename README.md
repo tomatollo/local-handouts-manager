@@ -24,6 +24,7 @@ Everything runs on your own machine. No cloud, no accounts, no lag.
 - [How POP works](#how-pop-works)
 - [Routes](#routes)
 - [Project layout](#project-layout)
+- [Documentation](#documentation)
 - [Roadmap](#roadmap)
 - [Credits](#credits)
 
@@ -38,15 +39,20 @@ Everything runs on your own machine. No cloud, no accounts, no lag.
 - **Browse however you think.** Handouts organised by collection, session or
   tag, plus a free-text search across titles, descriptions, tags and session
   notes.
-- **Two readers.** A **Carousel** for images and PDFs, and a page-curling
+- **Three readers.** A **Carousel** for images and PDFs, a page-curling
   **Book** viewer for multi-page tomes, journals and grimoires (with an
-  optional back cover).
+  optional back cover), and a **3D Inspect** viewer that opens a handout in a
+  full-screen canvas the player can rotate, zoom and pan - either a `.glb`
+  model or a double-sided sheet whose transparent areas punch real holes
+  through the paper (torn scrolls, bullet holes).
 - **Handouts that come to you.** When the Master POPs something, it opens on
   your screen by itself. If you are already reading a handout you are not
   interrupted: a banner offers the new one and you open it when you are ready.
-- **A shared interactive map.** Follow the party's journey across a hex map the
-  Master reveals as you go: fogged terrain, points of interest, a moving party
-  marker, and a "look here" camera the Master can push to every screen.
+- **A shared interactive map.** Follow the party's journey across a map the
+  Master reveals as you go - hex or square grid, fogged terrain, points of
+  interest, a moving party marker, and a "look here" camera the Master can push
+  to every screen. A table can hold several maps (a world map, a city, a
+  dungeon level).
 
 ### For the Game Master
 
@@ -59,13 +65,20 @@ Everything runs on your own machine. No cloud, no accounts, no lag.
   same handout again re-opens it, for when half the table missed it.
 - **Master's Screen.** Upload, edit, reorder pages by drag-and-drop, per-file
   descriptions, folders, tags, session numbers and discovery notes.
-- **Interactive map control.** Upload a campaign map, calibrate a hex grid over
-  it, reveal hexes as the party explores, drop labelled points of interest, and
-  move the party marker. Your edits stay a private draft until you **confirm**
-  them, so a stray click never flashes onto the table; a separate **focus**
-  action pushes everyone's view to a spot on the map at once.
-- **Theme manager.** Ten D&D campaign presets, each swapping the whole palette
-  *and* both typefaces (see [Themes](#themes)).
+- **Password-gated secrets.** Give a handout one or more passwords and link it
+  to another handout; a player who types the right word into the viewer unlocks
+  the linked one on the spot. Wrong or empty guesses look identical to a
+  handout with no secret at all, so the feature never reveals that a secret
+  exists.
+- **Interactive map control.** Upload one or more campaign maps, calibrate a
+  hex or square grid over each, reveal cells as the party explores, drop
+  labelled points of interest, and move the party marker. Your edits stay a
+  private draft until you **confirm** them, so a stray click never flashes onto
+  the table; a separate **focus** action pushes everyone's view to a spot on the
+  map at once.
+- **Theme manager.** Twenty campaign presets - fifteen inspired by official
+  D&D sourcebooks plus five from other universes - each swapping the whole
+  palette *and* both typefaces (see [Themes](#themes)).
 - **Backup & Transfer.** Export the whole library - handouts, images, folders,
   and the interactive map (state *and* background image) - as a single `.zip`,
   and import it on another computer, with a review step so nothing is
@@ -128,7 +141,7 @@ For a session that runs for hours, prefer the launcher or a production server
 
 The theme is table-wide: the Master picks it and everyone sees it. Each preset overrides the same design tokens, so switching can never leave a half-painted UI. Two of them (Tasha and Xanathar) go further than colour and type, adding their own animated textures - all motion respects `prefers-reduced-motion`. 
 
-Themes don't just change colours; they alter the whole vibe, right down to smaller details like custom error codes! As shown in `apperance.png`, there is a vast selection of themes available, spanning from classic modules to entirely different universes.
+Themes don't just change colours; they alter the whole vibe, right down to smaller details like custom error pages! As shown in the appearance page below, there is a vast selection of themes available, spanning from classic modules to entirely different universes.
 
 ### Dungeons & Dragons
 
@@ -161,9 +174,10 @@ Themes don't just change colours; they alter the whole vibe, right down to small
 | **Holo HUD** | Sci-fi interface: black glass, amber telemetry, and cut-corner frames. |
 
 ### Build Your Own
-Can't find exactly what you're looking for? You can create your own custom theme by following the instructions found in the `THEMES.md` file located in the `/docs` folder.
+Can't find exactly what you're looking for? You can create your own custom
+theme by following **[docs/dev/THEMES.md](docs/dev/THEMES.md)**.
 
-![Apperance Page](docs/screenshots/apperance.png)
+![Appearance page](docs/screenshots/apperance.png)
 
 ![Themes](docs/screenshots/themes.gif)
 
@@ -185,7 +199,7 @@ Under the hood the app also protects every state-changing action with a
 per-session CSRF token, rate-limits the polling endpoints so a runaway client
 cannot exhaust the server, and ships sensible response headers. The full
 reasoning - threat model, the choices made, and their sources - is written up
-in **[SECURITY.md](SECURITY.md)**.
+in **[docs/reference/SECURITY.md](docs/reference/SECURITY.md)**.
 
 > **Scope of the protection.** This is designed to stop a curious player at the
 > table from reading your notes. The app speaks plain HTTP and is meant for a
@@ -213,7 +227,8 @@ counter that only ever grows.
 Every player's page polls `GET /api/pop` and compares the `seq` it gets back
 against the last one that device showed (kept in `sessionStorage`). Anything
 higher is a new POP, so the page opens it in the same lightbox a click would -
-carousel, book, PDFs and back covers all work with no separate code path.
+carousel, book, 3D Inspect, PDFs and back covers all work with no separate code
+path.
 Polling pauses while a tab is hidden and fires immediately on return, so a phone
 that was asleep catches up the moment it wakes.
 
@@ -246,21 +261,37 @@ that simply happens again.
 | `/` | Players | The hub of revealed handouts |
 | `/folder/<id>` | Players | A single collection |
 | `/api/pop` | Players | Poll target: the current POP broadcast (JSON) |
-| `/map` | Players | Read-only interactive map |
-| `/api/map/state` | Players | Poll target: shared map state (JSON) |
-| `/api/map/reveal.png` | Players | The revealed-only map composite |
+| `/api/reveal-secret` | Players | Unlock a password-gated handout from the viewer (POST, JSON) |
+| `/maps` | Players | The map chooser (skips straight to the map if only one exists) |
+| `/map/<id>` | Players | Read-only interactive map |
+| `/api/map/<id>/state` | Players | Poll target: one map's shared state (JSON) |
+| `/api/map/<id>/reveal.png` | Players | One map's revealed-only composite |
 | `/guide` | Public | The in-app guide |
 | `/qr` | Public | A QR code that points at the player hub |
+| `/ping` | Public | Liveness probe the footer polls (returns `204`) |
 | `/unlock` | Public | Master passphrase prompt |
-| `/dm-panel` | **Master** | Master's Screen |
+| `/lock` | Public | Drop master rights (safe in any state) |
+| `/dm-panel` | **Master** | Master's Screen (dashboard) |
 | `/dm-panel/create` | **Master** | Upload form + folder management |
-| `/pop/<id>` | **Master** | POP a public handout to every screen |
-| `/publish/<id>` | **Master** | Publish a handout (`pop=1` to pop it too) |
-| `/dm-panel/map` | **Master** | Interactive-map control |
-| `/master/api/map/*` | **Master** | Map write endpoints (draft, confirm, focus) |
-| `/dm-panel/appearance` | **Master** | Theme + language |
+| `/upload` | **Master** | Create a handout (POST) |
+| `/edit/<id>` | **Master** | Edit a handout |
+| `/toggle/<id>` | **Master** | Flip a handout hidden/public (POST) |
+| `/publish/<id>` | **Master** | Publish a handout (POST; `pop=1` to pop it too) |
+| `/pop/<id>` | **Master** | POP a public handout to every screen (POST) |
+| `/delete/<id>` | **Master** | Delete a handout (POST) |
+| `/folders/create`, `/folders/rename/<id>`, `/folders/delete/<id>` | **Master** | Folder CRUD (POST) |
+| `/dm-panel/maps` | **Master** | Map chooser + create/rename/delete |
+| `/dm-panel/map/<id>` | **Master** | Interactive-map control for one map |
+| `/dm-panel/map/<id>/upload` | **Master** | Upload/clear one map's background (POST) |
+| `/master/api/map/<id>/state` | **Master** | Read/write one map's draft state |
+| `/master/api/map/<id>/confirm` | **Master** | Promote the draft to what players see (POST) |
+| `/master/api/map/<id>/discard` | **Master** | Throw the draft away (POST) |
+| `/master/api/map/<id>/focus` | **Master** | Broadcast "everyone look here" on one map (POST) |
+| `/dm-panel/appearance` | **Master** | Theme + welcome header + language |
 | `/dm-panel/transfer` | **Master** | Export / import |
 | `/dm-panel/security` | **Master** | Set or change the passphrase |
+| `/export`, `/export/handout/<id>`, `/export/map/<id>` | **Master** | Download the whole library, one handout, or one map as a `.zip` |
+| `/import`, `/import/apply` | **Master** | Upload a bundle, review conflicts, apply |
 
 Every **Master** route is enforced server-side. The player and master map
 endpoints live in separate blueprints, so "players can read but never write" is
@@ -275,10 +306,10 @@ app.py                    # entry point: app factory, language + theme + role + 
 handouts/
   auth.py                 # master passphrase, session unlock, @master_required
   security.py             # CSRF token + rate limiting (stdlib only)
-  storage.py              # JSON database + uploads on disk
+  storage/                # JSON database + uploads on disk (a package; see docs/reference/STORAGE.md)
   organize.py             # grouping, sorting and search (pure functions)
-  theming.py              # the theme table: palettes, font pairs, per-theme CSS
-  i18n.py                 # EN/IT catalogue
+  theming/                # the theme table: palettes, font pairs, per-theme CSS (see docs/dev/THEMES.md)
+  i18n/                   # EN/IT catalogue (see docs/dev/LANGUAGES.md)
   pdfs.py                 # PDF -> images, thumbnails
   mapmask.py              # the revealed-only map composite (anti-spoiler)
   transfer.py             # export / import bundles (handouts + map + images)
@@ -289,11 +320,33 @@ templates/
   player/_lightbox.html   # the one viewer; exposes window.Lightbox
   player/_pop.html        # POP watcher: polls /api/pop, drives the lightbox
 static/css/style.css      # mobile-first 8-bit stylesheet
+static/vendor/            # self-hosted JS libs (StPageFlip, Three.js), bundled; fetch_vendor.py refreshes them
 launcher.py               # desktop GUI to start/stop the server
+transfer_cli.py           # command-line export / import (alternative to the Master UI)
 start_launcher.bat        # double-click entry point for the launcher (Windows)
 INSTALL.md                # full install guide (Windows / macOS / Linux)
-SECURITY.md               # threat model + security design writeup
+docs/                     # all documentation (start at docs/README.md)
+  README.md               # documentation index
+  user-guide/             # using the app: GM-GUIDE, PLAYER-GUIDE
+  dev/                    # how-to-extend guides: THEMES, LANGUAGES
+  reference/              # how it works: DATA-MODEL, STORAGE, SECURITY
+  screenshots/            # images used across the docs
 ```
+
+---
+
+## Documentation
+
+All documentation is indexed in **[docs/README.md](docs/README.md)**. In short:
+
+- **[INSTALL.md](INSTALL.md)** — install, update and troubleshoot on any OS.
+- **[docs/user-guide/GM-GUIDE.md](docs/user-guide/GM-GUIDE.md)** — running a session as the Game Master.
+- **[docs/user-guide/PLAYER-GUIDE.md](docs/user-guide/PLAYER-GUIDE.md)** — the player's one-pager.
+- **[docs/reference/DATA-MODEL.md](docs/reference/DATA-MODEL.md)** — every stored object and its fields.
+- **[docs/reference/STORAGE.md](docs/reference/STORAGE.md)** — the storage package internals.
+- **[docs/reference/SECURITY.md](docs/reference/SECURITY.md)** — threat model and security design.
+- **[docs/dev/THEMES.md](docs/dev/THEMES.md)** — write and register a theme.
+- **[docs/dev/LANGUAGES.md](docs/dev/LANGUAGES.md)** — add an interface language.
 
 ---
 
@@ -315,6 +368,11 @@ The retro 8-bit visual style is inspired by [8bitcn/ui](https://8bitcn.com) by
 plain CSS, with no React or Tailwind dependency.
 
 Page-curl reading is powered by [StPageFlip](https://github.com/Nodlik/StPageFlip) (MIT).
+
+The 3D Inspect viewer is powered by [three.js](https://threejs.org/) (MIT).
+
+Both are self-hosted (bundled in `static/vendor/`, refreshable via
+`fetch_vendor.py`), so the app needs no CDN and runs fully offline at the table.
 
 Fonts are served from [Google Fonts](https://fonts.google.com/) (open-source
 licenses).

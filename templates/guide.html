@@ -10,128 +10,116 @@
     <div class="wrap" style="max-width: 800px; margin: 0 auto; padding: 2rem;">
         <div class="hub-top">
             <div>
-                <h1>📖 <a class="home-title" href="{% if master_unlocked %}{{ url_for('master.dm_panel') }}{% else %}{{ url_for('player.home') }}{% endif %}">{{ 'La Guida Completa' | t }}</a></h1>
-                <p class="subtitle">{{ 'Tutto quello che devi sapere su Local Handouts Manager' | t }}</p>
+                <h1>📖 <a class="home-title" href="{% if master_unlocked %}{{ url_for('master.dm_panel') }}{% else %}{{ url_for('player.home') }}{% endif %}">{{ 'The Complete Guide' | t }}</a></h1>
+                <p class="subtitle">{{ 'Everything you need to know about Local Handouts Manager' | t }}</p>
             </div>
             {% if master_unlocked %}
-            <a href="{{ url_for('master.dm_panel') }}" class="btn">{{ 'Torna alla Dashboard' | t }}</a>
+            <a href="{{ url_for('master.dm_panel') }}" class="btn">{{ 'Back to the Dashboard' | t }}</a>
             {% else %}
-            <a href="{{ url_for('player.home') }}" class="btn">{{ "Torna all'Hub Giocatori" | t }}</a>
+            <a href="{{ url_for('player.home') }}" class="btn">{{ 'Back to the Player Hub' | t }}</a>
             {% endif %}
             <button type="button" class="btn" id="browse-btn" aria-controls="drawer" aria-expanded="false">&#9776; {{ 'Browse' | t }}</button>
         </div>
 
         {% if master_unlocked %}
         <!-- ========================================== -->
-        <!-- SEZIONE MASTER (Visibile SOLO al Game Master) -->
+        <!-- MASTER SECTION (visible ONLY to the Game Master) -->
         <!-- ========================================== -->
         <div class="panel" style="margin-top: 2rem;">
-            <h2>👑 {{ 'Per il Master: Gestione e Organizzazione' | t }}</h2>
-            
-            <h3 style="margin-top: 1.5rem;">{{ '1. Creazione e Pubblicazione degli Handout' | t }}</h3>
+            <h2>👑 {{ 'For the Master: Running Your Table' | t }}</h2>
+
+            <h3 style="margin-top: 1.5rem;">{{ '1. Hidden until you reveal' | t }}</h3>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'Every handout starts hidden — a private draft only you can see. Prepare everything in advance while it is hidden, then reveal each piece at the moment the party earns it. Nothing you have not published can leak.' | t }}</p>
+
+            <h3 style="margin-top: 1.5rem;">{{ '2. Adding handouts' | t }}</h3>
             <ul style="line-height: 1.6; padding-left: 1.5rem;">
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Aggiungere un allegato:' | t }}</strong> {{ 'Carica le tue immagini, mappe o documenti PDF tramite l\'interfaccia Master.' | t }}</li>
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Pubblicazione:' | t }}</strong> {{ 'Di default, i nuovi handout sono "Nascosti". Impostali su "Pubblicato" solo nel momento esatto in cui i personaggi li scoprono in gioco, per evitare spoiler.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Upload:' | t }}</strong> {{ 'Use the Create page to add images (PNG/JPG/GIF/WebP), PDF documents (rendered to page images automatically), or a .glb 3D model. A handout can hold several files shown together — drag to reorder pages and give each its own caption.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Metadata:' | t }}</strong> {{ 'Add a title, description, folders, tags, a session number, and optional in-fiction discovery place and date.' | t }}</li>
             </ul>
 
-            <h3 style="margin-top: 1.5rem;">{{ '2. Organizzazione: Cartelle e Sessioni' | t }}</h3>
+            <h3 style="margin-top: 1.5rem;">{{ '3. The three viewers' | t }}</h3>
             <ul style="line-height: 1.6; padding-left: 1.5rem;">
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Cartelle (Categorie):' | t }}</strong> {{ 'Raggruppa gli allegati per tipologia logica (es. "Mappe", "Lettere", "PNG", "Oggetti Magici").' | t }}</li>
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Sessioni (Timeline):' | t }}</strong> {{ 'Tagga gli handout in base alla sessione in cui sono stati trovati. Questo aiuta i giocatori a ricostruire la linea temporale degli eventi.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Carousel:' | t }}</strong> {{ 'The default. Swipe through images and PDF pages — best for maps, portraits and single documents.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Book:' | t }}</strong> {{ 'A page-curl for multi-page tomes, journals and grimoires, with an optional back cover and hard or soft covers.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ '3D Inspect:' | t }}</strong> {{ 'A full-screen canvas the player can rotate, zoom and pan — either a .glb model or a double-sided sheet whose transparent areas show through as real holes (torn scrolls, bullet holes).' | t }}</li>
             </ul>
 
-            <h3 style="margin-top: 1.5rem;">{{ '3. I Tipi di Visualizzazione' | t }}</h3>
+            <h3 style="margin-top: 1.5rem;">{{ '4. Publish and POP' | t }}</h3>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'Publishing makes a hidden handout visible: it appears on the hub, ready the next time a player looks. POP goes further — it opens the handout on every player screen right now, without anyone touching their phone.' | t }}</p>
             <ul style="line-height: 1.6; padding-left: 1.5rem;">
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Griglia (Cards):' | t }}</strong> {{ 'Ideale per il colpo d\'occhio visivo (mappe, ritratti).' | t }}</li>
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Lista (Rows):' | t }}</strong> {{ 'Perfetta per i documenti testuali o quando i nomi dei file sono lunghi e descrittivi.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'POP' | t }}</strong> {{ 'broadcasts a handout that is already public.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Publish & POP' | t }}</strong> {{ 'reveals a hidden handout and pops it in one click.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Forge & POP' | t }}</strong> {{ 'does the same straight from the upload form.' | t }}</li>
+            </ul>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'You cannot POP a hidden handout — publish it first. Only the newest POP counts, it reaches players who join late or wake a sleeping phone, and it expires after a couple of minutes. Popping the same handout again re-opens it, for when half the table was not looking. A player already reading something is not interrupted — they get a banner offering the new handout.' | t }}</p>
+
+            <h3 style="margin-top: 1.5rem;">{{ '5. Organising: folders, tags, sessions' | t }}</h3>
+            <ul style="line-height: 1.6; padding-left: 1.5rem;">
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Folders:' | t }}</strong> {{ 'Named collections (Maps, Letters, NPCs). A handout can be in several at once; empty folders never show to players.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Tags:' | t }}</strong> {{ 'Free-text labels, searchable and groupable, separate from folders.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Sessions:' | t }}</strong> {{ 'Tag handouts by the session they were found in, so the table can browse the library as a timeline.' | t }}</li>
             </ul>
 
-            <h3 style="margin-top: 1.5rem;">{{ '4. La Funzione "POP" (Invia a schermo)' | t }}</h3>
-            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'La funzione "POP" è il tuo asso nella manica. Quando i giocatori trovano un indizio, clicca su "POP": il file si aprirà in primo piano sugli schermi di tutti i player connessi, garantendo un effetto "Wow!" e assicurandoti che tutti stiano guardando la stessa cosa nello stesso momento.' | t }}</p>
+            <h3 style="margin-top: 1.5rem;">{{ '6. Password-gated secrets' | t }}</h3>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'Give a handout one or more passwords and link it to another handout. When a player types a correct password into the open handout, the linked one opens on the spot. A wrong or empty guess looks identical to a handout with no secret, so the feature never reveals that a secret exists. This is table theatre, not security — the passwords are stored as plain text.' | t }}</p>
 
-            <h3 style="margin-top: 1.5rem;">{{ '5. Gestione del Tema' | t }}</h3>
-            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'Dal pannello Master puoi cambiare il tema dell\'interfaccia (es. Fantasy, Sci-Fi, Dark). Cambiando il tema, l\'interfaccia si aggiornerà automaticamente in tempo reale anche sui dispositivi dei tuoi giocatori.' | t }}</p>
+            <h3 style="margin-top: 1.5rem;">{{ '7. The interactive map' | t }}</h3>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'Upload one or more campaign maps (a world map, a city, a dungeon level). Calibrate a hex or square grid, reveal cells as the party explores, drop labelled points of interest, and move the party marker. Only revealed terrain is ever sent to players — the rest is simply absent, not hidden, so there is nothing to peek at.' | t }}</p>
+            <p style="line-height: 1.6; margin-bottom: 1rem;"><strong>{{ 'Draft and confirm:' | t }}</strong> {{ 'Your edits are a private draft until you press Confirm, so a stray click never flashes onto the table. Discard throws the draft away. Focus is a live "everyone look here" action that pushes every view to a spot at once.' | t }}</p>
 
-            <hr style="margin: 2rem 0; border: 0; border-top: 1px dashed var(--btn-border, #ccc);">
+            <h3 style="margin-top: 1.5rem;">{{ '8. Themes and appearance' | t }}</h3>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'From the Appearance page you can pick a theme (twenty presets, from D&D sourcebooks to other universes). The theme is table-wide: change it and every player screen updates live. You can also set a custom welcome header, and each person chooses their own interface language (English or Italian).' | t }}</p>
 
-            <h3 style="margin-top: 1.5rem;">💡 {{ 'Consigli Pratici per il Master' | t }}</h3>
+            <h3 style="margin-top: 1.5rem;">{{ '9. Backup & Transfer' | t }}</h3>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'Export bundles the whole library — handouts, images, folders, and the map (state and background) — into one .zip, with your passphrase stripped out so it is safe to share. Import merges a bundle on another computer with a review step, so nothing is overwritten without your say-so. Export is also the safest campaign backup; make one before you update the app.' | t }}</p>
+
+            <hr style="margin: 2rem 0; border: 0; border-top: 1px dashed var(--border, #6b4f34);">
+
+            <h3 style="margin-top: 1.5rem;">💡 {{ 'Session-day checklist' | t }}</h3>
             <ul style="line-height: 1.6; padding-left: 1.5rem;">
-                <li style="margin-bottom: 0.5rem;">{{ 'Preparazione pre-sessione: Carica tutti gli handout prima di giocare e lasciali nascosti. Durante la partita, dovrai solo cliccare su "Pubblica".' | t }}</li>
-                <li style="margin-bottom: 0.5rem;">{{ 'Nomi chiari (ma non troppo): Nomina i file in modo che i player possano riconoscerli in futuro, ma evita spoiler nel titolo.' | t }}</li>
-                <li style="margin-bottom: 0.5rem;">{{ 'Pulisci la vista: Se una campagna è molto lunga, usa l\'archiviazione o riorganizza le vecchie cartelle per non intasare l\'interfaccia dei player.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;">{{ 'Set a passphrase before your first game (Menu → Master Access); until you do, anyone on the Wi-Fi can open the Master side.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;">{{ 'Upload this session\'s handouts in advance and leave them hidden — during play you only click Publish or POP.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;">{{ 'Give players your LAN address or the QR code, and open one handout on a player device to confirm the Wi-Fi path works.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;">{{ 'Lock master mode (Menu → Lock) if you hand your device to a player.' | t }}</li>
             </ul>
-
-            <hr style="margin: 2rem 0; border: 0; border-top: 1px dashed var(--btn-border, #ccc);">
-
-            <!-- ========================================== -->
-            <!-- INSTALLAZIONE E AGGIORNAMENTO (riassunto di INSTALL.md) -->
-            <!-- ========================================== -->
-            <h2>⚙️ {{ 'Installazione e Aggiornamento' | t }}</h2>
-            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'Questa è una versione sintetica. La guida completa, con tutti i dettagli per Windows, macOS e Linux, si trova nel file INSTALL.md nella cartella del progetto.' | t }}</p>
-
-            <h3 style="margin-top: 1.5rem;">{{ 'Cosa serve' | t }}</h3>
-            <ul style="line-height: 1.6; padding-left: 1.5rem;">
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Python 3.9 o più recente.' | t }}</strong> {{ 'Su Windows, durante l\'installazione ricorda di spuntare "Add python.exe to PATH".' | t }}</li>
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Git' | t }}</strong> {{ '(consigliato, rende gli aggiornamenti immediati) oppure il download del codice come file ZIP.' | t }}</li>
-            </ul>
-
-            <h3 style="margin-top: 1.5rem;">{{ 'Prima installazione (una volta sola)' | t }}</h3>
-            <ol style="line-height: 1.6; padding-left: 1.5rem;">
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Scarica il codice:' | t }}</strong> {{ 'con Git, clona il repository ed entra nella cartella del progetto; oppure estrai lo ZIP e aprivi un terminale.' | t }}</li>
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Crea l\'ambiente virtuale e installa le dipendenze:' | t }}</strong> {{ 'crea una cartella .venv, attivala e lancia l\'installazione dei pacchetti richiesti. Il launcher cerca .venv in automatico, quindi vale la pena crearla.' | t }}</li>
-            </ol>
-            <p style="line-height: 1.6; margin-bottom: 1rem;"><strong>{{ 'Windows (PowerShell):' | t }}</strong></p>
-            <pre style="background: var(--code-bg, rgba(0,0,0,0.15)); padding: 1rem; border-radius: 8px; overflow-x: auto; line-height: 1.5;"><code>python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt</code></pre>
-            <p style="line-height: 1.6; margin: 1rem 0;"><strong>{{ 'macOS / Linux:' | t }}</strong></p>
-            <pre style="background: var(--code-bg, rgba(0,0,0,0.15)); padding: 1rem; border-radius: 8px; overflow-x: auto; line-height: 1.5;"><code>python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt</code></pre>
-
-            <h3 style="margin-top: 1.5rem;">{{ 'Avviare il programma' | t }}</h3>
-            <ul style="line-height: 1.6; padding-left: 1.5rem;">
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Con il launcher (consigliato):' | t }}</strong> {{ 'su Windows fai doppio clic su start_launcher.bat; su macOS/Linux lancia python launcher.py con la .venv attiva. Poi premi "Start server" e leggi l\'indirizzo di rete da dare ai giocatori.' | t }}</li>
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Da terminale:' | t }}</strong> {{ 'con la .venv attiva, lancia python app.py e apri http://localhost:8000. Comodo per le prove veloci.' | t }}</li>
-            </ul>
-
-            <hr style="margin: 2rem 0; border: 0; border-top: 1px dashed var(--btn-border, #ccc);">
-
-            <h3 style="margin-top: 1.5rem;">🔄 {{ 'Come aggiornare il software' | t }}</h3>
-            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'I dati della tua campagna vivono nella cartella data/ e i file caricati in static/uploads/ e static/maps/. Questi sono esclusi dal controllo di versione, quindi un normale aggiornamento non li tocca mai.' | t }}</p>
-            <p style="line-height: 1.6; margin-bottom: 1rem;"><strong>{{ 'Se hai usato Git:' | t }}</strong></p>
-            <pre style="background: var(--code-bg, rgba(0,0,0,0.15)); padding: 1rem; border-radius: 8px; overflow-x: auto; line-height: 1.5;"><code>git pull
-# poi, con la .venv attiva, se le dipendenze sono cambiate:
-pip install -r requirements.txt</code></pre>
-            <p style="line-height: 1.6; margin: 1rem 0;"><strong>{{ 'Se hai scaricato lo ZIP:' | t }}</strong> {{ 'fai una copia di sicurezza delle cartelle data/ e static/, estrai la nuova versione sopra la vecchia, e rimetti al loro posto quelle cartelle.' | t }}</p>
-            <p style="line-height: 1.6; margin-bottom: 1rem;"><strong>{{ 'Fai sempre un backup, comunque.' | t }}</strong> {{ 'Il backup più sicuro è l\'Export dell\'app stessa (Master → Backup & Transfer): raccoglie il database, tutte le immagini e la mappa interattiva in un unico file .zip che puoi reimportare ovunque. Dopo l\'aggiornamento, riavvia il server per applicare le modifiche.' | t }}</p>
+            <p style="line-height: 1.6; margin-top: 1rem;">{{ 'Full installation and update instructions live in INSTALL.md in the project folder.' | t }}</p>
         </div>
         {% endif %}
 
         <!-- ========================================== -->
-        <!-- SEZIONE PLAYER (Visibile a Master e Giocatori) -->
+        <!-- PLAYER SECTION (visible to Master and players) -->
         <!-- ========================================== -->
         <div class="panel" style="margin-top: 2rem;">
-            <h2>🛡️ 
+            <h2>🛡️
                 {% if master_unlocked %}
-                    {{ 'La Guida dei tuoi Giocatori' | t }}
+                    {{ 'Your Players\' Guide' | t }}
                 {% else %}
-                    {{ 'La Guida per i Giocatori' | t }}
+                    {{ 'The Players\' Guide' | t }}
                 {% endif %}
             </h2>
-            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'Questa sezione spiega come sfruttare al massimo la tua interfaccia giocatore per trovare subito quello che cerchi.' | t }}</p>
-            
-            <h3 style="margin-top: 1.5rem;">{{ 'Navigare l\'Interfaccia e Ricerca' | t }}</h3>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'This section explains how to get the most out of your player view and find what you are looking for quickly.' | t }}</p>
+
+            <h3 style="margin-top: 1.5rem;">{{ 'Getting in' | t }}</h3>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'Open the address your Master gives you (or scan the QR code) in any browser. You must be on the same Wi-Fi as the Master\'s computer — there is nothing to install and no account to create.' | t }}</p>
+
+            <h3 style="margin-top: 1.5rem;">{{ 'Browsing and search' | t }}</h3>
             <ul style="line-height: 1.6; padding-left: 1.5rem;">
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'I Selettori:' | t }}</strong> {{ 'Usa i pulsanti in alto per cambiare il modo in cui vedi i documenti. Puoi raggrupparli per "Cartelle" o per "Sessioni".' | t }}</li>
-                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Barra di Ricerca:' | t }}</strong> {{ 'Non ricordi in che sessione hai trovato quel medaglione? Usa la barra di ricerca nel menù di navigazione digitando parole chiave.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Grouping:' | t }}</strong> {{ 'The buttons at the top group handouts by Folders, Sessions, Tags, or newest-first (Recent).' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'View switch:' | t }}</strong> {{ 'Rows, Cards, or Tree change how the list is drawn — pick whichever reads best for you.' | t }}</li>
+                <li style="margin-bottom: 0.5rem;"><strong>{{ 'Search:' | t }}</strong> {{ 'Do not remember which session you found that medallion in? Use the search box in the ☰ menu to find a handout by any word in its title, description, tags or session notes.' | t }}</li>
             </ul>
 
-            <h3 style="margin-top: 1.5rem;">{{ 'Ordinamento Dinamico (Crescente/Decrescente)' | t }}</h3>
-            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'Cliccando di nuovo su un selettore già attivo (ad esempio "Sessioni"), l\'ordine degli elementi si invertirà. Clicca una volta per vedere dalla Sessione 1 in poi, clicca di nuovo per vedere prima le sessioni più recenti! Una freccia (↑ o ↓) ti indicherà sempre il verso di lettura.' | t }}</p>
+            <h3 style="margin-top: 1.5rem;">{{ 'Reversing the order' | t }}</h3>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'Tap a grouping button that is already active (for example Sessions) to reverse the order. Tap once to read from Session 1 onward, tap again to see the most recent first. An arrow (↑ or ↓) shows which way you are reading.' | t }}</p>
 
-            <h3 style="margin-top: 1.5rem;">{{ 'Immagini in primo piano (La funzione POP)' | t }}</h3>
-            <p style="line-height: 1.6;">{{ 'Se il Master ti invia un\'immagine con la funzione POP, questa apparirà da sola a tutto schermo. Per chiuderla, ti basterà cliccare sulla "X" in alto o cliccare fuori dall\'immagine.' | t }}</p>
+            <h3 style="margin-top: 1.5rem;">{{ 'Reading a handout' | t }}</h3>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'Tap any handout to open it. Depending on how the Master set it up, you will get a carousel you swipe through, a book you turn page by page, or a 3D object you can rotate and zoom by dragging. Close it with the ✕ or by tapping outside. Some handouts have a password box in their info panel — if the Master gave you a password, type it there to unlock something new.' | t }}</p>
+
+            <h3 style="margin-top: 1.5rem;">{{ 'When the Master POPs something' | t }}</h3>
+            <p style="line-height: 1.6; margin-bottom: 1rem;">{{ 'Sometimes a handout opens by itself, full-screen, on your device — that is the Master pushing it to the whole table at once. Close it the same way. If you are already reading something you will not be interrupted: a banner offers the new one, and you open it when you are ready.' | t }}</p>
+
+            <h3 style="margin-top: 1.5rem;">{{ 'The map' | t }}</h3>
+            <p style="line-height: 1.6;">{{ 'If your campaign uses the interactive map, you will find it in the ☰ menu. It shows only what the party has discovered — fog covers the rest. The Master reveals new ground as you explore and can pull everyone\'s view to a spot on the map.' | t }}</p>
         </div>
     </div>
 
