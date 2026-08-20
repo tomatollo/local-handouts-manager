@@ -14,6 +14,12 @@
  *     and an optional back texture, with PNG transparency punching real holes
  *     through the paper (torn scrolls, bullet holes, ...).
  *
+ * The built sheet is not a zero-thickness plane: it is given a real depth (a
+ * front face, a back face, and an opaque side wall between them) so that when
+ * the player turns it edge-on it still reads as a solid object rather than
+ * vanishing to a line. Both the depth and the surface feel (roughness /
+ * metalness) come from the handout's `material` option — see _assembleSheet.
+ *
  * The class owns exactly one canvas and one render loop. init() builds the
  * scene; destroy() tears EVERYTHING down — it stops requestAnimationFrame,
  * removes the canvas from the DOM, and calls .dispose() on every geometry,
@@ -30,6 +36,17 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+// The material a built sheet falls back to when the caller passes none (an old
+// POP payload, a hand-built call). Mirrors materials.py's parchment default and
+// the look the reader hardcoded before the material was configurable, so an
+// un-tuned sheet is unchanged. thickness is in scene units; the sheet's height
+// is normalised to 2 (see _assembleSheet), so 0.05 is a slip of parchment.
+const DEFAULT_SHEET_MATERIAL = {
+    roughness: 0.85,
+    metalness: 0.0,
+    thickness: 0.05,
+};
+
 export class Inspector3D {
     /**
      * @param {HTMLElement} host   Element the canvas is appended to. It should
@@ -39,6 +56,11 @@ export class Inspector3D {
      * @param {string}  [opts.modelUrl]        URL of a .glb model to load.
      * @param {string}  [opts.frontUrl]        Front-face texture (sheet mode).
      * @param {string}  [opts.backUrl]         Back-face texture (sheet mode).
+     * @param {Object}  [opts.material]        Sheet surface + depth:
+     *                                         {roughness, metalness, thickness}.
+     *                                         Missing keys fall back to the
+     *                                         parchment default. Ignored for a
+     *                                         .glb model (it brings its own).
      * @param {string}  [opts.background]      CSS/hex clear colour. Default a
      *                                         near-black so the object pops.
      * @param {Function}[opts.onError]         Called with an Error if loading
@@ -49,6 +71,11 @@ export class Inspector3D {
     constructor(host, opts = {}) {
         this.host = host;
         this.opts = opts;
+
+        // Normalise the sheet material once here so every builder below reads a
+        // complete, clamped object rather than re-checking each key. A .glb path
+        // never touches it.
+        this.material = this._cleanMaterial(opts.material);
 
         // Live references, all nulled out again in destroy(). Grouping the
         // disposables in arrays keeps teardown exhaustive: anything created is
@@ -70,10 +97,26 @@ export class Inspector3D {
         this._materials = [];
         this._textures = [];
         this._gltf = null;          // the loaded GLTF scene root, if any
+        this._sheetGroup = null;    // the built sheet's parent group, if any
 
         // Bound once so add/removeEventListener see the same reference.
         this._onResize = this._handleResize.bind(this);
         this._renderLoop = this._renderLoop.bind(this);
+    }
+
+    /** Coerce an incoming material option into a complete, clamped object. */
+    _cleanMaterial(m) {
+        m = m || {};
+        const clamp = (v, lo, hi, d) => {
+            const n = typeof v === 'number' ? v : parseFloat(v);
+            if (!isFinite(n)) return d;
+            return Math.max(lo, Math.min(hi, n));
+        };
+        return {
+            roughness: clamp(m.roughness, 0, 1, DEFAULT_SHEET_MATERIAL.roughness),
+            metalness: clamp(m.metalness, 0, 1, DEFAULT_SHEET_MATERIAL.metalness),
+            thickness: clamp(m.thickness, 0.005, 0.5, DEFAULT_SHEET_MATERIAL.thickness),
+        };
     }
 
     // =====================================================================
@@ -144,7 +187,9 @@ export class Inspector3D {
     _initLights() {
         // Ambient fills the shadows so no face is pure black; the directional
         // key gives shape and a soft highlight on the material. Two lights are
-        // plenty for an inspected prop and keep the frame cheap.
+        // plenty for an inspected prop and keep the frame cheap. A metallic
+        // sheet needs a bit more of a defined highlight to read as metal, but
+        // the rig here is enough for that too (metalness shows against the key).
         const ambient = new THREE.AmbientLight(0xffffff, 0.9);
         this.scene.add(ambient);
 
@@ -246,10 +291,22 @@ export class Inspector3D {
     }
 
     /**
-     * Two planes back-to-back at the origin. Each face is its own transparent
-     * material so a torn/holed PNG shows the void (and, through it, the other
-     * face) rather than a white card. The back plane is rotated 180° about Y so
-     * its texture reads correctly from behind.
+     * Build a sheet with REAL depth so it doesn't disappear edge-on.
+     *
+     * Three parts, all parented to one group centred on the origin:
+     *   - a front textured plane at +thickness/2,
+     *   - a back textured plane at -thickness/2 (rotated 180° so its texture
+     *     reads correctly from behind),
+     *   - an opaque side wall (an open-ended box shell) filling the gap between
+     *     them, tinted to the material so the edge looks like the paper/metal's
+     *     own thickness rather than a black seam.
+     *
+     * Keeping the two faces as separate transparent planes (rather than one
+     * solid box with the texture on every side) is what preserves the PNG-hole
+     * effect: alphaTest still punches holes through each face, and because the
+     * faces are now set apart by the thickness, a hole shows the real interior
+     * depth and the far face through it. roughness/metalness come from the
+     * material so a "metal plate" reads glossy and a "stone tablet" dead-matte.
      */
     _assembleSheet(frontTex, backTex) {
         // Size the sheet to the front texture's aspect ratio so it isn't
@@ -260,53 +317,103 @@ export class Inspector3D {
         if (img && img.width && img.height) aspect = img.width / img.height;
         const h = 2;
         const w = h * aspect;
+        const t = this.material.thickness;   // full depth
+        const halfT = t / 2;
 
+        const rough = this.material.roughness;
+        const metal = this.material.metalness;
+
+        // A group so the whole sheet frames + orbits as one object.
+        const group = new THREE.Group();
+        this._sheetGroup = group;
+
+        // ---- Front face ----
         const geoFront = new THREE.PlaneGeometry(w, h);
         this._geometries.push(geoFront);
-
         const matFront = new THREE.MeshStandardMaterial({
             map: frontTex,
             transparent: true,
             // alphaTest drops fully-transparent texels so holes are crisp AND
-            // don't fight the depth buffer (a purely transparent-blended plane
-            // would sort oddly against its own back face). 0.5 suits the hard
-            // edges of a torn scroll / punched hole.
+            // don't fight the depth buffer. 0.5 suits the hard edges of a torn
+            // scroll / punched hole.
             alphaTest: 0.5,
             side: THREE.FrontSide,
-            roughness: 0.85,
-            metalness: 0.0,
+            roughness: rough,
+            metalness: metal,
         });
         this._materials.push(matFront);
-
         const front = new THREE.Mesh(geoFront, matFront);
-        this.scene.add(front);
+        front.position.z = halfT;
+        group.add(front);
         this._sheetFront = front;
 
-        // Back face. If no back texture was given, reuse the front one on a
-        // second plane so the sheet still has a visible reverse (a blank-backed
-        // scroll shows the same paper), but flipped so it isn't mirror-text.
+        // ---- Back face ----
+        // Reuse the front texture (flipped) when no dedicated back was given so
+        // a blank-backed scroll shows the same paper rather than a void.
         const geoBack = new THREE.PlaneGeometry(w, h);
         this._geometries.push(geoBack);
-
         const backMap = backTex || frontTex;
         const matBack = new THREE.MeshStandardMaterial({
             map: backMap,
             transparent: true,
             alphaTest: 0.5,
             side: THREE.FrontSide,
-            roughness: 0.85,
-            metalness: 0.0,
+            roughness: rough,
+            metalness: metal,
         });
         this._materials.push(matBack);
-
         const back = new THREE.Mesh(geoBack, matBack);
+        back.position.z = -halfT;
         back.rotation.y = Math.PI;     // face the other way
-        this.scene.add(back);
+        group.add(back);
         this._sheetBack = back;
 
-        // Frame the pair (they're centred on the origin already, so just set a
-        // camera distance that fits the taller dimension).
+        // ---- Side wall (the visible thickness) ----
+        // An open-ended box (no front/back caps — the textured planes are those)
+        // whose four side faces fill the gap between front and back. Tinted from
+        // the texture's average-ish tone would be ideal, but a neutral parchment/
+        // metal tone keyed off metalness reads well and needs no pixel readback:
+        // a metallic sheet gets a mid-grey edge, a matte one a warm paper edge.
+        const edgeColor = metal > 0.5 ? 0x9a9a9a : 0xcbb994;
+        const geoEdge = new THREE.BoxGeometry(w, h, t);
+        // Drop the front (+Z) and back (-Z) faces of the box so only the rim
+        // remains; the textured planes provide the faces (and keep their holes).
+        this._openBoxEnds(geoEdge);
+        this._geometries.push(geoEdge);
+        const matEdge = new THREE.MeshStandardMaterial({
+            color: edgeColor,
+            roughness: Math.min(1, rough + 0.05),
+            metalness: metal,
+            side: THREE.DoubleSide,
+        });
+        this._materials.push(matEdge);
+        const edge = new THREE.Mesh(geoEdge, matEdge);
+        group.add(edge);
+        this._sheetEdge = edge;
+
+        this.scene.add(group);
+
+        // Frame the group (centred on the origin already, so just set a camera
+        // distance that fits the taller dimension).
         this._frameSheet(Math.max(w, h));
+    }
+
+    /**
+     * Remove the +Z and -Z faces from a BoxGeometry so it becomes an open tube
+     * (a rim only). BoxGeometry lays its faces out in a fixed group order:
+     * +X, -X, +Y, -Y, +Z, -Z, six vertices (two triangles) each. Dropping the
+     * last two groups' 12 indices leaves the four side walls. Done by trimming
+     * the index buffer, which keeps the shared vertex buffer intact.
+     */
+    _openBoxEnds(box) {
+        const index = box.getIndex();
+        if (!index) return;                      // non-indexed: leave as-is
+        const arr = index.array;
+        // 6 faces * 6 indices = 36; the +Z/-Z faces are the last 12.
+        if (arr.length >= 36) {
+            const trimmed = arr.slice(0, arr.length - 12);
+            box.setIndex(new THREE.BufferAttribute(trimmed, 1));
+        }
     }
 
     // =====================================================================
@@ -388,8 +495,10 @@ export class Inspector3D {
             this.scene = null;
         }
         this._gltf = null;
+        this._sheetGroup = null;
         this._sheetFront = null;
         this._sheetBack = null;
+        this._sheetEdge = null;
 
         // 6. Renderer last: lose the context and remove the canvas from the DOM
         //    so the browser can reclaim the WebGL backing immediately.

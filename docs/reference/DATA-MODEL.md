@@ -55,6 +55,7 @@ plus its metadata and the flags that control how and when players see it.
 | `source_format` | string | The ORIGINAL upload format (`pdf`, `png`, …), recorded before PDF pages are rendered to images. Drives the master's "Group by Format" view only. |
 | `back_cover` | file entry or null | Book viewer only: a single page shown as the very last leaf. Ignored by other viewers. |
 | `back_texture` | file entry or null | `object3d` sheet viewer only: the image painted on the reverse face; PNG transparency shows through as holes. |
+| `sheet_material` | object | `object3d` **built sheet** only: how the procedurally-built paper looks and how thick it is. `{preset, roughness, metalness, thickness}` (see below). Ignored by a `.glb` model and by the carousel/book viewers. Every handout carries one; legacy records get the parchment default on load. |
 | `secret_passwords` | list of strings | Words that, typed into the viewer, reveal `secret_handout_id`. Empty = no secret. Plain text by design — this is table theatre, not security. |
 | `secret_ignore_case` | bool | Match `secret_passwords` without regard to letter case. |
 | `secret_handout_id` | string or null | The handout unlocked when a secret password is entered. |
@@ -80,6 +81,28 @@ Each item in `files` (and each `back_cover` / `back_texture`) is:
 > `files` are usually image pages even though `source_format` stays `pdf`. A
 > `.glb` model keeps `reader: "model"` and is left untouched by the PDF and
 > thumbnail passes.
+
+### Sheet material
+
+The `sheet_material` object controls the `object3d` **built sheet** — a scroll,
+torn note, or plate built procedurally from the front image (not a `.glb` model,
+which brings its own materials). It is a small dict:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `preset` | string | The named look: `paper`, `parchment`, `leather`, `wood`, `stone`, `metal`, or `custom` when the numbers below were tuned away from any preset. |
+| `roughness` | float | PBR roughness, 0–1 (1 = fully matte). Maps straight onto the sheet faces' `MeshStandardMaterial`. |
+| `metalness` | float | PBR metalness, 0–1 (1 = metal). |
+| `thickness` | float | Sheet depth in scene units, 0.005–0.5, so it doesn't vanish edge-on. The sheet's height is normalised to 2, so 0.05 is a slip of parchment. |
+
+The default (and what every legacy record is normalized to) is the `parchment`
+preset — `roughness 0.85`, `metalness 0.0`, `thickness 0.05` — which matches the
+look the 3D reader used before the material was configurable, so existing sheet
+handouts are unchanged. The named presets, the clamping ranges, and the rule that
+downgrades `preset` to `custom` when the sliders diverge all live in
+`handouts/storage/materials.py`; see [STORAGE.md](STORAGE.md#the-materials-module)
+and [3D-VIEWER.md](3D-VIEWER.md#the-built-sheet-and-its-real-depth) for how the
+reader turns these four numbers into geometry.
 
 ---
 

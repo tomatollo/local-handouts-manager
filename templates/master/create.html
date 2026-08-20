@@ -5,6 +5,150 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ 'Create a Handout' | t }}</title>
     {% include '_head.html' %}
+
+    {# Import map so the create-page live 3D preview can use bare 'three' /
+       'three/addons/...' specifiers that resolve to the self-hosted copies
+       under static/vendor/three/ (the same map the player lightbox declares).
+       The Inspector3D module is imported lazily, only when the 3D viewer is
+       actually chosen, so nothing 3D downloads for a plain carousel upload. #}
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "{{ url_for('static', filename='vendor/three/three.module.min.js') }}",
+        "three/addons/": "{{ url_for('static', filename='vendor/three/addons/') }}"
+      }
+    }
+    </script>
+
+    <style>
+        /* ===== Create page: viewer-driven layout ==========================
+           The form used to show every viewer's fields at once, hidden with the
+           `hidden` attribute. That left dead space and made "which of these do
+           I fill in?" unclear. Now the viewer is a big segmented control, and
+           only the chosen viewer's extras appear, inside one labelled block. */
+
+        /* The Viewer chooser: three tappable tiles instead of a bare <select>.
+           Radio inputs are visually hidden; their label tiles carry the look
+           and the checked state. Keyboard + screen readers still see radios. */
+        .viewer-choice { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        @media (min-width: 560px) {
+            .viewer-choice { grid-template-columns: repeat(3, 1fr); }
+        }
+        .viewer-tile {
+            position: relative;
+            display: flex; flex-direction: column; gap: 4px;
+            padding: 12px;
+            background: var(--bg);
+            border: var(--px) solid var(--border);
+            box-shadow: var(--px) var(--px) 0 0 var(--shadow);
+            cursor: pointer;
+            transition: transform .05s ease;
+        }
+        .viewer-tile:hover { transform: translate(-1px, -1px); }
+        .viewer-tile input {
+            position: absolute; opacity: 0; width: 0; height: 0;
+            pointer-events: none;
+        }
+        .viewer-tile__name {
+            font-family: var(--font-display);
+            font-size: calc(0.62rem * var(--display-scale));
+            color: var(--ink);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .viewer-tile__desc { color: var(--ink-dim); font-size: 0.82rem; line-height: 1.35; }
+        .viewer-tile__icon { font-size: 1.1rem; line-height: 1; }
+        /* Checked tile: torch-gold border + faint gold wash so the choice reads
+           at a glance. :has() keeps it CSS-only; a JS class mirrors it for old
+           browsers (see wire()). */
+        .viewer-tile:has(input:checked),
+        .viewer-tile.is-checked {
+            border-color: var(--accent);
+            background: color-mix(in srgb, var(--accent) 14%, var(--bg));
+        }
+        .viewer-tile:has(input:checked) .viewer-tile__name,
+        .viewer-tile.is-checked .viewer-tile__name { color: var(--accent); }
+        .viewer-tile input:focus-visible + .viewer-tile__name { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+        /* The per-viewer extras live in one block that only shows for the
+           relevant viewer. A thin gold rule ties it to the viewer choice above. */
+        .viewer-extras {
+            margin-top: 4px;
+            padding: 14px;
+            background: var(--bg);
+            border: var(--px) solid var(--border);
+            border-left: var(--px) solid var(--accent);
+            box-shadow: var(--px) var(--px) 0 0 var(--shadow);
+        }
+        .viewer-extras__head {
+            font-family: var(--font-display);
+            font-size: calc(0.6rem * var(--display-scale));
+            color: var(--accent);
+            margin: 0 0 10px;
+        }
+
+        /* Material presets: a wrap of small tappable chips. */
+        .mat-presets { display: flex; flex-wrap: wrap; gap: 8px; }
+        .mat-preset {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 12px;
+            background: var(--bg-panel);
+            border: var(--px) solid var(--border);
+            box-shadow: 2px 2px 0 0 var(--shadow);
+            cursor: pointer; user-select: none;
+            font-size: 0.85rem; color: var(--ink);
+        }
+        .mat-preset input { position: absolute; opacity: 0; width: 0; height: 0; }
+        .mat-preset:has(input:checked),
+        .mat-preset.is-checked {
+            border-color: var(--accent);
+            background: color-mix(in srgb, var(--accent) 18%, var(--bg-panel));
+            color: var(--accent);
+        }
+        .mat-swatch {
+            width: 14px; height: 14px; border: 2px solid var(--border);
+            display: inline-block; flex: 0 0 auto;
+        }
+
+        /* Advanced sliders, collapsed by default under a <details>. */
+        .mat-advanced { margin-top: 12px; }
+        .mat-advanced > summary {
+            cursor: pointer; color: var(--ink-dim);
+            font-size: 0.85rem; padding: 4px 0; list-style: revert;
+        }
+        .mat-advanced[open] > summary { color: var(--accent); }
+        .slider-row { display: grid; grid-template-columns: 1fr; gap: 4px; margin-top: 10px; }
+        .slider-row label {
+            display: flex; justify-content: space-between; align-items: baseline;
+            font-size: 0.85rem; color: var(--ink-dim);
+        }
+        .slider-row output { color: var(--accent); font-variant-numeric: tabular-nums; }
+        .slider-row input[type=range] { width: 100%; accent-color: var(--accent); }
+
+        /* The live preview canvas host. Sits beside the material controls on
+           wide screens, stacks under them on phones. */
+        .mat-layout { display: grid; grid-template-columns: 1fr; gap: 16px; }
+        @media (min-width: 720px) {
+            .mat-layout { grid-template-columns: 1fr 260px; align-items: start; }
+        }
+        .mat-preview {
+            position: relative;
+            width: 100%; aspect-ratio: 1 / 1;
+            background: #0b0b0d;
+            border: var(--px) solid var(--border);
+            box-shadow: var(--px) var(--px) 0 0 var(--shadow);
+            overflow: hidden;
+        }
+        .mat-preview__hint,
+        .mat-preview__state {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            text-align: center; padding: 16px;
+            color: var(--ink-dim); font-size: 0.82rem; line-height: 1.4;
+            pointer-events: none;
+        }
+        .mat-preview__state { color: var(--accent); }
+        .mat-preview canvas { display: block; }
+    </style>
 </head>
 <body>
     <div class="wrap">
@@ -23,7 +167,7 @@
                 <div class="panel">
                     <h2>{{ 'Upload a Handout' | t }}</h2>
                     <form action="{{ url_for('master.upload_handout') }}" method="post"
-                          enctype="multipart/form-data" class="form-grid">
+                          enctype="multipart/form-data" class="form-grid" id="upload-form">
                         <div class="field field--wide">
                             <label for="title">{{ 'Title' | t }}</label>
                             <input type="text" id="title" name="title" placeholder="Old Kingdom Map" required>
@@ -45,38 +189,6 @@
                         </div>
 
                         <div class="field">
-                            <label for="view_type">{{ 'Viewer' | t }}</label>
-                            <select id="view_type" name="view_type">
-                                {% for vt in view_types %}
-                                <option value="{{ vt }}" {% if vt == default_view_type %}selected{% endif %}>
-                                    {%- if vt == 'object3d' %}{{ '3D Inspect' | t }}{% else %}{{ vt|capitalize }}{% endif -%}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        {# Book viewer only: rigid/soft covers. The initial
-                           hidden state is set here server-side from the default
-                           viewer, so the field is correct even before JS runs;
-                           the JS at the foot then follows the Viewer select. #}
-                        <div class="field" id="hard-covers-field" {% if default_view_type != 'book' %}hidden{% endif %}>
-                            <label>{{ 'Book covers' | t }}</label>
-                            <label class="folder-choice">
-                                <input type="checkbox" name="hard_covers" value="1" checked>
-                                {{ 'Hard covers' | t }}
-                            </label>
-                            <p class="subtitle">{{ 'First and last page turn like a stiff cover. Uncheck to flip them softly.' | t }}</p>
-                        </div>
-
-                        {# 3D Inspect viewer only: an explanation. Hidden unless
-                           the default viewer is object3d; JS follows the select. #}
-                        <div class="field field--wide" id="object3d-help" {% if default_view_type != 'object3d' %}hidden{% endif %}>
-                            <p class="subtitle">
-                                {{ 'The player rotates, zooms and pans the handout in 3D. Upload a .glb 3D model as the file, or a front image (PNG) as a double-sided sheet: transparent areas of the PNG become real holes (torn scrolls, bullet holes).' | t }}
-                            </p>
-                        </div>
-
-                        <div class="field field--wide">
                             <label for="tags">{{ 'Tags' | t }} <span class="hint">{{ 'comma-separated' | t }}</span></label>
                             <input type="text" id="tags" name="tags" list="tag-list"
                                    placeholder="map, kingdom, cursed">
@@ -85,6 +197,181 @@
                             </datalist>
                         </div>
 
+                        {# ===== Viewer chooser: three tiles ===================
+                           Replaces the bare <select>. The `value` still posts as
+                           `view_type`, so the backend is unchanged. The old
+                           <select id="view_type"> is kept as a hidden mirror so
+                           the existing JS (and anything else) that reads it by id
+                           still works; the tiles write into it on change. #}
+                        <div class="field field--wide">
+                            <label>{{ 'Viewer' | t }}</label>
+                            <div class="viewer-choice" role="radiogroup" aria-label="{{ 'Viewer' | t }}">
+                                {% for vt in view_types %}
+                                <label class="viewer-tile">
+                                    <input type="radio" name="view_type" value="{{ vt }}"
+                                           {% if vt == default_view_type %}checked{% endif %}>
+                                    <span class="viewer-tile__name">
+                                        <span class="viewer-tile__icon">
+                                            {%- if vt == 'carousel' %}&#128444;&#65039;{% elif vt == 'book' %}&#128216;{% elif vt == 'object3d' %}&#128302;{% else %}&#128196;{% endif -%}
+                                        </span>
+                                        {%- if vt == 'object3d' %}{{ '3D Inspect' | t }}{% else %}{{ vt|capitalize }}{% endif -%}
+                                    </span>
+                                    <span class="viewer-tile__desc">
+                                        {%- if vt == 'carousel' %}{{ 'Swipe through images one at a time.' | t }}
+                                        {%- elif vt == 'book' %}{{ 'Turn pages like a real tome.' | t }}
+                                        {%- elif vt == 'object3d' %}{{ 'Rotate a model or a physical sheet in 3D.' | t }}
+                                        {%- else %}{{ vt|capitalize }}{% endif -%}
+                                    </span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        {# ===== Files ========================================
+                           The label hint + sub-line change with the viewer; the
+                           accept list is switched by JS. #}
+                        <div class="field field--wide">
+                            <label for="file">{{ 'Files' | t }}
+                                <span class="hint" id="file-hint-default" {% if default_view_type == 'object3d' %}hidden{% endif %}>{{ 'images, PDF or 3D model (.glb)' | t }}</span>
+                                <span class="hint" id="file-hint-3d" {% if default_view_type != 'object3d' %}hidden{% endif %}>{{ 'one .glb model, or one PNG for a sheet' | t }}</span>
+                            </label>
+                            <input type="file" id="file" name="files"
+                                   accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.glb" multiple required>
+                            <p class="subtitle" id="file-sub-default" {% if default_view_type == 'object3d' %}hidden{% endif %}>{{ 'Select several images to build a carousel or book.' | t }}</p>
+                            <p class="subtitle" id="file-sub-3d" {% if default_view_type != 'object3d' %}hidden{% endif %}>{{ 'For 3D Inspect, upload one .glb model, or one PNG for a double-sided sheet.' | t }}</p>
+                        </div>
+
+                        {# ===== BOOK extras =================================== #}
+                        <div class="field field--wide viewer-extras" id="extras-book"
+                             {% if default_view_type != 'book' %}hidden{% endif %}>
+                            <p class="viewer-extras__head">{{ 'Book options' | t }}</p>
+
+                            <div class="field">
+                                <label>{{ 'Book covers' | t }}</label>
+                                <label class="folder-choice">
+                                    <input type="checkbox" name="hard_covers" value="1" checked>
+                                    {{ 'Hard covers' | t }}
+                                </label>
+                                <p class="subtitle">{{ 'First and last page turn like a stiff cover. Uncheck to flip them softly.' | t }}</p>
+                            </div>
+
+                            <div class="field field--wide">
+                                <label for="back_cover">{{ 'Back Cover' | t }} <span class="hint">{{ 'optional' | t }}</span></label>
+                                <input type="file" id="back_cover" name="back_cover"
+                                       accept=".png,.jpg,.jpeg,.gif,.webp,.pdf">
+                                <p class="subtitle">{{ 'Shown as the last page in the Book viewer.' | t }}</p>
+                            </div>
+                        </div>
+
+                        {# ===== 3D INSPECT extras ============================
+                           Explanation, back texture, and — for a BUILT sheet —
+                           the material picker with a live preview. The material
+                           block is hidden when a .glb model is chosen as the
+                           file (a model brings its own materials). #}
+                        <div class="field field--wide viewer-extras" id="extras-3d"
+                             {% if default_view_type != 'object3d' %}hidden{% endif %}>
+                            <p class="viewer-extras__head">{{ '3D Inspect options' | t }}</p>
+
+                            <p class="subtitle">
+                                {{ 'The player rotates, zooms and pans the handout in 3D. Upload a .glb 3D model as the file, or a front image (PNG) as a double-sided sheet: transparent areas of the PNG become real holes (torn scrolls, bullet holes).' | t }}
+                            </p>
+
+                            <div class="field field--wide">
+                                <label for="back_texture">{{ 'Back Texture' | t }} <span class="hint">{{ 'sheet, optional' | t }}</span></label>
+                                <input type="file" id="back_texture" name="back_texture"
+                                       accept=".png,.jpg,.jpeg,.gif,.webp">
+                                <p class="subtitle">{{ 'Painted on the reverse of the 3D sheet. Use a PNG with transparency for holes. Leave empty to reuse the front.' | t }}</p>
+                            </div>
+
+                            {# The whole material block only matters for a BUILT
+                               sheet (image front), not a .glb. `#sheet-material`
+                               is hidden by JS when the chosen file is a model. #}
+                            <div id="sheet-material">
+                                <div class="field field--wide">
+                                    <label>{{ 'Sheet material' | t }}</label>
+                                    <p class="subtitle">{{ 'How the built sheet looks and how thick it is when seen edge-on.' | t }}</p>
+                                </div>
+
+                                <div class="mat-layout">
+                                    <div>
+                                        {# Preset chips. Each carries its numbers
+                                           as data-* so picking one fills the
+                                           advanced sliders below. #}
+                                        <div class="mat-presets" role="radiogroup" aria-label="{{ 'Sheet material' | t }}">
+                                            {% for key, p in sheet_material_presets.items() %}
+                                            <label class="mat-preset"
+                                                   data-roughness="{{ p.roughness }}"
+                                                   data-metalness="{{ p.metalness }}"
+                                                   data-thickness="{{ p.thickness }}">
+                                                <input type="radio" name="sheet_material_preset" value="{{ key }}"
+                                                       {% if key == default_sheet_material.preset %}checked{% endif %}>
+                                                <span class="mat-swatch" style="background:
+                                                    {%- if key == 'metal' %}#9a9a9a
+                                                    {%- elif key == 'stone' %}#8b8680
+                                                    {%- elif key == 'wood' %}#7a5230
+                                                    {%- elif key == 'leather' %}#6b4a2f
+                                                    {%- elif key == 'paper' %}#efe7d2
+                                                    {%- else %}#cbb994{% endif -%};"></span>
+                                                {{ p.label | t }}
+                                            </label>
+                                            {% endfor %}
+                                        </div>
+
+                                        <details class="mat-advanced">
+                                            <summary>{{ 'Advanced options' | t }}</summary>
+
+                                            <div class="slider-row">
+                                                <label for="sheet_roughness">
+                                                    {{ 'Roughness' | t }}
+                                                    <output id="out-roughness">{{ default_sheet_material.roughness }}</output>
+                                                </label>
+                                                <input type="range" id="sheet_roughness" name="sheet_roughness"
+                                                       min="0" max="1" step="0.01"
+                                                       value="{{ default_sheet_material.roughness }}">
+                                            </div>
+
+                                            <div class="slider-row">
+                                                <label for="sheet_metalness">
+                                                    {{ 'Metalness' | t }}
+                                                    <output id="out-metalness">{{ default_sheet_material.metalness }}</output>
+                                                </label>
+                                                <input type="range" id="sheet_metalness" name="sheet_metalness"
+                                                       min="0" max="1" step="0.01"
+                                                       value="{{ default_sheet_material.metalness }}">
+                                            </div>
+
+                                            <div class="slider-row">
+                                                <label for="sheet_thickness">
+                                                    {{ 'Thickness / depth' | t }}
+                                                    <output id="out-thickness">{{ default_sheet_material.thickness }}</output>
+                                                </label>
+                                                <input type="range" id="sheet_thickness" name="sheet_thickness"
+                                                       min="0.005" max="0.5" step="0.005"
+                                                       value="{{ default_sheet_material.thickness }}">
+                                                <p class="subtitle">{{ 'Give the sheet some depth so it doesn\'t vanish when turned edge-on.' | t }}</p>
+                                            </div>
+                                        </details>
+                                    </div>
+
+                                    {# Live preview. Shows the chosen front image
+                                       as a sheet with the current material, so
+                                       the Master sees roughness / metalness /
+                                       depth before saving. Falls back to a hint
+                                       until a front image is picked. #}
+                                    <div>
+                                        <div class="mat-preview" id="mat-preview">
+                                            <div class="mat-preview__hint" id="mat-preview-hint">
+                                                {{ 'Pick a front image to preview the material in 3D.' | t }}
+                                            </div>
+                                            <div class="mat-preview__state" id="mat-preview-state" hidden></div>
+                                        </div>
+                                        <p class="subtitle" style="margin-top:6px;">{{ 'Drag to rotate the preview.' | t }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {# ===== Filing metadata ============================= #}
                         <div class="field field--wide">
                             <label>{{ 'Folders' | t }}</label>
                             {% if folders %}
@@ -139,40 +426,6 @@
                                 {% endfor %}
                             </select>
                             <p class="subtitle">{{ 'When a player types the password in this handout\'s info panel, the chosen handout opens in its place.' | t }}</p>
-                        </div>
-
-                        {# The Files label + its hint change with the viewer.
-                           Server-side sets which hint/sub is visible initially;
-                           the JS at the foot switches them and the accept list. #}
-                        <div class="field field--wide">
-                            <label for="file">{{ 'Files' | t }}
-                                <span class="hint" id="file-hint-default" {% if default_view_type == 'object3d' %}hidden{% endif %}>{{ 'images, PDF or 3D model (.glb)' | t }}</span>
-                                <span class="hint" id="file-hint-3d" {% if default_view_type != 'object3d' %}hidden{% endif %}>{{ 'one .glb model, or one PNG for a sheet' | t }}</span>
-                            </label>
-                            <input type="file" id="file" name="files"
-                                   accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.glb" multiple required>
-                            <p class="subtitle" id="file-sub-default" {% if default_view_type == 'object3d' %}hidden{% endif %}>{{ 'Select several images to build a carousel or book.' | t }}</p>
-                            <p class="subtitle" id="file-sub-3d" {% if default_view_type != 'object3d' %}hidden{% endif %}>{{ 'For 3D Inspect, upload one .glb model, or one PNG for a double-sided sheet.' | t }}</p>
-                        </div>
-
-                        {# Book viewer only: the back cover shown as the last
-                           page. Hidden server-side unless the default is Book;
-                           JS follows the select. #}
-                        <div class="field field--wide" id="back-cover-field" {% if default_view_type != 'book' %}hidden{% endif %}>
-                            <label for="back_cover">{{ 'Back Cover' | t }} <span class="hint">{{ 'Book viewer, optional' | t }}</span></label>
-                            <input type="file" id="back_cover" name="back_cover"
-                                   accept=".png,.jpg,.jpeg,.gif,.webp,.pdf">
-                            <p class="subtitle">{{ 'Shown as the last page in the Book viewer.' | t }}</p>
-                        </div>
-
-                        {# 3D Inspect viewer only: the reverse-side texture of the
-                           double-sided sheet. Hidden server-side unless default
-                           is object3d; JS follows the select. #}
-                        <div class="field field--wide" id="back-texture-field" {% if default_view_type != 'object3d' %}hidden{% endif %}>
-                            <label for="back_texture">{{ 'Back Texture' | t }} <span class="hint">{{ '3D Inspect sheet, optional' | t }}</span></label>
-                            <input type="file" id="back_texture" name="back_texture"
-                                   accept=".png,.jpg,.jpeg,.gif,.webp">
-                            <p class="subtitle">{{ 'Painted on the reverse of the 3D sheet. Use a PNG with transparency for holes. Leave empty to reuse the front.' | t }}</p>
                         </div>
 
                         <div class="field field--wide">
@@ -242,50 +495,68 @@
         {% include '_footer.html' %}
     </div>
 
-
     <script>
-        // Show only the fields that belong to the selected viewer, so the form
-        // never offers a control that does nothing for the chosen viewer:
-        //   * Carousel  -> just the files (no covers, no texture, no 3D note).
-        //   * Book      -> "Book covers" (hard/soft) + "Back Cover".
-        //   * 3D Inspect-> the 3D help note + "Back Texture", and the Files
-        //                  label/hint switch to the .glb/PNG wording.
-        // The initial state is already set server-side (hidden attributes from
-        // default_view_type), so this only needs to react to later changes.
-        // Wrapped so a throw can't leave fields stuck; runs on DOMContentLoaded
-        // in case this <script> parses before the form for any reason.
+        // =================================================================
+        // Viewer-driven form: show only the chosen viewer's extras, switch the
+        // Files hint/accept, and (for a built 3D sheet) drive a live material
+        // preview. Wrapped so a throw can't leave the form half-wired; runs on
+        // DOMContentLoaded in case this parses before the form.
+        // =================================================================
         (function () {
+            var INSPECTOR_URL = "{{ url_for('static', filename='vendor/three/inspector3d.js') }}";
+            var T = {
+                loading: {{ 'Building preview…' | t | tojson }},
+                error:   {{ 'Preview unavailable here.' | t | tojson }}
+            };
+
             function wire() {
-                var viewer = document.getElementById('view_type');
-                if (!viewer) return;
-                var ids = {
-                    hard: 'hard-covers-field',
-                    backCover: 'back-cover-field',
-                    backTex: 'back-texture-field',
-                    help3d: 'object3d-help',
-                    hintDefault: 'file-hint-default',
-                    hint3d: 'file-hint-3d',
-                    subDefault: 'file-sub-default',
-                    sub3d: 'file-sub-3d'
-                };
-                var el = {};
-                for (var k in ids) el[k] = document.getElementById(ids[k]);
+                var form = document.getElementById('upload-form');
+                if (!form) return;
+
+                var tiles = Array.prototype.slice.call(
+                    form.querySelectorAll('input[name="view_type"]'));
                 var fileInput = document.getElementById('file');
+
+                var el = {
+                    extrasBook: document.getElementById('extras-book'),
+                    extras3d: document.getElementById('extras-3d'),
+                    sheetMat: document.getElementById('sheet-material'),
+                    hintDefault: document.getElementById('file-hint-default'),
+                    hint3d: document.getElementById('file-hint-3d'),
+                    subDefault: document.getElementById('file-sub-default'),
+                    sub3d: document.getElementById('file-sub-3d')
+                };
 
                 var ACCEPT_3D = '.glb,.png,.jpg,.jpeg,.gif,.webp';
                 var ACCEPT_PAGED = '.png,.jpg,.jpeg,.gif,.webp,.pdf,.glb';
 
-                function show(e, on) { if (e) { e.hidden = !on; } }
+                function show(e, on) { if (e) e.hidden = !on; }
+                function currentViewer() {
+                    var checked = form.querySelector('input[name="view_type"]:checked');
+                    return checked ? checked.value : 'carousel';
+                }
+
+                // Is the currently-picked file a .glb model? (Only the first
+                // file matters; the sheet material is irrelevant for a model.)
+                function pickedIsModel() {
+                    var f = fileInput && fileInput.files && fileInput.files[0];
+                    if (!f) return false;
+                    return /\.glb$/i.test(f.name || '');
+                }
+                // The first picked file, if it is an image (for the preview).
+                function pickedImage() {
+                    var f = fileInput && fileInput.files && fileInput.files[0];
+                    if (!f) return null;
+                    return /\.(png|jpe?g|gif|webp)$/i.test(f.name || '') ? f : null;
+                }
 
                 function sync() {
-                    var v = viewer.value;
+                    var v = currentViewer();
                     var isBook = (v === 'book');
                     var is3d = (v === 'object3d');
 
-                    show(el.hard, isBook);
-                    show(el.backCover, isBook);
-                    show(el.backTex, is3d);
-                    show(el.help3d, is3d);
+                    show(el.extrasBook, isBook);
+                    show(el.extras3d, is3d);
 
                     show(el.hintDefault, !is3d);
                     show(el.hint3d, is3d);
@@ -293,10 +564,162 @@
                     show(el.sub3d, is3d);
 
                     if (fileInput) fileInput.setAttribute('accept', is3d ? ACCEPT_3D : ACCEPT_PAGED);
+
+                    // Material block only for a built (image) sheet, not a model.
+                    if (el.sheetMat) el.sheetMat.hidden = !(is3d && !pickedIsModel());
+
+                    // Mirror checked state onto tiles for browsers without :has().
+                    tiles.forEach(function (r) {
+                        var tile = r.closest('.viewer-tile');
+                        if (tile) tile.classList.toggle('is-checked', r.checked);
+                    });
+
+                    updatePreview();
                 }
-                viewer.addEventListener('change', sync);
-                sync();   // reconcile once on load (harmless: matches server state)
+
+                tiles.forEach(function (r) { r.addEventListener('change', sync); });
+
+                // ---- Material sliders <-> preset chips ----------------------
+                var rough = document.getElementById('sheet_roughness');
+                var metal = document.getElementById('sheet_metalness');
+                var thick = document.getElementById('sheet_thickness');
+                var outR = document.getElementById('out-roughness');
+                var outM = document.getElementById('out-metalness');
+                var outT = document.getElementById('out-thickness');
+                var presetChips = Array.prototype.slice.call(
+                    form.querySelectorAll('input[name="sheet_material_preset"]'));
+
+                function refreshOutputs() {
+                    if (outR && rough) outR.textContent = (+rough.value).toFixed(2);
+                    if (outM && metal) outM.textContent = (+metal.value).toFixed(2);
+                    if (outT && thick) outT.textContent = (+thick.value).toFixed(3);
+                }
+
+                // Picking a preset loads its three numbers into the sliders.
+                presetChips.forEach(function (chip) {
+                    chip.addEventListener('change', function () {
+                        var label = chip.closest('.mat-preset');
+                        if (!label) return;
+                        if (rough) rough.value = label.getAttribute('data-roughness');
+                        if (metal) metal.value = label.getAttribute('data-metalness');
+                        if (thick) thick.value = label.getAttribute('data-thickness');
+                        // Mirror checked state for no-:has() browsers.
+                        presetChips.forEach(function (c) {
+                            var l = c.closest('.mat-preset');
+                            if (l) l.classList.toggle('is-checked', c.checked);
+                        });
+                        refreshOutputs();
+                        updatePreview();
+                    });
+                });
+
+                // Nudging a slider means the material no longer matches a named
+                // preset: the server records it as 'custom'. We don't need to
+                // change the radio here (the backend derives 'custom' from the
+                // numbers), but we clear the visible chip highlight so the UI
+                // doesn't imply a preset that no longer holds.
+                [rough, metal, thick].forEach(function (s) {
+                    if (!s) return;
+                    s.addEventListener('input', function () {
+                        refreshOutputs();
+                        schedulePreview();
+                    });
+                });
+
+                // ---- Live 3D preview ---------------------------------------
+                // Rebuilds an Inspector3D whenever the front image, the viewer,
+                // or the material changes. Debounced so dragging a slider does
+                // not thrash the GPU. Only ever runs for a built sheet with an
+                // image chosen; a model or a non-3D viewer tears it down.
+                var host = document.getElementById('mat-preview');
+                var hint = document.getElementById('mat-preview-hint');
+                var state = document.getElementById('mat-preview-state');
+                var inspector = null;
+                var objectUrl = null;      // the createObjectURL to revoke
+                var previewToken = 0;      // guards async module import
+                var debounceTimer = null;
+                var Inspector3DCtor = null; // cached after first import
+
+                function setState(msg) {
+                    if (!state) return;
+                    if (msg) { state.textContent = msg; state.hidden = false; }
+                    else { state.hidden = true; }
+                }
+
+                function teardownPreview() {
+                    if (inspector) {
+                        try { inspector.destroy(); } catch (e) { /* ignore */ }
+                        inspector = null;
+                    }
+                    if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
+                }
+
+                function materialNow() {
+                    return {
+                        roughness: rough ? +rough.value : 0.85,
+                        metalness: metal ? +metal.value : 0.0,
+                        thickness: thick ? +thick.value : 0.05
+                    };
+                }
+
+                function schedulePreview() {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(updatePreview, 180);
+                }
+
+                function updatePreview() {
+                    // Only for a built sheet in the 3D viewer with an image.
+                    var active = (currentViewer() === 'object3d') && !pickedIsModel();
+                    var img = pickedImage();
+
+                    // Always start clean: the material or file may have changed.
+                    var myToken = ++previewToken;
+                    teardownPreview();
+
+                    if (!active || !img) {
+                        setState('');
+                        if (hint) hint.hidden = false;
+                        return;
+                    }
+                    if (hint) hint.hidden = true;
+                    setState(T.loading);
+
+                    objectUrl = URL.createObjectURL(img);
+                    var frontUrl = objectUrl;
+                    var mat = materialNow();
+
+                    var build = function () {
+                        if (myToken !== previewToken) return;  // superseded
+                        try {
+                            inspector = new Inspector3DCtor(host, {
+                                frontUrl: frontUrl,
+                                material: mat,
+                                onLoaded: function () { if (myToken === previewToken) setState(''); },
+                                onError: function () { if (myToken === previewToken) setState(T.error); }
+                            }).init();
+                        } catch (e) {
+                            if (myToken === previewToken) setState(T.error);
+                        }
+                    };
+
+                    if (Inspector3DCtor) { build(); return; }
+                    import(INSPECTOR_URL).then(function (mod) {
+                        if (myToken !== previewToken) return;
+                        Inspector3DCtor = mod.Inspector3D || mod.default;
+                        build();
+                    }).catch(function () {
+                        if (myToken === previewToken) setState(T.error);
+                    });
+                }
+
+                if (fileInput) fileInput.addEventListener('change', function () {
+                    sync();            // a new file may flip model<->sheet
+                });
+
+                refreshOutputs();
+                sync();                // reconcile once on load
             }
+
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', wire);
             } else {

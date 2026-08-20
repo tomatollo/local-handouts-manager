@@ -5,6 +5,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ 'Edit Handout' | t }}</title>
     {% include '_head.html' %}
+
+    {# Import map for the live 3D material preview (same self-hosted three as
+       the player lightbox). The Inspector3D module is imported lazily, only
+       when the object3d viewer is selected and an image file is chosen. #}
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "{{ url_for('static', filename='vendor/three/three.module.min.js') }}",
+        "three/addons/": "{{ url_for('static', filename='vendor/three/addons/') }}"
+      }
+    }
+    </script>
+
+    <style>
+        /* Sheet-material controls (object3d built sheet). Mirrors the create
+           page; scoped here so edit.html keeps its plainer single-column form. */
+        .mat-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+        .mat-preset {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 12px;
+            background: var(--bg-panel);
+            border: var(--px) solid var(--border);
+            box-shadow: 2px 2px 0 0 var(--shadow);
+            cursor: pointer; user-select: none;
+            font-size: 0.85rem; color: var(--ink);
+        }
+        .mat-preset input { position: absolute; opacity: 0; width: 0; height: 0; }
+        .mat-preset:has(input:checked),
+        .mat-preset.is-checked {
+            border-color: var(--accent);
+            background: color-mix(in srgb, var(--accent) 18%, var(--bg-panel));
+            color: var(--accent);
+        }
+        .mat-swatch {
+            width: 14px; height: 14px; border: 2px solid var(--border);
+            display: inline-block; flex: 0 0 auto;
+        }
+        .mat-advanced { margin-top: 12px; }
+        .mat-advanced > summary {
+            cursor: pointer; color: var(--ink-dim);
+            font-size: 0.85rem; padding: 4px 0; list-style: revert;
+        }
+        .mat-advanced[open] > summary { color: var(--accent); }
+        .slider-row { display: grid; grid-template-columns: 1fr; gap: 4px; margin-top: 10px; }
+        .slider-row label {
+            display: flex; justify-content: space-between; align-items: baseline;
+            font-size: 0.85rem; color: var(--ink-dim);
+        }
+        .slider-row output { color: var(--accent); font-variant-numeric: tabular-nums; }
+        .slider-row input[type=range] { width: 100%; accent-color: var(--accent); }
+        .mat-layout { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 8px; }
+        @media (min-width: 720px) {
+            .mat-layout { grid-template-columns: 1fr 240px; align-items: start; }
+        }
+        .mat-preview {
+            position: relative; width: 100%; aspect-ratio: 1 / 1;
+            background: #0b0b0d;
+            border: var(--px) solid var(--border);
+            box-shadow: var(--px) var(--px) 0 0 var(--shadow);
+            overflow: hidden;
+        }
+        .mat-preview__hint, .mat-preview__state {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            text-align: center; padding: 16px;
+            color: var(--ink-dim); font-size: 0.82rem; line-height: 1.4;
+            pointer-events: none;
+        }
+        .mat-preview__state { color: var(--accent); }
+        .mat-preview canvas { display: block; }
+    </style>
 </head>
 <body>
     <div class="wrap">
@@ -197,6 +268,74 @@
                     {% endif %}
                     <input type="file" id="back_texture" name="back_texture" accept=".png,.jpg,.jpeg,.gif,.webp">
                     <p class="subtitle">{{ 'Painted on the reverse of the 3D sheet. Use a PNG with transparency for holes. Leave empty to reuse the front.' | t }}</p>
+
+                    {# ---- Built-sheet material (roughness/metalness/depth) ----
+                       Only relevant to a built sheet (image front), not a .glb
+                       model. The whole #back-texture-field is already shown only
+                       for object3d; this block is hidden by JS when the COVER
+                       file is a 3D model. Prefilled from the saved material. #}
+                    {% set sm = handout.sheet_material %}
+                    <div id="sheet-material">
+                        <label style="margin-top:10px;">{{ 'Sheet material' | t }}</label>
+                        <p class="subtitle">{{ 'How the built sheet looks and how thick it is when seen edge-on.' | t }}</p>
+
+                        <div class="mat-layout">
+                            <div>
+                                <div class="mat-presets" role="radiogroup" aria-label="{{ 'Sheet material' | t }}">
+                                    {% for key, p in sheet_material_presets.items() %}
+                                    <label class="mat-preset"
+                                           data-roughness="{{ p.roughness }}"
+                                           data-metalness="{{ p.metalness }}"
+                                           data-thickness="{{ p.thickness }}">
+                                        <input type="radio" name="sheet_material_preset" value="{{ key }}"
+                                               {% if key == sm.preset %}checked{% endif %}>
+                                        <span class="mat-swatch" style="background:
+                                            {%- if key == 'metal' %}#9a9a9a
+                                            {%- elif key == 'stone' %}#8b8680
+                                            {%- elif key == 'wood' %}#7a5230
+                                            {%- elif key == 'leather' %}#6b4a2f
+                                            {%- elif key == 'paper' %}#efe7d2
+                                            {%- else %}#cbb994{% endif -%};"></span>
+                                        {{ p.label | t }}
+                                    </label>
+                                    {% endfor %}
+                                </div>
+
+                                <details class="mat-advanced" {% if sm.preset == 'custom' %}open{% endif %}>
+                                    <summary>{{ 'Advanced options' | t }}</summary>
+                                    <div class="slider-row">
+                                        <label for="sheet_roughness">{{ 'Roughness' | t }}
+                                            <output id="out-roughness">{{ sm.roughness }}</output></label>
+                                        <input type="range" id="sheet_roughness" name="sheet_roughness"
+                                               min="0" max="1" step="0.01" value="{{ sm.roughness }}">
+                                    </div>
+                                    <div class="slider-row">
+                                        <label for="sheet_metalness">{{ 'Metalness' | t }}
+                                            <output id="out-metalness">{{ sm.metalness }}</output></label>
+                                        <input type="range" id="sheet_metalness" name="sheet_metalness"
+                                               min="0" max="1" step="0.01" value="{{ sm.metalness }}">
+                                    </div>
+                                    <div class="slider-row">
+                                        <label for="sheet_thickness">{{ 'Thickness / depth' | t }}
+                                            <output id="out-thickness">{{ sm.thickness }}</output></label>
+                                        <input type="range" id="sheet_thickness" name="sheet_thickness"
+                                               min="0.005" max="0.5" step="0.005" value="{{ sm.thickness }}">
+                                        <p class="subtitle">{{ 'Give the sheet some depth so it doesn\'t vanish when turned edge-on.' | t }}</p>
+                                    </div>
+                                </details>
+                            </div>
+
+                            <div>
+                                <div class="mat-preview" id="mat-preview">
+                                    <div class="mat-preview__hint" id="mat-preview-hint">
+                                        {{ 'Preview uses the current front image.' | t }}
+                                    </div>
+                                    <div class="mat-preview__state" id="mat-preview-state" hidden></div>
+                                </div>
+                                <p class="subtitle" style="margin-top:6px;">{{ 'Drag to rotate the preview.' | t }}</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <label>&nbsp;</label>
@@ -244,6 +383,12 @@
                     show(el.hint3d, is3d);
 
                     if (fileInput) fileInput.setAttribute('accept', is3d ? ACCEPT_3D : ACCEPT_PAGED);
+
+                    // The material block only applies to a BUILT sheet, not a
+                    // .glb model. Hide it when the cover file is a model. The
+                    // material JS (separate IIFE) listens for this via the
+                    // 'viewersync' event so it can refresh its preview too.
+                    document.dispatchEvent(new CustomEvent('viewersync', { detail: { is3d: is3d } }));
                 }
                 viewer.addEventListener('change', sync);
                 sync();
@@ -336,6 +481,164 @@
                     });
                 });
             }
+        })();
+
+        // ---- Sheet material: presets <-> sliders <-> live 3D preview -------
+        (function () {
+            var INSPECTOR_URL = {{ url_for('static', filename='vendor/three/inspector3d.js') | tojson }};
+            var UPLOADS_BASE = {{ (url_for('static', filename='uploads/') ) | tojson }};
+            var T = {
+                loading: {{ 'Building preview…' | t | tojson }},
+                error:   {{ 'Preview unavailable here.' | t | tojson }}
+            };
+            // The saved cover, if it is an image, seeds the preview before the
+            // Master picks a new file. reader/filename come from the server.
+            var COVER = {{ ({'filename': (handout.files[0].filename if handout.files else ''), 'reader': (handout.files[0].reader if handout.files else '')}) | tojson }};
+
+            var viewer = document.getElementById('view_type');
+            var block = document.getElementById('sheet-material');
+            if (!viewer || !block) return;
+
+            var fileInput = document.getElementById('file');
+            var rough = document.getElementById('sheet_roughness');
+            var metal = document.getElementById('sheet_metalness');
+            var thick = document.getElementById('sheet_thickness');
+            var outR = document.getElementById('out-roughness');
+            var outM = document.getElementById('out-metalness');
+            var outT = document.getElementById('out-thickness');
+            var presetChips = Array.prototype.slice.call(
+                document.querySelectorAll('input[name="sheet_material_preset"]'));
+
+            var host = document.getElementById('mat-preview');
+            var hint = document.getElementById('mat-preview-hint');
+            var state = document.getElementById('mat-preview-state');
+            var inspector = null;
+            var objectUrl = null;
+            var previewToken = 0;
+            var debounceTimer = null;
+            var Ctor = null;
+
+            function refreshOutputs() {
+                if (outR && rough) outR.textContent = (+rough.value).toFixed(2);
+                if (outM && metal) outM.textContent = (+metal.value).toFixed(2);
+                if (outT && thick) outT.textContent = (+thick.value).toFixed(3);
+            }
+            function setState(msg) {
+                if (!state) return;
+                if (msg) { state.textContent = msg; state.hidden = false; }
+                else { state.hidden = true; }
+            }
+            function materialNow() {
+                return {
+                    roughness: rough ? +rough.value : 0.85,
+                    metalness: metal ? +metal.value : 0.0,
+                    thickness: thick ? +thick.value : 0.05
+                };
+            }
+
+            // The newly-picked file, if it is an image (takes precedence over
+            // the saved cover for the preview). A .glb picked here means the
+            // handout is becoming a model, so no sheet preview.
+            function pickedFile() {
+                var f = fileInput && fileInput.files && fileInput.files[0];
+                return f || null;
+            }
+            function pickedIsModel() {
+                var f = pickedFile();
+                if (f) return /\.glb$/i.test(f.name || '');
+                // No new file: fall back to the saved cover's type.
+                return COVER.reader === 'model';
+            }
+            function pickedImageFile() {
+                var f = pickedFile();
+                if (f && /\.(png|jpe?g|gif|webp)$/i.test(f.name || '')) return f;
+                return null;
+            }
+            // The URL to preview: a freshly-picked image (object URL) wins;
+            // else the saved cover if it is an image; else null.
+            function previewSource() {
+                var img = pickedImageFile();
+                if (img) return { kind: 'blob', file: img };
+                if (!pickedFile() && COVER.reader === 'image' && COVER.filename) {
+                    return { kind: 'url', url: UPLOADS_BASE + COVER.filename };
+                }
+                return null;
+            }
+
+            function teardown() {
+                if (inspector) { try { inspector.destroy(); } catch (e) {} inspector = null; }
+                if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
+            }
+
+            function update() {
+                var is3d = (viewer.value === 'object3d');
+                // Hide the whole material block for a model cover, mirror of
+                // create.html. The block sits inside #back-texture-field, which
+                // the viewer-sync already hides for non-3d viewers.
+                block.hidden = !(is3d && !pickedIsModel());
+
+                var myToken = ++previewToken;
+                teardown();
+
+                if (block.hidden) { setState(''); if (hint) hint.hidden = false; return; }
+
+                var src = previewSource();
+                if (!src) { setState(''); if (hint) hint.hidden = false; return; }
+                if (hint) hint.hidden = true;
+                setState(T.loading);
+
+                var frontUrl;
+                if (src.kind === 'blob') { objectUrl = URL.createObjectURL(src.file); frontUrl = objectUrl; }
+                else { frontUrl = src.url; }
+                var mat = materialNow();
+
+                var build = function () {
+                    if (myToken !== previewToken) return;
+                    try {
+                        inspector = new Ctor(host, {
+                            frontUrl: frontUrl,
+                            material: mat,
+                            onLoaded: function () { if (myToken === previewToken) setState(''); },
+                            onError: function () { if (myToken === previewToken) setState(T.error); }
+                        }).init();
+                    } catch (e) { if (myToken === previewToken) setState(T.error); }
+                };
+                if (Ctor) { build(); return; }
+                import(INSPECTOR_URL).then(function (mod) {
+                    if (myToken !== previewToken) return;
+                    Ctor = mod.Inspector3D || mod.default;
+                    build();
+                }).catch(function () { if (myToken === previewToken) setState(T.error); });
+            }
+
+            function schedule() { clearTimeout(debounceTimer); debounceTimer = setTimeout(update, 180); }
+
+            presetChips.forEach(function (chip) {
+                chip.addEventListener('change', function () {
+                    var label = chip.closest('.mat-preset');
+                    if (label) {
+                        if (rough) rough.value = label.getAttribute('data-roughness');
+                        if (metal) metal.value = label.getAttribute('data-metalness');
+                        if (thick) thick.value = label.getAttribute('data-thickness');
+                    }
+                    presetChips.forEach(function (c) {
+                        var l = c.closest('.mat-preset');
+                        if (l) l.classList.toggle('is-checked', c.checked);
+                    });
+                    refreshOutputs();
+                    update();
+                });
+            });
+            [rough, metal, thick].forEach(function (s) {
+                if (!s) return;
+                s.addEventListener('input', function () { refreshOutputs(); schedule(); });
+            });
+            if (fileInput) fileInput.addEventListener('change', update);
+            // React to the viewer <select> changing (fired by the first IIFE).
+            document.addEventListener('viewersync', update);
+
+            refreshOutputs();
+            update();
         })();
     </script>
 </body>

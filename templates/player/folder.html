@@ -43,6 +43,7 @@
                  data-hard-covers="{{ 'true' if h.hard_covers else 'false' }}"
                  {% if h.back_cover %}data-back='{{ h.back_cover | tojson }}'{% endif %}
                  {% if h.back_texture %}data-back-texture='{{ h.back_texture | tojson }}'{% endif %}
+                 {% if h.sheet_material %}data-sheet-material='{{ h.sheet_material | tojson }}'{% endif %}
                  data-files='{{ h.files | tojson }}'>
                 <div class="h-thumb">
                     {% if cover.reader == 'image' %}

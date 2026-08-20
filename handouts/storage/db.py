@@ -21,6 +21,7 @@ from .. import theming
 from .paths import DB_PATH, POP_KEY, MAP_KEY, MAPS_KEY
 from .util import clean_view_type
 from .formats import format_of_handout
+from .materials import clean_sheet_material
 from .welcome import _normalize_welcome
 from .map_state import _normalize_map
 
@@ -198,6 +199,13 @@ def _normalize(data):
         # exactly as it was; a Master can clear it to make the covers turn soft.
         h.setdefault('hard_covers', True)
         h['hard_covers'] = bool(h.get('hard_covers'))
+        # Object3d SHEET viewer only: how the procedurally-built paper looks
+        # (roughness/metalness) and how thick it is (so it doesn't vanish edge
+        # on). A named preset or a custom tune; see materials.clean_sheet_material.
+        # Ignored by a .glb model (it brings its own materials) and by the
+        # carousel/book viewers. Default (parchment) matches the reader's old
+        # hardcoded 0.85/0.0 look, so existing sheet handouts are unchanged.
+        h['sheet_material'] = clean_sheet_material(h.get('sheet_material'))
         # Original upload format ('pdf', 'png', ...), used only by the master's
         # "Group by Format" view. Legacy records saved before this field gain a
         # best-guess value from their cover file's extension, so they still

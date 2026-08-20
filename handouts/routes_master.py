@@ -147,7 +147,31 @@ def create_page():
                            handouts=db['handouts'],
                            view_types=storage.VIEW_TYPES,
                            default_view_type=storage.DEFAULT_VIEW_TYPE,
+                           # The object3d sheet material picker: the named
+                           # presets it offers and the default a fresh handout
+                           # starts on (parchment). The template pre-fills its
+                           # advanced sliders from these so a POST always
+                           # carries valid numbers even if "Advanced" is closed.
+                           sheet_material_presets=storage.SHEET_MATERIAL_PRESETS,
+                           default_sheet_material=storage.default_sheet_material(),
                            passphrase_set=auth.is_configured(db))
+
+
+def _sheet_material_from_request():
+    """Read the four sheet-material form fields into a cleaned material dict.
+
+    Shared by upload + edit so the two paths can never drift. Missing fields
+    (a POST from a page whose viewer was never object3d) simply fall through to
+    the preset/defaults inside sheet_material_from_form, which clamps and fills
+    anything absent -- so it is always safe to call and always returns a valid
+    dict, even for a carousel handout that will never use it.
+    """
+    return storage.sheet_material_from_form(
+        request.form.get('sheet_material_preset'),
+        request.form.get('sheet_roughness'),
+        request.form.get('sheet_metalness'),
+        request.form.get('sheet_thickness'),
+    )
 
 
 @bp.route('/upload', methods=['POST'])
@@ -181,6 +205,12 @@ def upload_handout():
     # sends no field at all, so absence means False here. Default-on lives in
     # the create form's `checked` attribute and in _normalize for old records.
     hard_covers = bool(request.form.get('hard_covers'))
+
+    # Object3d built-sheet material (roughness/metalness/thickness). Always
+    # parsed and stored: it is cheap, it is ignored by every other viewer, and
+    # storing it unconditionally means switching a handout TO object3d later
+    # (in edit) already finds a sensible material rather than nothing.
+    sheet_material = _sheet_material_from_request()
 
     # Optional back cover (only meaningful for the Book viewer).
     back_cover = None
@@ -257,6 +287,7 @@ def upload_handout():
         'folders': folder_ids,
         'view_type': view_type,
         'hard_covers': hard_covers,
+        'sheet_material': sheet_material,
         'source_format': source_format,
         'back_cover': back_cover,
         'back_texture': back_texture,
@@ -294,7 +325,9 @@ def edit_handout(handout_id):
                                folders=storage.all_folders(db),
                                handouts=db['handouts'],
                                view_types=storage.VIEW_TYPES,
-                               default_view_type=storage.DEFAULT_VIEW_TYPE)
+                               default_view_type=storage.DEFAULT_VIEW_TYPE,
+                               sheet_material_presets=storage.SHEET_MATERIAL_PRESETS,
+                               default_sheet_material=storage.default_sheet_material())
 
     # --- POST: metadata ---
     handout['title'] = request.form.get('title', '').strip() or handout['title']
@@ -308,6 +341,10 @@ def edit_handout(handout_id):
     # touched here: it records what the handout ORIGINALLY was, so adding or
     # swapping files in an edit doesn't relabel a PDF handout as PNG.
     handout['hard_covers'] = bool(request.form.get('hard_covers'))
+    # Object3d built-sheet material. Parsed unconditionally like at upload, so
+    # a handout being switched to object3d in this same edit already gets the
+    # material the form carried.
+    handout['sheet_material'] = _sheet_material_from_request()
     handout['folders'] = storage.valid_folder_ids(
         db, request.form.getlist('folders'))
     handout['session_title'] = request.form.get('session_title', '').strip()

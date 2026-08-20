@@ -4,6 +4,7 @@ passwords, session number).
 """
 
 from .paths import DEFAULT_VIEW_TYPE
+from .materials import clean_sheet_material
 
 
 def find(db, handout_id):
@@ -33,6 +34,12 @@ def player_payload(handout):
         # paints the back face of the double-sided sheet. None when the handout
         # is a model or a single-sided sheet.
         'back_texture': handout.get('back_texture'),
+        # The object3d sheet's material (roughness/metalness/thickness). Cleaned
+        # on the way out so a POP/reveal payload carries a valid dict even for a
+        # hand-edited record that never went through _normalize. The 3D reader
+        # reads it only for a built sheet; a .glb model and the 2D viewers
+        # ignore it.
+        'sheet_material': clean_sheet_material(handout.get('sheet_material')),
         # True when THIS handout itself carries a further secret reveal, so the
         # viewer knows to keep showing the password box after a reveal chains
         # into another handout. The password values are never included.

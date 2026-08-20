@@ -35,6 +35,10 @@ Explanation-oriented docs: read these to understand the system.
 - **[reference/STORAGE.md](reference/STORAGE.md)** — the `handouts/storage/`
   persistence package: its module map, the acyclic dependency graph, the maps
   model, and the draft/confirm staging.
+- **[reference/3D-VIEWER.md](reference/3D-VIEWER.md)** — the `object3d`
+  inspection viewer: what it is built on (self-hosted Three.js), how a handout's
+  files and material reach the screen, how the built sheet gets real depth, the
+  no-WebGL fallback, and the WebGL teardown.
 - **[reference/SECURITY.md](reference/SECURITY.md)** — the threat model and the
   reasoning behind every access-control, request-integrity and availability
   decision, with sources.
@@ -66,6 +70,7 @@ docs/
   reference/           # how it works
     DATA-MODEL.md      # every stored object and its fields
     STORAGE.md         # the storage package internals
+    3D-VIEWER.md       # the object3d inspection viewer
     SECURITY.md        # threat model + security design
   dev/                 # how to extend
     THEMES.md          # write & register a theme

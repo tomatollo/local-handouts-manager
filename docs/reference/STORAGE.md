@@ -44,6 +44,7 @@ internal dependencies) upward.
 | `records.py` | Handout-record helpers over the loaded DB: `find`, `player_payload`, `reveal_secret`, plus the aggregate/parse helpers `all_categories`, `all_tags`, `parse_tags`, `parse_passwords`, `parse_session_number`. |
 | `folders.py` | Master-defined folders (`{id, name}`, multi-membership on handouts): `all_folders`, `find_folder`, `create_folder`, `rename_folder`, `delete_folder`, `valid_folder_ids`. |
 | `settings.py` | Global, master-controlled theme: `get_theme`, `set_theme`. The only module that imports `theming`. |
+| `materials.py` | Object3d **built-sheet** material presets (roughness/metalness/thickness): `SHEET_MATERIAL_PRESETS`, `DEFAULT_SHEET_MATERIAL_PRESET`, `default_sheet_material`, `clean_sheet_material`, `sheet_material_from_form`. A foundation module — no internal imports — so `db._normalize` and `records` can pull it in without a cycle. See [the materials module](#the-materials-module). |
 | `welcome.py` | The player-hub welcome header (titles/subtitles/random): `get_welcome_config`, `set_welcome`, `pick_welcome`, and the shared `_normalize_welcome` cleaner. |
 | `pop.py` | POP broadcasts — "put this handout on every screen, now": `pop_state`, `pop_age_seconds`, `pop_is_live`, `set_pop`, `clear_pop`. |
 | `map_state.py` | The interactive **maps**: a list of maps, each with confirmed state plus a `pending` draft layer, POIs, and focus broadcasts. Owns the map collection CRUD (`all_maps`, `find_map`, `get_map`, `create_map`, `rename_map`, `delete_map`), the per-map scene operations (all taking a `map_id`), the validation constants and cleaners (`_clean_pois`, `_coerce_map_fields`, `_normalize_map`, ...). Named `map_state` (not `map`) so it never shadows the builtin. |
@@ -56,30 +57,33 @@ internal dependencies) upward.
 ## The dependency graph is acyclic
 
 The modules form a layered, one-directional graph. `paths` and `util` sit at the
-bottom and import nothing internal. The domain modules (`formats`, `records`,
+bottom and import nothing internal. `materials` also imports nothing internal, so
+it sits on that same foundation layer. The domain modules (`formats`, `records`,
 `folders`, `settings`, `welcome`, `pop`, `map_state`, `files`) import only from
-those foundations. `db` sits at the top and is the **only** module that imports
-several domain modules — never the reverse.
+those foundations — `records` pulls in `materials` to clean a handout's
+`sheet_material` for the player payload. `db` sits at the top and is the **only**
+module that imports several domain modules — never the reverse.
 
 ```
-paths, util                         (no internal imports)
+paths, util, materials              (no internal imports)
       ^
-formats, records, folders,          (import paths/util only)
-settings, welcome, pop,
+formats, records, folders,          (import paths/util/materials only;
+settings, welcome, pop,              records imports materials)
 map_state, files
       ^
 db                                  (imports paths, util, formats,
-                                     welcome, map_state)
+                                     materials, welcome, map_state)
       ^
 __init__                            (re-exports everything)
 ```
 
 `db` imports the domain modules because `_normalize` — the migration pass that
 brings a loaded DB up to the current shape — has to touch every concern
-(welcome, POP, map POIs, handout view-type and format, secrets). Keeping each
-concern's per-node cleaner in its own module and letting `db` call them means the
-migration logic for a concern lives next to that concern, and the graph stays
-acyclic because nothing the domain modules import ever reaches back into `db`.
+(welcome, POP, map POIs, handout view-type, format, sheet material, secrets).
+Keeping each concern's per-node cleaner in its own module and letting `db` call
+them means the migration logic for a concern lives next to that concern, and the
+graph stays acyclic because nothing the domain modules import ever reaches back
+into `db`.
 
 ---
 
@@ -196,6 +200,51 @@ without invalidating already-revealed cells.
 the list (and for the migrated legacy map): it ensures the id + name, fills any
 missing scene field, de-duplicates revealed hexes, re-cleans POIs, and seeds the
 `pending`/`confirm_seq`. It is idempotent, so running it on every load is safe.
+
+---
+
+## The materials module
+
+`materials.py` owns the object3d **built-sheet** material — the small
+`{preset, roughness, metalness, thickness}` dict that says how a procedurally-
+built sheet (a scroll, a torn note, a plate) looks and how thick it is. A `.glb`
+model ignores it (it brings its own materials); the carousel/book viewers never
+look at it. For the stored shape and the field meanings see
+[DATA-MODEL.md](DATA-MODEL.md#sheet-material); for how the 3D reader turns the
+four numbers into geometry see
+[3D-VIEWER.md](3D-VIEWER.md#the-built-sheet-and-its-real-depth).
+
+It is a **foundation** module: it imports no sibling, so both `db._normalize`
+(which sets `sheet_material` on every handout) and `records.player_payload`
+(which cleans it into the POP/reveal payload) can depend on it without a cycle.
+
+The public surface:
+
+- `SHEET_MATERIAL_PRESETS` — the named looks offered in the create/edit form
+  (`paper`, `parchment`, `leather`, `wood`, `stone`, `metal`), each with its
+  `label` + `roughness`/`metalness`/`thickness`. The dict order is the UI order.
+- `DEFAULT_SHEET_MATERIAL_PRESET` (`'parchment'`) and `default_sheet_material()`
+  — the default a fresh handout gets and every legacy record is normalized to. It
+  matches the reader's old hardcoded 0.85 / 0.0 look, so existing sheets are
+  unchanged. `default_sheet_material()` returns a **fresh dict** each call, so
+  storing it on a record never aliases a shared object.
+- `clean_sheet_material(raw)` — the cleaner. Coerces junk to the default, clamps
+  `roughness`/`metalness` to 0–1 and `thickness` to 0.005–0.5, and applies the
+  key rule: **explicit slider values win over a named preset, and the recorded
+  `preset` becomes `'custom'` only when the numbers actually diverge from every
+  preset.** That is what lets the form send a preset choice *and* advanced
+  overrides in one POST — "Metal, but rougher" resolves to a custom material
+  seeded from metal. This is the same defensive cleaner `db._normalize` and
+  `player_payload` both call, so a hand-edited record or a stale POST can never
+  store out-of-range numbers.
+- `sheet_material_from_form(preset, roughness, metalness, thickness)` — packs the
+  four raw form fields into the dict shape and runs it through
+  `clean_sheet_material`. Used by the upload + edit routes.
+
+Mirroring the two-place clamping noted in [3D-VIEWER.md](3D-VIEWER.md): the server
+cleans here (defending the stored record and every payload), and the browser
+reader clamps again (defending against a partial material it might be handed
+directly). Both are deliberate — keep them.
 
 ---
 

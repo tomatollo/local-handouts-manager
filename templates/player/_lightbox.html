@@ -117,6 +117,7 @@
         var files = [];       // page files [{filename, reader, description}]
         var back = null;      // optional back-cover file entry
         var backTexture = null; // optional 3D reverse-side texture entry
+        var sheetMaterial = null; // optional 3D sheet material {roughness,metalness,thickness}
         var view = 'carousel';
         var hardCovers = true; // book: draw cover + back cover as rigid pages
         var index = 0;        // carousel file index
@@ -361,6 +362,11 @@
                 if (backTexture && backTexture.filename) {
                     opts.backUrl = uploadUrl(backTexture.filename);
                 }
+                // Surface + depth of the built sheet (roughness/metalness/
+                // thickness). Only meaningful for a sheet, so it is set only on
+                // this branch; a .glb model above ignores it. The reader
+                // clamps/fills anything missing, so passing null is safe.
+                if (sheetMaterial) opts.material = sheetMaterial;
             } else {
                 // Nothing to show; surface the error state and stop.
                 opts.onError();
@@ -468,6 +474,7 @@
             if (!files.length) return false;
             back = (data && data.back_cover) || null;
             backTexture = (data && data.back_texture) || null;
+            sheetMaterial = (data && data.sheet_material) || null;
 
             view = (data && data.view_type) || 'carousel';
             // Default TRUE so a payload that omits the flag (an older POP, a
@@ -516,6 +523,10 @@
                 var bt = card.getAttribute('data-back-texture');
                 data.back_texture = bt ? JSON.parse(bt) : null;
             } catch (e) { data.back_texture = null; }
+            try {
+                var sm = card.getAttribute('data-sheet-material');
+                data.sheet_material = sm ? JSON.parse(sm) : null;
+            } catch (e) { data.sheet_material = null; }
 
             data.view_type = card.getAttribute('data-view') || 'carousel';
             // data-hard-covers is the string "false" only when explicitly off;

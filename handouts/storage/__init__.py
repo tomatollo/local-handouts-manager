@@ -10,6 +10,7 @@ split by responsibility:
     paths.py       on-disk paths + shared constants (view types, POP/map keys)
     util.py        small pure helpers (view-type, allowed_file, ids, timestamps)
     formats.py     source-format labelling for the "Group by Format" view
+    materials.py   object3d sheet material presets (roughness/metalness/depth)
     records.py     handout lookup, player_payload, secret reveal, tag/category
                    /password/session parsing
     folders.py     master-defined folders (id + name, multi-membership)
@@ -103,6 +104,15 @@ from .settings import (
     set_theme,
 )
 
+# Object3d sheet material presets
+from .materials import (
+    SHEET_MATERIAL_PRESETS,
+    DEFAULT_SHEET_MATERIAL_PRESET,
+    default_sheet_material,
+    clean_sheet_material,
+    sheet_material_from_form,
+)
+
 # Welcome header
 from .welcome import (
     WELCOME_TITLE_MAX,
@@ -184,6 +194,9 @@ __all__ = [
     'rename_folder', 'delete_folder', 'valid_folder_ids',
     # settings
     'get_theme', 'set_theme',
+    # materials
+    'SHEET_MATERIAL_PRESETS', 'DEFAULT_SHEET_MATERIAL_PRESET',
+    'default_sheet_material', 'clean_sheet_material', 'sheet_material_from_form',
     # welcome
     'WELCOME_TITLE_MAX', 'WELCOME_SUBTITLE_MAX', 'WELCOME_MAX_LINES',
     'get_welcome_config', 'set_welcome', 'pick_welcome',
