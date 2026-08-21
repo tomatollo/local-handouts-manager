@@ -30,7 +30,6 @@ confirm bumps confirm_seq and the next request rebuilds.
 
 import math
 import os
-import threading
 
 import fitz  # PyMuPDF: only to read the source PNG into a buffer.
 from PIL import Image, ImageDraw
@@ -40,25 +39,6 @@ from . import storage
 # Where composites are cached. Kept out of static/maps so the raw backgrounds
 # there are never mistaken for something safe to serve.
 CACHE_DIR = os.path.join(storage.BASE_DIR, 'data', 'map_cache')
-
-# One build lock per map_id. When confirm_seq bumps, every polling player asks
-# for the new reveal.png within the poll window; without this they all rebuild
-# the same composite in parallel and saturate the waitress threads (the
-# "thundering herd" that made other pages stop loading). With it, the first
-# request builds while the rest wait, then find the finished file in cache.
-# A module-level dict guarded by its own lock hands out (and reuses) one Lock
-# per map so two different maps never block each other.
-_build_locks = {}
-_build_locks_guard = threading.Lock()
-
-
-def _lock_for(map_id):
-    with _build_locks_guard:
-        lock = _build_locks.get(map_id)
-        if lock is None:
-            lock = threading.Lock()
-            _build_locks[map_id] = lock
-        return lock
 
 
 def _hex_geometry(state, W, H):
@@ -225,91 +205,68 @@ def build_composite(db, map_id, force=False):
     if os.path.exists(out_path) and not force:
         return out_path
 
-    # Serialise builds of THIS map. The first caller through builds; any others
-    # that piled up behind the lock re-check the cache below and return the
-    # file the first caller just wrote, instead of rebuilding it themselves.
-    # This is what stops a reveal (which bumps confirm_seq and invalidates the
-    # cache) from making every polling player rebuild the same composite at
-    # once and starving the server of worker threads.
-    lock = _lock_for(map_id)
-    with lock:
-        # Re-check now that we hold the lock: while we waited, another thread
-        # may have finished exactly this composite. (Skip the shortcut when
-        # force=True -- a calibration preview always wants a fresh build.)
-        if os.path.exists(out_path) and not force:
-            return out_path
+    source = _load_source_rgb(map_image)
+    if source is None:
+        return None
+    W, H = source.size
 
-        source = _load_source_rgb(map_image)
-        if source is None:
-            return None
-        W, H = source.size
+    # Transparent canvas the size of the map. We paste the source through a
+    # per-hex mask so only revealed terrain ends up opaque.
+    composite = Image.new('RGBA', (W, H), (0, 0, 0, 0))
 
-        # Transparent canvas the size of the map. We paste the source through a
-        # per-hex mask so only revealed terrain ends up opaque.
-        composite = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    # One shared mask image we redraw per hex would be slower to allocate each
+    # time; instead we accumulate all revealed hexes into a single mask, then
+    # paste once. The mask is 'L' (8-bit alpha): 255 where revealed.
+    mask = Image.new('L', (W, H), 0)
+    mdraw = ImageDraw.Draw(mask)
 
-        # One shared mask image we redraw per hex would be slower to allocate
-        # each time; instead we accumulate all revealed hexes into a single
-        # mask, then paste once. The mask is 'L' (8-bit alpha): 255 where
-        # revealed.
-        mask = Image.new('L', (W, H), 0)
-        mdraw = ImageDraw.Draw(mask)
+    r, col_step, row_step, start_x, start_y = _hex_geometry(state, W, H)
+    grid_type = state.get('grid_type', 'hex')
+    if grid_type == 'square':
+        side, sq_start_x, sq_start_y = _square_geometry(state, W, H)
 
-        r, col_step, row_step, start_x, start_y = _hex_geometry(state, W, H)
-        grid_type = state.get('grid_type', 'hex')
-        if grid_type == 'square':
-            side, sq_start_x, sq_start_y = _square_geometry(state, W, H)
+    revealed = state.get('revealed_hexes', [])
+    cols = state.get('grid_cols', 20)
+    rows = state.get('grid_rows', 15)
 
-        revealed = state.get('revealed_hexes', [])
-        cols = state.get('grid_cols', 20)
-        rows = state.get('grid_rows', 15)
+    # Inverse mask approach. Instead of "reveal the revealed hexes and a border
+    # rectangle" -- which left the last row/column of revealed hexes meeting a
+    # straight rectangle edge and reading as sheared half-hexes -- we do the
+    # opposite: start with the WHOLE image revealed, then paint back to
+    # transparent ONLY the hexes that are not revealed. The result:
+    #   - every un-revealed hex is hidden as an exact hexagon (no straight cut);
+    #   - revealed hexes are whole (nothing is ever subtracted from them);
+    #   - map margin outside the grid stays visible (it was never hidden);
+    #   - the boundary between hidden and shown is always a hex edge, so there
+    #     is no rectangular frame and no half-hex artefact anywhere.
+    # Security: only the interiors of un-revealed hexes are removed. The thin
+    # seams between adjacent hidden hexes stay visible, but those seam pixels
+    # are shared hex borders, not the secret interior of any single hex, so this
+    # does not expose an un-revealed location.
+    mdraw.rectangle([0, 0, W, H], fill=255)
 
-        # Inverse mask approach. Instead of "reveal the revealed hexes and a
-        # border rectangle" -- which left the last row/column of revealed hexes
-        # meeting a straight rectangle edge and reading as sheared half-hexes --
-        # we do the opposite: start with the WHOLE image revealed, then paint
-        # back to transparent ONLY the hexes that are not revealed. The result:
-        #   - every un-revealed hex is hidden as an exact hexagon (no straight
-        #     cut);
-        #   - revealed hexes are whole (nothing is ever subtracted from them);
-        #   - map margin outside the grid stays visible (it was never hidden);
-        #   - the boundary between hidden and shown is always a hex edge, so
-        #     there is no rectangular frame and no half-hex artefact anywhere.
-        # Security: only the interiors of un-revealed hexes are removed. The
-        # thin seams between adjacent hidden hexes stay visible, but those seam
-        # pixels are shared hex borders, not the secret interior of any single
-        # hex, so this does not expose an un-revealed location.
-        mdraw.rectangle([0, 0, W, H], fill=255)
+    revealed_set = set(revealed)
+    if cols > 0 and rows > 0:
+        for col in range(cols):
+            for row in range(rows):
+                if f'hex-{col}-{row}' in revealed_set:
+                    continue  # revealed: leave it shown
+                if grid_type == 'square':
+                    poly = _square_polygon(col, row, side,
+                                           sq_start_x, sq_start_y)
+                else:
+                    cx, cy = _hex_center(col, row, r, col_step, row_step,
+                                         start_x, start_y)
+                    poly = _hex_polygon(cx, cy, r)
+                mdraw.polygon(poly, fill=0)  # hide this cell exactly
 
-        revealed_set = set(revealed)
-        if cols > 0 and rows > 0:
-            for col in range(cols):
-                for row in range(rows):
-                    if f'hex-{col}-{row}' in revealed_set:
-                        continue  # revealed: leave it shown
-                    if grid_type == 'square':
-                        poly = _square_polygon(col, row, side,
-                                               sq_start_x, sq_start_y)
-                    else:
-                        cx, cy = _hex_center(col, row, r, col_step, row_step,
-                                             start_x, start_y)
-                        poly = _hex_polygon(cx, cy, r)
-                    mdraw.polygon(poly, fill=0)  # hide this cell exactly
+    # Paste the map's pixels wherever the mask says "revealed".
+    composite.paste(source, (0, 0), mask)
 
-        # Paste the map's pixels wherever the mask says "revealed".
-        composite.paste(source, (0, 0), mask)
-
-        # Write atomically-ish: temp then replace, so a concurrent reader never
-        # sees a half-written PNG.
-        #
-        # compress_level=1 (was optimize=True): optimize runs extra compression
-        # passes that dominate the rebuild time on a large map to save a few KB.
-        # Level 1 is the fastest zlib setting -- a slightly larger file that
-        # generates in a fraction of the time. The player still fetches it once
-        # and caches it (ETag on confirm_seq), so the on-disk size barely
-        # matters; the rebuild latency is what stalled other requests.
-        tmp = out_path + '.tmp'
-        composite.save(tmp, 'PNG', compress_level=1)
-        os.replace(tmp, out_path)
-        _prune_old(map_id, map_image, out_path)
-        return out_path
+    # Write atomically-ish: temp then replace, so a concurrent reader never
+    # sees a half-written PNG.
+    tmp = out_path + '.tmp'
+    composite.save(tmp, 'PNG', optimize=True)
+    os.replace(tmp, out_path)
+    _prune_old(map_id, map_image, out_path)
+    return out_path

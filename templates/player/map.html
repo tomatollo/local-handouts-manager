@@ -140,7 +140,7 @@
     (function () {
         'use strict';
         var READ_URL = "{{ url_for('player.map_state', map_id=map_id) }}";
-        var POLL_MS = 3000;
+        var POLL_MS = 5000;
         var MAPS_BASE = JSON.parse(document.getElementById('map-base').textContent);
 
         var stage = document.getElementById('map-stage');
@@ -346,10 +346,6 @@
                 poiLayer.appendChild(el);
             });
         }
-
-        // When the composite finishes loading, its clientWidth/Height are
-        // final, so re-poll to recompute geometry and place POIs correctly.
-        img.addEventListener('load', function () { poll(); });
 
         try { applyState(JSON.parse(document.getElementById('map-initial').textContent)); }
         catch (e) {}
