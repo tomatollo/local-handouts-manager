@@ -47,6 +47,20 @@ from .map_state import _normalize_map
 
 _DB_LOCK = threading.RLock()
 
+# Schema version. Bumped whenever _normalize's per-handout migration loop gains
+# a step that must run over existing records. It is written into the DB (as
+# `_schema`) the first time a DB at this version is saved, and lets load_db skip
+# the expensive per-handout + per-map migration pass on a DB already known to be
+# current: that loop is pure migration work (it only ever fills defaults on
+# legacy records), so re-running it on an up-to-date DB changes nothing but
+# costs a full walk of the library on EVERY request. The cheap DB-level
+# setdefaults still run unconditionally, so a hand-edited or half-migrated DB
+# stays robust.
+#
+# IMPORTANT: bump this by 1 whenever you add or change a migration step inside
+# the per-handout loop (or _normalize_map), so older DBs get migrated once more.
+_SCHEMA_VERSION = 1
+
 # Filled in by set_request_cache_hooks(). `_cache_get()` returns the cached DB
 # for the current request or None; `_cache_set(db)` stores it. Left as no-ops
 # so a caller that never installs them (the CLI, tests) behaves exactly as it
@@ -133,6 +147,21 @@ def _normalize(data):
     pop.setdefault('seq', 0)
     pop.setdefault('handout_id', None)
     pop.setdefault('at', None)
+
+    # Fast path: a DB already stamped at the current schema has had the heavy
+    # per-map + per-handout migration below applied and persisted, so re-running
+    # it every request only burns CPU walking the whole library to change
+    # nothing. Skip straight to the end. The cheap DB-level setdefaults above
+    # always run, so robustness on a fresh/partial DB is unaffected; only the
+    # migration LOOP is gated. Any change to that loop must bump _SCHEMA_VERSION
+    # (see its comment) so older DBs are migrated once more.
+    #
+    # Note we do NOT stamp `_schema` here -- only save_db does, once the
+    # migrated shape is actually written to disk. Until then every load keeps
+    # doing the full pass, which is correct: an un-persisted migration must not
+    # be assumed complete.
+    if data.get('_schema') == _SCHEMA_VERSION:
+        return
 
     # DB-level: interactive maps. The table can have several (a world map, a
     # city, a dungeon level), stored as a LIST under MAPS_KEY. Each is an
@@ -267,6 +296,18 @@ def _normalize(data):
             h['back_texture'].setdefault('thumb', None)
 
 
+def is_current_schema(data):
+    """True if `data` is already stamped at the current schema version.
+
+    Lets callers cheaply skip one-time, whole-library migration work (the PDF
+    page + thumbnail backfills in the player hub) on a DB that has already been
+    fully migrated and saved. On any older or unstamped DB this returns False,
+    so that work still runs until the next save_db stamps the DB current. Kept
+    here next to _SCHEMA_VERSION so the meaning of the stamp lives in one place.
+    """
+    return data.get('_schema') == _SCHEMA_VERSION
+
+
 def _atomic_write(data):
     """Serialise `data` to DB_PATH atomically: temp file, fsync, os.replace.
 
@@ -299,6 +340,13 @@ def save_db(data):
     a later load_db in the same request returns exactly what was written rather
     than a stale earlier copy.
     """
+    # Stamp the schema version we are persisting. This is what lets a later
+    # load_db take the fast path in _normalize and skip the per-handout
+    # migration loop: by the time this write lands, that migration has been
+    # applied to `data` in memory, so the on-disk copy is genuinely current.
+    # Writing it here (rather than in _normalize) guarantees the stamp only
+    # appears once the migrated shape actually reaches disk.
+    data['_schema'] = _SCHEMA_VERSION
     with _DB_LOCK:
         _atomic_write(data)
     _cache_set(data)

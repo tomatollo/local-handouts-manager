@@ -172,6 +172,7 @@ from .db import (
     set_request_cache_hooks,
     load_db,
     save_db,
+    is_current_schema,
     _normalize,
 )
 
@@ -212,5 +213,6 @@ __all__ = [
     'save_files', 'remove_files', 'save_back_cover', 'save_back_texture',
     'allowed_map_file', 'save_map_image', 'remove_map_image',
     # db
-    'set_request_cache_hooks', 'load_db', 'save_db', '_normalize',
+    'set_request_cache_hooks', 'load_db', 'save_db', 'is_current_schema',
+    '_normalize',
 ]

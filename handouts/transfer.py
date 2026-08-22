@@ -40,8 +40,13 @@ def _public_db(db):
     Only `settings` is filtered; handouts, folders and wiki pages travel whole.
     The copy is shallow apart from `settings`, which is the only thing rebuilt,
     so nothing here mutates the caller's DB.
+
+    The internal `_schema` stamp is dropped: it is a purely local optimisation
+    marker (see storage/db.py) and has no meaning in a portable bundle, which
+    is always fully re-normalized on import anyway.
     """
     out = dict(db)
+    out.pop('_schema', None)
     out['settings'] = {k: v for k, v in db.get('settings', {}).items()
                        if k not in PRIVATE_SETTINGS}
     return out
@@ -269,6 +274,12 @@ def _read_bundle(zip_bytes):
         incoming = json.loads(zf.read(MANIFEST_NAME).decode('utf-8'))
     except (json.JSONDecodeError, UnicodeDecodeError):
         raise ValueError('The database.json in the archive is unreadable.')
+    # Force a FULL re-normalization of an imported bundle regardless of any
+    # `_schema` stamp it carries. A bundle is external data of unknown vintage;
+    # trusting its stamp could let an older-shaped record skip the migration
+    # loop. Dropping the stamp makes _normalize take its full path, and the
+    # merge's eventual save_db re-stamps the merged DB to the current version.
+    incoming.pop('_schema', None)
     storage._normalize(incoming)
     return incoming, zf
 

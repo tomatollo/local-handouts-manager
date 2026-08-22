@@ -2,14 +2,18 @@
 
 Everything the app persists lives in one JSON file, `data/database.json`. This
 document describes its shape object by object: what each record is, which fields
-it carries, and what they mean. It is a reference, not a guide — for *how* the
+it carries, and what they mean. It is a reference, not a guide for *how* the
 storage package is organised (modules, the load/save cycle, migrations) see
 [STORAGE.md](STORAGE.md).
 
 The file is plain JSON with no schema enforcement; the shapes below are what the
 code writes and what `storage._normalize()` guarantees on load. Legacy records
-are brought up to the current shape on every load, so you may see extra or
-missing keys in an old file that the app fills in automatically.
+are brought up to the current shape automatically, so you may see extra or
+missing keys in an old file that the app fills in on load. Once a database has
+been migrated and saved it is stamped current (`_schema`), and later loads skip
+the heavy per-record migration pass see
+[STORAGE.md](STORAGE.md#the-schema-stamp-and-the-migration-fast-path) but the
+resulting shape is identical either way.
 
 ## Top level
 
@@ -20,24 +24,33 @@ The root object has these keys:
   "handouts": [ ... ],
   "folders":  [ ... ],
   "maps":     [ ... ],
-  "settings": { ... }
+  "wiki":     [ ... ],
+  "settings": { ... },
+  "_schema":  1
 }
 ```
 
 - `handouts` — the library, a list of handout objects (see below).
 - `folders` — master-defined collections, a list of `{id, name}`.
 - `maps` — the interactive maps, a list of map objects.
+- `wiki` — the master's wiki pages, a list of page objects (each carries its
+  own scope, so a master page stays a master page across an export/import).
 - `settings` — table-wide settings: the theme, the welcome header, the current
   POP broadcast, and the (opaque) master credentials.
+- `_schema` — an internal integer stamp recording which normalize/migration
+  version last wrote this file. It lets the app skip the one-time, whole-library
+  migration pass on a database already known to be current; it is not game data
+  and is stripped from export bundles. See
+  [STORAGE.md](STORAGE.md#the-schema-stamp-and-the-migration-fast-path).
 
 A freshly created database starts as `{"handouts": [], "folders": []}`; the
-other keys are added on first normalize.
+other keys (including `_schema`) are added on first normalize and save.
 
 ---
 
 ## Handout
 
-A single piece of shared material — one or more image/PDF pages, or a 3D model —
+A single piece of shared material one or more image/PDF pages, or a 3D model
 plus its metadata and the flags that control how and when players see it.
 
 | Field | Type | Meaning |
@@ -56,7 +69,7 @@ plus its metadata and the flags that control how and when players see it.
 | `back_cover` | file entry or null | Book viewer only: a single page shown as the very last leaf. Ignored by other viewers. |
 | `back_texture` | file entry or null | `object3d` sheet viewer only: the image painted on the reverse face; PNG transparency shows through as holes. |
 | `sheet_material` | object | `object3d` **built sheet** only: how the procedurally-built paper looks and how thick it is. `{preset, roughness, metalness, thickness}` (see below). Ignored by a `.glb` model and by the carousel/book viewers. Every handout carries one; legacy records get the parchment default on load. |
-| `secret_passwords` | list of strings | Words that, typed into the viewer, reveal `secret_handout_id`. Empty = no secret. Plain text by design — this is table theatre, not security. |
+| `secret_passwords` | list of strings | Words that, typed into the viewer, reveal `secret_handout_id`. Empty = no secret. Plain text by design this is table theatre, not security. |
 | `secret_ignore_case` | bool | Match `secret_passwords` without regard to letter case. |
 | `secret_handout_id` | string or null | The handout unlocked when a secret password is entered. |
 | `secret_password` | string | Legacy mirror of the first entry in `secret_passwords`, kept so older readers and export/import still work. Not the source of truth. |
@@ -84,7 +97,7 @@ Each item in `files` (and each `back_cover` / `back_texture`) is:
 
 ### Sheet material
 
-The `sheet_material` object controls the `object3d` **built sheet** — a scroll,
+The `sheet_material` object controls the `object3d` **built sheet** a scroll,
 torn note, or plate built procedurally from the front image (not a `.glb` model,
 which brings its own materials). It is a small dict:
 
@@ -96,7 +109,7 @@ which brings its own materials). It is a small dict:
 | `thickness` | float | Sheet depth in scene units, 0.005–0.5, so it doesn't vanish edge-on. The sheet's height is normalised to 2, so 0.05 is a slip of parchment. |
 
 The default (and what every legacy record is normalized to) is the `parchment`
-preset — `roughness 0.85`, `metalness 0.0`, `thickness 0.05` — which matches the
+preset `roughness 0.85`, `metalness 0.0`, `thickness 0.05` which matches the
 look the 3D reader used before the material was configurable, so existing sheet
 handouts are unchanged. The named presets, the clamping ranges, and the rule that
 downgrades `preset` to `custom` when the sliders diverge all live in
@@ -185,14 +198,14 @@ Table-wide, master-controlled state under the root `settings` key.
 
 | Field | Type | Meaning |
 | --- | --- | --- |
-| `theme` | string | The active theme id (see [THEMES.md](../dev/THEMES.md)). Global — every player sees it. |
+| `theme` | string | The active theme id (see [THEMES.md](../dev/THEMES.md)). Global every player sees it. |
 | `welcome` | object | The player-hub welcome header: title(s), subtitle(s), and a `random` flag. Empty values mean "use the app default". |
 | `pop` | object | The current POP broadcast (see below). |
 
 `settings` also holds the master **passphrase hash** and the **session signing
 key** (written by `auth.py`). These are opaque to display code, and both are
 stripped from export bundles so a shared `.zip` never carries credentials. The
-per-user interface language is deliberately NOT stored here — it is a cookie, so
+per-user interface language is deliberately NOT stored here it is a cookie, so
 each person can pick their own.
 
 ### POP
@@ -205,7 +218,7 @@ The `settings.pop` object records the current "put this on every screen" broadca
 | `handout_id` | string or null | The handout to open. |
 | `at` | string or null | When it was fired (used to expire it after a couple of minutes). |
 
-Only the newest POP is kept — there is no queue. The player endpoint re-checks
+Only the newest POP is kept there is no queue. The player endpoint re-checks
 the handout is still visible on every read, so a POP can never leak a handout
 the Master has pulled back.
 

@@ -105,6 +105,29 @@ def create_app():
         response.headers.setdefault('X-Frame-Options', 'DENY')
         response.headers.setdefault('Referrer-Policy',
                                     'strict-origin-when-cross-origin')
+        # Long-cache uploaded media. Handout pages/thumbnails (static/uploads)
+        # and map backgrounds (static/maps) are content-addressed in practice:
+        # every upload gets a unique filename and an existing file is never
+        # rewritten in place, so a change always means a NEW url. That makes
+        # them safe to cache hard -- the players' browsers then reuse them
+        # across page loads and whole sessions instead of re-fetching or
+        # revalidating the same images every time, which is the bulk of the
+        # repeat byte traffic after the map composite.
+        #
+        # Deliberately scoped to those two folders only: the app's own CSS/JS/
+        # fonts also live under static/ but DO change in place across app
+        # updates without a new name, so caching them hard would strand players
+        # on a stale UI. They keep Flask's default (short) caching. The map
+        # COMPOSITE (/api/map/<id>/reveal.png) is not a static file and sets its
+        # own ETag/no-cache in routes_player, so it is untouched here.
+        if request.endpoint == 'static':
+            served = request.path  # e.g. /static/uploads/<name>
+            if '/static/uploads/' in served or '/static/maps/' in served:
+                # 30 days, immutable: the browser may reuse it without even a
+                # revalidation request until it expires. Safe precisely because
+                # the url changes whenever the bytes do.
+                response.headers['Cache-Control'] = (
+                    'public, max-age=2592000, immutable')
         retry_after = getattr(g, 'rate_limited_retry_after', None)
         if retry_after:
             response.headers['Retry-After'] = str(retry_after)

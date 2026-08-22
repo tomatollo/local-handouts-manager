@@ -20,16 +20,30 @@ MODES = ('folder', 'session', 'tag', 'recent')
 def home():
     db = storage.load_db()
 
-    # Older carousel handouts stored PDFs as PDFs (shown in an iframe). Both
-    # viewers now render images only, so expand any lingering PDF pages into
-    # page images once, here, and persist if anything changed. Non-destructive:
-    # the source PDFs stay on disk (see pdfs.backfill_carousel_pdfs).
-    changed = pdfs.backfill_carousel_pdfs(db)
-    # Older PDFs predate thumbnails; render any that are missing so cards show
-    # a real preview instead of the grey placeholder.
-    if pdfs.backfill_thumbs(db):
-        changed = True
-    if changed:
+    # One-time legacy backfills, gated on schema. On a library already migrated
+    # and saved (stamped current), neither of these ever finds anything to do,
+    # yet each still walks every handout and stats every PDF thumb on disk --
+    # on the busiest page in the app, every load. So we run them ONLY until the
+    # DB is stamped current, after which they are skipped entirely. New PDF
+    # uploads are converted on the master upload/edit path, not here, so
+    # skipping these on a current DB cannot leave a freshly uploaded PDF
+    # unconverted -- these only ever recovered handouts saved before the
+    # image-only viewers and thumbnails existed.
+    if not storage.is_current_schema(db):
+        # Older carousel handouts stored PDFs as PDFs (shown in an iframe).
+        # Both viewers now render images only, so expand any lingering PDF
+        # pages into page images once, here, and persist if anything changed.
+        # Non-destructive: the source PDFs stay on disk (see
+        # pdfs.backfill_carousel_pdfs).
+        changed = pdfs.backfill_carousel_pdfs(db)
+        # Older PDFs predate thumbnails; render any that are missing so cards
+        # show a real preview instead of the grey placeholder.
+        if pdfs.backfill_thumbs(db):
+            changed = True
+        # Persist regardless of `changed`: save_db stamps the schema current,
+        # which is what lets every later hub load skip the two walks above.
+        # (Even a no-op pass should record "nothing left to migrate" so it is
+        # not repeated forever.)
         storage.save_db(db)
 
     visible = [h for h in db['handouts'] if h.get('visible')]
